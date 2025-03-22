@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Game Creator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>AI Game Creator</h1>
+        <p>Talk to the AI to create your own game!</p>
+    </header>
+
+    <main>
+        <section id="ai-chat" aria-labelledby="chat-title">
+            <h2 id="chat-title">Chat with AI</h2>
+            <div id="chat-window" aria-live="polite"></div>
+            <textarea id="user-input" placeholder="Type your message here..." aria-label="User input"></textarea>
+            <button id="send-button" aria-label="Send message">Send</button>
+        </section>
+
+        <section id="game-section" aria-labelledby="game-title" style="display: none;">
+            <h2 id="game-title">Your Game</h2>
+            <div id="game-container">
+                <!-- Game content will be dynamically inserted here -->
+            </div>
+            <button id="back-to-ai" aria-label="Go back to AI">Go Back to AI</button>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2023 AI Game Creator. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
