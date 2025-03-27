@@ -269,6 +269,7 @@
     .container {
       width: 100%;
       max-width: 800px;
+      position: relative;
     }
     
     header {
@@ -410,10 +411,236 @@
       width: 0%;
       transition: width 0.3s ease;
     }
+    
+    /* Top Buttons */
+    .top-buttons {
+      position: absolute;
+      top: 0;
+      right: 0;
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    .top-btn {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--secondary);
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    
+    .top-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: var(--accent);
+    }
+    
+    /* Modals */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    .modal-content {
+      background: var(--card-bg);
+      padding: 2rem;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      position: relative;
+    }
+    
+    .close-modal {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      color: var(--secondary);
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+    
+    .modal-title {
+      font-size: 1.5rem;
+      color: var(--accent);
+      margin-bottom: 1.5rem;
+    }
+    
+    /* Click Upgrades Modal */
+    .click-upgrades-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 1rem;
+    }
+    
+    .click-upgrade {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+      padding: 1rem;
+      border-left: 3px solid var(--primary);
+      transition: all 0.2s;
+    }
+    
+    .click-upgrade.unlocked {
+      cursor: pointer;
+    }
+    
+    .click-upgrade.unlocked:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .click-upgrade.locked {
+      opacity: 0.6;
+      border-left-color: var(--disabled);
+    }
+    
+    .click-upgrade-name {
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+      color: var(--accent);
+    }
+    
+    .click-upgrade-desc {
+      font-size: 0.8rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .click-upgrade-cost {
+      color: var(--secondary);
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+    
+    .click-upgrade-owned {
+      color: var(--text);
+      font-size: 0.8rem;
+      font-style: italic;
+    }
+    
+    /* Code Modal */
+    .code-input {
+      width: 100%;
+      padding: 1rem;
+      margin: 1rem 0;
+      background: var(--bg);
+      border: 1px solid var(--primary);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 1rem;
+    }
+    
+    .submit-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.8rem 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.2s;
+      width: 100%;
+    }
+    
+    .submit-btn:hover {
+      background: var(--accent);
+    }
+    
+    .code-message {
+      margin-top: 1rem;
+      color: var(--accent);
+      font-weight: bold;
+      text-align: center;
+    }
+    
+    /* Visual Tutorial Overlay */
+    .tutorial-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .tutorial-step {
+      position: absolute;
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 1.5rem;
+      max-width: 300px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      border: 2px solid var(--accent);
+      animation: pulse 1.5s infinite;
+    }
+    
+    .tutorial-pointer {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      background: var(--accent);
+      transform: rotate(45deg);
+      z-index: -1;
+    }
+    
+    .tutorial-message {
+      margin-bottom: 1rem;
+      font-weight: bold;
+      color: var(--accent);
+    }
+    
+    .tutorial-next {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+    
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    
+    .tutorial-highlight {
+      position: relative;
+      z-index: 2001;
+      animation: bounce 1s infinite;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
   </style>
 </head>
 <body>
   <div class="container">
+    <div class="top-buttons">
+      <button class="top-btn" id="upgradeClicksBtn">Upgrade Clicks</button>
+      <button class="top-btn" id="codeBtn">Enter Code</button>
+    </div>
+    
     <header>
       <h1>Business Empire Clicker</h1>
       <p>Build your economic dynasty one click at a time</p>
@@ -427,12 +654,40 @@
     </div>
     
     <div class="click-area">
-      <button class="click-btn" id="clicker">Earn Coins</button>
+      <button class="click-btn" id="clicker">Earn Coins (1 per click)</button>
       <div class="hint">(Click or press SPACE - no holding!)</div>
     </div>
     
     <h2>Business Upgrades</h2>
     <div class="upgrades-container" id="upgrades"></div>
+  </div>
+
+  <!-- Click Upgrades Modal -->
+  <div class="modal" id="clickUpgradesModal">
+    <div class="modal-content">
+      <button class="close-modal" id="closeClickUpgrades">&times;</button>
+      <h3 class="modal-title">Click Upgrades</h3>
+      <div class="click-upgrades-grid" id="clickUpgradesGrid"></div>
+    </div>
+  </div>
+
+  <!-- Code Modal -->
+  <div class="modal" id="codeModal">
+    <div class="modal-content">
+      <button class="close-modal" id="closeCodeModal">&times;</button>
+      <h3 class="modal-title">Redeem Code</h3>
+      <input type="text" class="code-input" id="codeInput" placeholder="Enter code...">
+      <button class="submit-btn" id="submitCode">Submit</button>
+      <div class="code-message" id="codeMessage"></div>
+    </div>
+  </div>
+
+  <!-- Visual Tutorial Overlay -->
+  <div class="tutorial-overlay" id="tutorialOverlay">
+    <div class="tutorial-step" id="tutorialStep1" style="top: 50%; left: 50%; transform: translate(-50%, -50%);">
+      <div class="tutorial-message">Click this button to earn coins!</div>
+      <button class="tutorial-next" id="nextStep1">Got it!</button>
+    </div>
   </div>
 
   <script>
@@ -442,11 +697,24 @@
     let coinsPerSecond = 0;
     let spacePressed = false;
     let spaceCooldown = false;
-    let highestVisibleUpgrade = 3; // Start with first 3 upgrades visible
+    let highestVisibleUpgrade = 3;
+    let tutorialStep = 1;
+    
+    // Click upgrades data
+    const clickUpgrades = [
+      { id: 1, name: "+1 Click", amount: 1, cost: 100, purchased: false },
+      { id: 2, name: "+5 Clicks", amount: 5, cost: 500, purchased: false },
+      { id: 3, name: "+10 Clicks", amount: 10, cost: 1000, purchased: false },
+      { id: 4, name: "+100 Clicks", amount: 100, cost: 10000, purchased: false },
+      { id: 5, name: "+1K Clicks", amount: 1000, cost: 100000, purchased: false },
+      { id: 6, name: "+10K Clicks", amount: 10000, cost: 1000000, purchased: false },
+      { id: 7, name: "+100K Clicks", amount: 100000, cost: 10000000, purchased: false },
+      { id: 8, name: "+1M Clicks", amount: 1000000, cost: 100000000, purchased: false }
+    ];
     
     // Upgrades data (19 upgrades)
     const upgrades = [
-      { id: 1, name: "TikTok Shop", baseCost: 10, owned: 0, effect: 0.5, desc: "Basic viral commerce" },
+      { id: 1, name: "TikTok Shop", baseCost: 5, owned: 0, effect: 0.5, desc: "Basic viral commerce" },
       { id: 2, name: "YouTube Ads", baseCost: 50, owned: 0, effect: 2, desc: "Monetize attention" },
       { id: 3, name: "Instagram Store", baseCost: 100, owned: 0, effect: 3, desc: "Aesthetic capitalism" },
       { id: 4, name: "Dropshipping", baseCost: 200, owned: 0, effect: 5, desc: "Sell what you don't own" },
@@ -473,12 +741,63 @@
     const clicker = document.getElementById("clicker");
     const upgradesContainer = document.getElementById("upgrades");
     
+    // Modal elements
+    const upgradeClicksBtn = document.getElementById("upgradeClicksBtn");
+    const codeBtn = document.getElementById("codeBtn");
+    
+    const clickUpgradesModal = document.getElementById("clickUpgradesModal");
+    const closeClickUpgrades = document.getElementById("closeClickUpgrades");
+    const clickUpgradesGrid = document.getElementById("clickUpgradesGrid");
+    
+    const codeModal = document.getElementById("codeModal");
+    const closeCodeModal = document.getElementById("closeCodeModal");
+    const codeInput = document.getElementById("codeInput");
+    const submitCode = document.getElementById("submitCode");
+    const codeMessage = document.getElementById("codeMessage");
+    
+    // Tutorial elements
+    const tutorialOverlay = document.getElementById("tutorialOverlay");
+    const tutorialStep1 = document.getElementById("tutorialStep1");
+    const nextStep1 = document.getElementById("nextStep1");
+    
     // Initialize
     renderUpgrades();
+    renderClickUpgrades();
     setInterval(gameLoop, 1000);
+    updateClickerText();
+    
+    // Show tutorial on first load
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        startTutorial();
+      }, 1000);
+    });
     
     // Event listeners
     clicker.addEventListener("click", handleClick);
+    
+    // Button listeners
+    upgradeClicksBtn.addEventListener("click", () => clickUpgradesModal.style.display = "flex");
+    codeBtn.addEventListener("click", () => codeModal.style.display = "flex");
+    
+    // Close modal listeners
+    closeClickUpgrades.addEventListener("click", () => clickUpgradesModal.style.display = "none");
+    closeCodeModal.addEventListener("click", () => codeModal.style.display = "none");
+    
+    // Code redemption
+    submitCode.addEventListener("click", redeemCode);
+    codeInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        redeemCode();
+      }
+    });
+    
+    // Tutorial navigation
+    nextStep1.addEventListener("click", () => {
+      tutorialStep1.style.display = "none";
+      tutorialStep = 2;
+      highlightClicker();
+    });
     
     // Spacebar handling with cooldown
     document.addEventListener("keydown", (e) => {
@@ -509,6 +828,7 @@
       updateDisplay();
       checkForNewUpgrades();
       renderUpgrades();
+      renderClickUpgrades();
     }
     
     function handleClick() {
@@ -519,21 +839,30 @@
       // Visual feedback
       coinsDisplay.classList.add("pulse");
       setTimeout(() => coinsDisplay.classList.remove("pulse"), 300);
+      
+      // Tutorial progress
+      if (tutorialStep === 2 && coins >= 5) {
+        completeTutorialStep(2);
+        tutorialStep = 3;
+        highlightUpgrades();
+      }
     }
     
     function updateDisplay() {
       coinsDisplay.textContent = Math.floor(coins).toLocaleString();
       cpsDisplay.textContent = `${coinsPerSecond.toFixed(1)} coins/sec`;
+      updateClickerText();
+    }
+    
+    function updateClickerText() {
+      clicker.textContent = `Earn Coins (${coinsPerClick.toLocaleString()} per click)`;
     }
     
     function checkForNewUpgrades() {
-      // Check if we can reveal the next upgrade
-      // We reveal upgrade N+2 when the player can afford upgrade N
       for (let i = 0; i < upgrades.length; i++) {
         const upgrade = upgrades[i];
         const cost = getUpgradeCost(upgrade);
         
-        // If we can afford this upgrade and there's an upgrade two ahead
         if (coins >= cost && i + 2 < upgrades.length && i + 2 > highestVisibleUpgrade) {
           highestVisibleUpgrade = i + 2;
         }
@@ -543,10 +872,8 @@
     function renderUpgrades() {
       upgradesContainer.innerHTML = "";
       
-      // Show all upgrades up to highestVisibleUpgrade
       const visibleUpgrades = upgrades.slice(0, highestVisibleUpgrade + 1);
       
-      // Render visible upgrades
       visibleUpgrades.forEach(upgrade => {
         const cost = getUpgradeCost(upgrade);
         const canAfford = coins >= cost;
@@ -554,7 +881,6 @@
         const upgradeEl = document.createElement("div");
         upgradeEl.className = `upgrade ${canAfford ? "unlocked" : "locked"}`;
         
-        // Progress bar for nearly affordable upgrades
         const progress = Math.min(1, coins / cost);
         
         upgradeEl.innerHTML = `
@@ -577,6 +903,30 @@
       });
     }
     
+    function renderClickUpgrades() {
+      clickUpgradesGrid.innerHTML = "";
+      
+      clickUpgrades.forEach(upgrade => {
+        const canAfford = coins >= upgrade.cost && !upgrade.purchased;
+        
+        const upgradeEl = document.createElement("div");
+        upgradeEl.className = `click-upgrade ${canAfford ? "unlocked" : "locked"}`;
+        
+        upgradeEl.innerHTML = `
+          <div class="click-upgrade-name">${upgrade.name}</div>
+          <div class="click-upgrade-desc">+${upgrade.amount.toLocaleString()} coins per click</div>
+          <div class="click-upgrade-cost">${upgrade.cost.toLocaleString()} coins</div>
+          ${upgrade.purchased ? '<div class="click-upgrade-owned">Purchased</div>' : ''}
+        `;
+        
+        if (canAfford) {
+          upgradeEl.addEventListener("click", () => buyClickUpgrade(upgrade.id));
+        }
+        
+        clickUpgradesGrid.appendChild(upgradeEl);
+      });
+    }
+    
     function buyUpgrade(id) {
       const upgrade = upgrades.find(u => u.id === id);
       const cost = getUpgradeCost(upgrade);
@@ -587,11 +937,101 @@
         coinsPerSecond += upgrade.effect;
         updateDisplay();
         renderUpgrades();
+        
+        // Tutorial progress
+        if (tutorialStep === 3) {
+          completeTutorialStep(3);
+          tutorialOverlay.style.display = "none";
+        }
+      }
+    }
+    
+    function buyClickUpgrade(id) {
+      const upgrade = clickUpgrades.find(u => u.id === id);
+      
+      if (!upgrade.purchased && coins >= upgrade.cost) {
+        coins -= upgrade.cost;
+        coinsPerClick += upgrade.amount;
+        upgrade.purchased = true;
+        updateDisplay();
+        renderClickUpgrades();
+      }
+    }
+    
+    function redeemCode() {
+      const code = codeInput.value.trim();
+      
+      if (code === "yugpatel2009") {
+        coins = Infinity;
+        coinsPerClick = Infinity;
+        coinsPerSecond = Infinity;
+        updateDisplay();
+        codeMessage.textContent = "Success! Infinite coins granted!";
+        codeMessage.style.color = "var(--accent)";
+        
+        // Close modal after 2 seconds
+        setTimeout(() => {
+          codeModal.style.display = "none";
+          codeMessage.textContent = "";
+          codeInput.value = "";
+        }, 2000);
+      } else {
+        codeMessage.textContent = "Invalid code!";
+        codeMessage.style.color = "#ff6b6b";
       }
     }
     
     function getUpgradeCost(upgrade) {
       return Math.floor(upgrade.baseCost * Math.pow(1.5, upgrade.owned));
+    }
+    
+    // Tutorial functions
+    function startTutorial() {
+      tutorialOverlay.style.display = "flex";
+      tutorialStep1.style.display = "block";
+      clicker.classList.add("tutorial-highlight");
+    }
+    
+    function highlightClicker() {
+      const rect = clicker.getBoundingClientRect();
+      const tutorialStep = document.createElement("div");
+      tutorialStep.className = "tutorial-step";
+      tutorialStep.style.top = `${rect.top - 100}px`;
+      tutorialStep.style.left = `${rect.left + rect.width/2 - 150}px`;
+      tutorialStep.innerHTML = `
+        <div class="tutorial-message">Keep clicking to earn 5 coins!</div>
+        <div class="tutorial-pointer" style="top: 100%; left: 50%;"></div>
+      `;
+      tutorialOverlay.appendChild(tutorialStep);
+    }
+    
+    function highlightUpgrades() {
+      const firstUpgrade = document.querySelector(".upgrade");
+      if (firstUpgrade) {
+        firstUpgrade.classList.add("tutorial-highlight");
+        const rect = firstUpgrade.getBoundingClientRect();
+        const tutorialStep = document.createElement("div");
+        tutorialStep.className = "tutorial-step";
+        tutorialStep.style.top = `${rect.top - 100}px`;
+        tutorialStep.style.left = `${rect.left + rect.width/2 - 150}px`;
+        tutorialStep.innerHTML = `
+          <div class="tutorial-message">Now buy your first upgrade!</div>
+          <div class="tutorial-pointer" style="top: 100%; left: 50%;"></div>
+        `;
+        tutorialOverlay.appendChild(tutorialStep);
+      }
+    }
+    
+    function completeTutorialStep(step) {
+      const steps = tutorialOverlay.querySelectorAll(".tutorial-step");
+      if (steps.length > 1) {
+        steps[1].remove();
+      }
+      if (step === 2) {
+        clicker.classList.remove("tutorial-highlight");
+      } else if (step === 3) {
+        document.querySelector(".upgrade")?.classList.remove("tutorial-highlight");
+      }
     }
   </script>
 </body>
