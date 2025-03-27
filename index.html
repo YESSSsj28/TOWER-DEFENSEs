@@ -1,0 +1,582 @@
+<!-- Add to your CSS -->
+<style>
+  /* Modern Patch Notes Modal */
+  .patch-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.3s ease;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+  
+  .patch-content {
+    background: white;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 480px;
+    padding: 2.5rem;
+    position: relative;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    color: #333;
+  }
+  
+  .patch-content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, #6c5ce7, #00cec9);
+  }
+  
+  .close-patch {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 50%;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1.2rem;
+    border: none;
+  }
+  
+  .close-patch:hover {
+    background: rgba(0, 0, 0, 0.1);
+    transform: rotate(90deg);
+    color: #333;
+  }
+  
+  .patch-title {
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    color: #222;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  
+  .patch-text {
+    line-height: 1.7;
+    margin-bottom: 1.25rem;
+    color: #444;
+    font-size: 1.05rem;
+  }
+  
+  .patch-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #6c5ce7, #8c7ae6);
+    color: white;
+    padding: 0.35rem 1rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(108, 92, 231, 0.2);
+  }
+  
+  .patch-features {
+    margin: 1.5rem 0;
+  }
+  
+  .patch-feature {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 0.8rem;
+    color: #444;
+  }
+  
+  .patch-feature::before {
+    content: '•';
+    color: #6c5ce7;
+    font-size: 1.5rem;
+    margin-right: 0.75rem;
+    line-height: 1;
+  }
+  
+  .feedback-link {
+    color: #6c5ce7;
+    text-decoration: none;
+    font-weight: 500;
+    border-bottom: 1px dashed #a29bfe;
+    transition: all 0.2s ease;
+  }
+  
+  .feedback-link:hover {
+    color: #00cec9;
+    border-bottom-color: #00cec9;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+</style>
+
+<!-- Add to your HTML (before </body>) -->
+<div class="patch-modal" id="patchModal">
+  <div class="patch-content">
+    <button class="close-patch" id="closePatch">&times;</button>
+    <div class="patch-badge">BETA VERSION</div>
+    <h3 class="patch-title">Game Updates</h3>
+    <p class="patch-text">
+      Thank you for testing our beta! The full version will be released this 
+      <span style="color: #6c5ce7; font-weight: 500;">Monday or Friday</span>.
+      <span style="color: #e74c3c;">Note: Your progress won't carry over to the full game.</span>
+    </p>
+    
+    <div class="patch-features">
+      <div class="patch-feature">
+        <span>19 unique business upgrades with progressive unlocking</span>
+      </div>
+      <div class="patch-feature">
+        <span>Spacebar quick-click functionality</span>
+      </div>
+      <div class="patch-feature">
+        <span>Completely redesigned UI/UX</span>
+      </div>
+      <div class="patch-feature">
+        <span>More content coming in full release</span>
+      </div>
+    </div>
+    
+    <p class="patch-text">
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLScPOqrRMIviZR163cYp2wIqkGQigwTR8jU-Qb7Hrl3tMUinGA/viewform?usp=dialog" 
+         class="feedback-link" 
+         target="_blank">
+        Click here if you have feedback
+      </a>
+    </p>
+  </div>
+</div>
+
+<!-- Add to your JavaScript -->
+<script>
+  // Enhanced Patch Notes Modal
+  const patchModal = document.getElementById("patchModal");
+  const closePatch = document.getElementById("closePatch");
+  
+  // Show modal with delay
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      patchModal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }, 1500);
+  });
+  
+  // Close handlers
+  closePatch.addEventListener('click', () => {
+    patchModal.style.animation = 'fadeIn 0.3s ease reverse';
+    setTimeout(() => {
+      patchModal.style.display = 'none';
+      document.body.style.overflow = 'auto';
+    }, 250);
+  });
+  
+  // Close when clicking outside
+  patchModal.addEventListener('click', (e) => {
+    if (e.target === patchModal) {
+      patchModal.style.animation = 'fadeIn 0.3s ease reverse';
+      setTimeout(() => {
+        patchModal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+      }, 250);
+    }
+  });
+</script>
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Business Empire Clicker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --primary: #6c5ce7;
+      --secondary: #a29bfe;
+      --accent: #00cec9;
+      --text: #f5f6fa;
+      --bg: #2d3436;
+      --card-bg: #3d4548;
+      --disabled: #636e72;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+      line-height: 1.6;
+    }
+    
+    .container {
+      width: 100%;
+      max-width: 800px;
+    }
+    
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+      padding: 1.5rem;
+      border-radius: 12px;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .coins-display {
+      font-size: 2rem;
+      font-weight: bold;
+      color: var(--accent);
+    }
+    
+    .cps-display {
+      color: var(--secondary);
+    }
+    
+    .click-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    .click-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 1rem 2rem;
+      font-size: 1.2rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 200px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .click-btn:active {
+      transform: scale(0.98);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    
+    .hint {
+      color: var(--secondary);
+      font-size: 0.9rem;
+    }
+    
+    .upgrades-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    .upgrade {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 1rem;
+      transition: all 0.2s;
+      border-left: 4px solid var(--primary);
+    }
+    
+    .upgrade.unlocked {
+      cursor: pointer;
+    }
+    
+    .upgrade.unlocked:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .upgrade.locked {
+      opacity: 0.6;
+      border-left-color: var(--disabled);
+    }
+    
+    .upgrade-name {
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+      color: var(--accent);
+    }
+    
+    .upgrade-desc {
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .upgrade-cost {
+      color: var(--secondary);
+      font-weight: bold;
+    }
+    
+    .upgrade-owned {
+      float: right;
+      color: var(--text);
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    
+    .pulse {
+      animation: pulse 0.3s ease;
+    }
+    
+    .progress-bar {
+      height: 4px;
+      background: var(--disabled);
+      border-radius: 2px;
+      margin-top: 0.5rem;
+      overflow: hidden;
+    }
+    
+    .progress {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Business Empire Clicker</h1>
+      <p>Build your economic dynasty one click at a time</p>
+    </header>
+    
+    <div class="stats">
+      <div>
+        <div class="coins-display" id="coins">0</div>
+        <div class="cps-display" id="cps">0 coins/sec</div>
+      </div>
+    </div>
+    
+    <div class="click-area">
+      <button class="click-btn" id="clicker">Earn Coins</button>
+      <div class="hint">(Click or press SPACE - no holding!)</div>
+    </div>
+    
+    <h2>Business Upgrades</h2>
+    <div class="upgrades-container" id="upgrades"></div>
+  </div>
+
+  <script>
+    // Game state
+    let coins = 0;
+    let coinsPerClick = 1;
+    let coinsPerSecond = 0;
+    let spacePressed = false;
+    let spaceCooldown = false;
+    let highestVisibleUpgrade = 3; // Start with first 3 upgrades visible
+    
+    // Upgrades data (19 upgrades)
+    const upgrades = [
+      { id: 1, name: "TikTok Shop", baseCost: 10, owned: 0, effect: 0.5, desc: "Basic viral commerce" },
+      { id: 2, name: "YouTube Ads", baseCost: 50, owned: 0, effect: 2, desc: "Monetize attention" },
+      { id: 3, name: "Instagram Store", baseCost: 100, owned: 0, effect: 3, desc: "Aesthetic capitalism" },
+      { id: 4, name: "Dropshipping", baseCost: 200, owned: 0, effect: 5, desc: "Sell what you don't own" },
+      { id: 5, name: "Amazon FBA", baseCost: 500, owned: 0, effect: 8, desc: "Warehouse domination" },
+      { id: 6, name: "Cryptocurrency", baseCost: 1000, owned: 0, effect: 12, desc: "Digital gold rush" },
+      { id: 7, name: "NFT Marketplace", baseCost: 2000, owned: 0, effect: 18, desc: "Tokenize everything" },
+      { id: 8, name: "VC Funding", baseCost: 5000, owned: 0, effect: 25, desc: "Other people's money" },
+      { id: 9, name: "AI Startup", baseCost: 10000, owned: 0, effect: 35, desc: "Automate the future" },
+      { id: 10, name: "Tesla Competitor", baseCost: 20000, owned: 0, effect: 50, desc: "Disrupt transportation" },
+      { id: 11, name: "Space Tourism", baseCost: 50000, owned: 0, effect: 75, desc: "The final frontier" },
+      { id: 12, name: "Time Travel Tech", baseCost: 100000, owned: 0, effect: 100, desc: "Sell yesterday today" },
+      { id: 13, name: "Dyson Sphere", baseCost: 250000, owned: 0, effect: 150, desc: "Harvest a star" },
+      { id: 14, name: "Galactic Empire", baseCost: 500000, owned: 0, effect: 225, desc: "Rule the cosmos" },
+      { id: 15, name: "Multiverse Corp", baseCost: 1000000, owned: 0, effect: 350, desc: "Infinite markets" },
+      { id: 16, name: "Godhood", baseCost: 5000000, owned: 0, effect: 600, desc: "Become divine" },
+      { id: 17, name: "Omnipotence", baseCost: 10000000, owned: 0, effect: 1000, desc: "All-powerful" },
+      { id: 18, name: "The Singularity", baseCost: 50000000, owned: 0, effect: 2000, desc: "Merge with machines" },
+      { id: 19, name: "The Meaning of Life", baseCost: 100000000, owned: 0, effect: 5000, desc: "Ultimate truth" }
+    ];
+    
+    // DOM elements
+    const coinsDisplay = document.getElementById("coins");
+    const cpsDisplay = document.getElementById("cps");
+    const clicker = document.getElementById("clicker");
+    const upgradesContainer = document.getElementById("upgrades");
+    
+    // Initialize
+    renderUpgrades();
+    setInterval(gameLoop, 1000);
+    
+    // Event listeners
+    clicker.addEventListener("click", handleClick);
+    
+    // Spacebar handling with cooldown
+    document.addEventListener("keydown", (e) => {
+      if (e.code === "Space" && !spacePressed && !spaceCooldown) {
+        e.preventDefault();
+        spacePressed = true;
+        handleClick();
+        
+        // Visual feedback
+        clicker.classList.add("pulse");
+        setTimeout(() => clicker.classList.remove("pulse"), 300);
+        
+        // Cooldown
+        spaceCooldown = true;
+        setTimeout(() => spaceCooldown = false, 300);
+      }
+    });
+    
+    document.addEventListener("keyup", (e) => {
+      if (e.code === "Space") {
+        spacePressed = false;
+      }
+    });
+    
+    // Game functions
+    function gameLoop() {
+      coins += coinsPerSecond;
+      updateDisplay();
+      checkForNewUpgrades();
+      renderUpgrades();
+    }
+    
+    function handleClick() {
+      coins += coinsPerClick;
+      updateDisplay();
+      checkForNewUpgrades();
+      
+      // Visual feedback
+      coinsDisplay.classList.add("pulse");
+      setTimeout(() => coinsDisplay.classList.remove("pulse"), 300);
+    }
+    
+    function updateDisplay() {
+      coinsDisplay.textContent = Math.floor(coins).toLocaleString();
+      cpsDisplay.textContent = `${coinsPerSecond.toFixed(1)} coins/sec`;
+    }
+    
+    function checkForNewUpgrades() {
+      // Check if we can reveal the next upgrade
+      // We reveal upgrade N+2 when the player can afford upgrade N
+      for (let i = 0; i < upgrades.length; i++) {
+        const upgrade = upgrades[i];
+        const cost = getUpgradeCost(upgrade);
+        
+        // If we can afford this upgrade and there's an upgrade two ahead
+        if (coins >= cost && i + 2 < upgrades.length && i + 2 > highestVisibleUpgrade) {
+          highestVisibleUpgrade = i + 2;
+        }
+      }
+    }
+    
+    function renderUpgrades() {
+      upgradesContainer.innerHTML = "";
+      
+      // Show all upgrades up to highestVisibleUpgrade
+      const visibleUpgrades = upgrades.slice(0, highestVisibleUpgrade + 1);
+      
+      // Render visible upgrades
+      visibleUpgrades.forEach(upgrade => {
+        const cost = getUpgradeCost(upgrade);
+        const canAfford = coins >= cost;
+        
+        const upgradeEl = document.createElement("div");
+        upgradeEl.className = `upgrade ${canAfford ? "unlocked" : "locked"}`;
+        
+        // Progress bar for nearly affordable upgrades
+        const progress = Math.min(1, coins / cost);
+        
+        upgradeEl.innerHTML = `
+          <div class="upgrade-name">${upgrade.name}</div>
+          <div class="upgrade-desc">${upgrade.desc}</div>
+          <div>
+            <span class="upgrade-cost">${cost.toLocaleString()} coins</span>
+            <span class="upgrade-owned">Owned: ${upgrade.owned}</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress" style="width: ${progress * 100}%"></div>
+          </div>
+        `;
+        
+        if (canAfford) {
+          upgradeEl.addEventListener("click", () => buyUpgrade(upgrade.id));
+        }
+        
+        upgradesContainer.appendChild(upgradeEl);
+      });
+    }
+    
+    function buyUpgrade(id) {
+      const upgrade = upgrades.find(u => u.id === id);
+      const cost = getUpgradeCost(upgrade);
+      
+      if (coins >= cost) {
+        coins -= cost;
+        upgrade.owned++;
+        coinsPerSecond += upgrade.effect;
+        updateDisplay();
+        renderUpgrades();
+      }
+    }
+    
+    function getUpgradeCost(upgrade) {
+      return Math.floor(upgrade.baseCost * Math.pow(1.5, upgrade.owned));
+    }
+  </script>
+</body>
+</html>
+
+
+
+
+
