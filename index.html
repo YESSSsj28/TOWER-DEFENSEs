@@ -230,6 +230,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -475,24 +476,6 @@
       object-fit: cover;
     }
     
-    .username-container {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      cursor: pointer;
-    }
-    
-    .username-edit {
-      width: 16px;
-      height: 16px;
-      opacity: 0.6;
-      transition: all 0.2s;
-    }
-    
-    .username-container:hover .username-edit {
-      opacity: 1;
-    }
-    
     .user-name {
       font-size: 0.9rem;
       color: white;
@@ -538,12 +521,6 @@
       font-size: 1.5rem;
       color: var(--accent);
       margin-bottom: 1.5rem;
-    }
-    
-    /* Username Modal Specific */
-    #usernameInput {
-      margin: 1rem 0;
-      width: 100%;
     }
     
     /* Click Upgrades Modal */
@@ -817,12 +794,7 @@
       <!-- User Profile (shown after sign-in) -->
       <div class="user-profile" id="userProfile">
         <img class="user-avatar" id="userAvatar" src="" alt="Profile">
-        <div class="username-container" id="usernameContainer">
-          <span class="user-name" id="userName"></span>
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="username-edit">
-            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-          </svg>
-        </div>
+        <span class="user-name" id="userName"></span>
       </div>
       
       <button class="top-btn" id="upgradeClicksBtn">Upgrade Clicks</button>
@@ -871,17 +843,6 @@
     </div>
   </div>
 
-  <!-- Username Modal -->
-  <div class="modal" id="usernameModal">
-    <div class="modal-content">
-      <h3 class="modal-title">Choose Your Username</h3>
-      <p>Pick a unique display name (3-20 chars, a-z, 0-9, _):</p>
-      <input type="text" class="code-input" id="usernameInput" placeholder="Enter username..." maxlength="20">
-      <button class="submit-btn" id="saveUsernameBtn">Continue</button>
-      <div class="code-message" id="usernameMessage"></div>
-    </div>
-  </div>
-
   <!-- Tutorial Prompt Modal -->
   <div class="modal" id="tutorialPrompt">
     <div class="modal-content">
@@ -912,113 +873,44 @@
       <button class="rebirth-btn" id="continueBtn">Continue Your Empire</button>
     </div>
   </div>
+
   <script>
     // ======================
-    // UPDATED AUTH SYSTEM WITH USERNAMES
+    // UPDATED AUTH SYSTEM
     // ======================
     let playerName = "Guest";
-    let playerUsername = "";
     let playerEmail = "";
     let playerPicture = "";
     let isSignedIn = false;
-    let userId = "";
-
-    // DOM elements for username system
-    const usernameModal = document.getElementById("usernameModal");
-    const usernameInput = document.getElementById("usernameInput");
-    const saveUsernameBtn = document.getElementById("saveUsernameBtn");
-    const usernameMessage = document.getElementById("usernameMessage");
-    const usernameContainer = document.getElementById("usernameContainer");
+    let userId = ""; // Unique identifier for the user
 
     function handleGoogleSignIn(response) {
       const userData = parseJWT(response.credential);
       playerName = userData.name;
       playerEmail = userData.email;
       playerPicture = userData.picture;
-      userId = userData.sub;
+      userId = userData.sub; // Google's unique user ID
       isSignedIn = true;
       
-      // Hide Google sign-in button
+      // Update UI
       document.querySelector('.g_id_signin').style.display = 'none';
+      document.getElementById('userProfile').style.display = 'flex';
+      document.getElementById('userAvatar').src = playerPicture;
+      document.getElementById('userName').textContent = playerName;
       document.getElementById('signOutBtn').style.display = "block";
       
-      // Check if user already has a username
-      const savedUser = localStorage.getItem(`user_${userId}`);
-      if (savedUser) {
-        const user = JSON.parse(savedUser);
-        playerUsername = user.username || playerName;
-        updateUserDisplay();
-        loadGame();
-      } else {
-        // Show username selection modal
-        usernameModal.style.display = "flex";
-        usernameInput.value = playerName; // Pre-fill with Google name
-        usernameInput.focus();
-      }
-      
-      // Save basic user info
+      // Save user info to localStorage
       localStorage.setItem('googleUser', JSON.stringify({
         name: playerName,
         email: playerEmail,
         picture: playerPicture,
         id: userId
       }));
-    }
-
-    function saveUsername() {
-      const newUsername = usernameInput.value.trim();
       
-      // Validate username
-      if (newUsername.length < 3) {
-        usernameMessage.textContent = "Username must be at least 3 characters";
-        usernameMessage.style.color = "#ff6b6b";
-        return;
-      }
-      
-      if (newUsername.length > 20) {
-        usernameMessage.textContent = "Username must be 20 characters or less";
-        usernameMessage.style.color = "#ff6b6b";
-        return;
-      }
-      
-      // Check for valid characters (alphanumeric + underscore)
-      if (!/^[a-zA-Z0-9_]+$/.test(newUsername)) {
-        usernameMessage.textContent = "Only letters, numbers and underscores allowed";
-        usernameMessage.style.color = "#ff6b6b";
-        return;
-      }
-      
-      // Check if username is already taken by another user
-      const allUsernames = JSON.parse(localStorage.getItem('allUsernames') || '{}');
-      if (allUsernames[newUsername] && allUsernames[newUsername] !== userId) {
-        usernameMessage.textContent = "Username already taken";
-        usernameMessage.style.color = "#ff6b6b";
-        return;
-      }
-      
-      // Save the username
-      playerUsername = newUsername;
-      
-      // Update username tracking
-      allUsernames[newUsername] = userId;
-      localStorage.setItem('allUsernames', JSON.stringify(allUsernames));
-      
-      // Save user profile
-      localStorage.setItem(`user_${userId}`, JSON.stringify({
-        username: playerUsername,
-        picture: playerPicture
-      }));
-      
-      // Close modal and update UI
-      usernameModal.style.display = "none";
-      updateUserDisplay();
+      // Load the user's saved game from cloud/local storage
       loadGame();
-    }
-
-    function updateUserDisplay() {
-      document.getElementById("userProfile").style.display = "flex";
-      document.getElementById("userAvatar").src = playerPicture;
-      document.getElementById("userName").textContent = playerUsername;
+      
+      console.log("Signed in as:", playerName);
     }
 
     function signOut() {
@@ -1029,14 +921,17 @@
       
       isSignedIn = false;
       playerName = "Guest";
-      playerUsername = "";
       userId = "";
       
+      // Update UI
       document.querySelector('.g_id_signin').style.display = 'block';
       document.getElementById('userProfile').style.display = 'none';
       document.getElementById('signOutBtn').style.display = "none";
       
+      // Clear user data
       localStorage.removeItem('googleUser');
+      
+      // Switch to local save for guest mode
       loadGame();
     }
 
@@ -1045,18 +940,6 @@
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
       return JSON.parse(atob(base64));
     }
-
-    // Event listeners for username system
-    saveUsernameBtn.addEventListener("click", saveUsername);
-    usernameInput.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") saveUsername();
-    });
-    
-    usernameContainer.addEventListener("click", () => {
-      usernameModal.style.display = "flex";
-      usernameInput.value = playerUsername;
-      usernameInput.focus();
-    });
 
     // Check existing session on load
     window.addEventListener('DOMContentLoaded', () => {
@@ -1071,31 +954,20 @@
         
         // Update UI
         document.querySelector('.g_id_signin').style.display = 'none';
+        document.getElementById('userProfile').style.display = 'flex';
+        document.getElementById('userAvatar').src = playerPicture;
+        document.getElementById('userName').textContent = playerName;
         document.getElementById('signOutBtn').style.display = "block";
-        
-        // Load username if exists
-        const userData = localStorage.getItem(`user_${userId}`);
-        if (userData) {
-          const user = JSON.parse(userData);
-          playerUsername = user.username || playerName;
-          updateUserDisplay();
-        }
       }
       
-      // Initialize game
+      // Initialize your game
       renderUpgrades();
       renderClickUpgrades();
       setInterval(gameLoop, 1000);
       updateClickerText();
-      loadGame();
       
-      // Show patch notes on first load
-      if (!localStorage.getItem('patchNotesShown')) {
-        setTimeout(() => {
-          document.getElementById("patchModal").style.display = 'flex';
-          localStorage.setItem('patchNotesShown', 'true');
-        }, 1200);
-      }
+      // Load game data
+      loadGame();
     });
 
     // ======================
@@ -1180,10 +1052,6 @@
     const rebirthModal = document.getElementById("rebirthModal");
     const continueBtn = document.getElementById("continueBtn");
     
-    // Patch notes elements
-    const patchModal = document.getElementById("patchModal");
-    const closePatch = document.getElementById("closePatch");
-    
     // Event listeners
     clicker.addEventListener("click", handleClick);
     
@@ -1195,7 +1063,6 @@
     // Close modal listeners
     closeClickUpgrades.addEventListener("click", () => clickUpgradesModal.style.display = "none");
     closeCodeModal.addEventListener("click", () => codeModal.style.display = "none");
-    closePatch.addEventListener("click", () => patchModal.style.display = "none");
     
     // Tutorial prompt listeners
     startTutorial.addEventListener("click", () => {
@@ -1587,5 +1454,11 @@
   </script>
 </body>
 </html>
+
+
+
+
+
+
 
 
