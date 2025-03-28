@@ -1231,21 +1231,38 @@
       return Math.floor(upgrade.baseCost * Math.pow(1.5, upgrade.owned));
     }
     
-    // Authentication functions
+    // Authentication functions - FIXED VERSION
     function handleGoogleSignIn() {
       const provider = new firebase.auth.GoogleAuthProvider();
+      provider.addScope('profile');
+      provider.addScope('email');
+      
+      // First try popup
       firebase.auth().signInWithPopup(provider)
         .then((result) => {
-          // User signed in automatically via onAuthStateChanged
+          // Success - handled by onAuthStateChanged
         })
         .catch((error) => {
-          console.error("Sign in error:", error);
+          console.error("Popup sign in error:", error);
+          
+          // If popup was blocked, fall back to redirect
+          if (error.code === 'auth/popup-blocked') {
+            firebase.auth().signInWithRedirect(provider)
+              .then(() => {
+                // Success - handled by onAuthStateChanged
+              })
+              .catch((redirectError) => {
+                console.error("Redirect sign in error:", redirectError);
+              });
+          }
         });
     }
     
     function handleSignOut() {
       firebase.auth().signOut().then(() => {
-        // User signed out automatically via onAuthStateChanged
+        // Sign-out successful - handled by onAuthStateChanged
+      }).catch((error) => {
+        console.error("Sign out error:", error);
       });
     }
     
@@ -1363,7 +1380,6 @@
   </script>
 </body>
 </html>
-
 
 
 
