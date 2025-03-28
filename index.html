@@ -432,6 +432,29 @@
       transition: all 0.2s;
     }
     
+    #signInBtn {
+      background: #4285F4;
+      color: white;
+    }
+    
+    #signInBtn:hover {
+      background: #3367D6;
+    }
+    
+    #signInBtn img {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+    
+    #signOutBtn {
+      display: none;
+      background: #ff6b6b;
+      color: white;
+    }
+    
     .top-btn:hover {
       background: rgba(255, 255, 255, 0.2);
       color: var(--accent);
@@ -566,6 +589,47 @@
       text-align: center;
     }
     
+    /* Tutorial Prompt Modal */
+    .tutorial-prompt {
+      text-align: center;
+    }
+    
+    .tutorial-options {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    
+    .tutorial-btn {
+      padding: 0.8rem 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s;
+    }
+    
+    .tutorial-yes {
+      background: var(--primary);
+      color: white;
+      border: none;
+    }
+    
+    .tutorial-yes:hover {
+      background: var(--accent);
+    }
+    
+    .tutorial-no {
+      background: transparent;
+      color: var(--secondary);
+      border: 1px solid var(--secondary);
+    }
+    
+    .tutorial-no:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+    
     /* Visual Tutorial Overlay */
     .tutorial-overlay {
       position: fixed;
@@ -573,12 +637,9 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.8);
       z-index: 2000;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      display: none;
+      pointer-events: none;
     }
     
     .tutorial-step {
@@ -590,6 +651,7 @@
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
       border: 2px solid var(--accent);
       animation: pulse 1.5s infinite;
+      pointer-events: auto;
     }
     
     .tutorial-pointer {
@@ -617,6 +679,57 @@
       margin-top: 1rem;
     }
     
+    /* Rebirth Modal */
+    .rebirth-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 3000;
+      justify-content: center;
+      align-items: center;
+      animation: fadeIn 0.5s ease;
+    }
+    
+    .rebirth-content {
+      background: var(--card-bg);
+      padding: 2rem;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      text-align: center;
+      border: 3px solid var(--accent);
+    }
+    
+    .rebirth-title {
+      font-size: 2rem;
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+    
+    .rebirth-message {
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+    }
+    
+    .rebirth-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 1rem 2rem;
+      font-size: 1.2rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .rebirth-btn:hover {
+      background: var(--accent);
+    }
+    
     @keyframes bounce {
       0%, 100% { transform: translateY(0); }
       50% { transform: translateY(-10px); }
@@ -637,8 +750,10 @@
 <body>
   <div class="container">
     <div class="top-buttons">
+      <button class="top-btn" id="signInBtn">Sign In with Google</button>
       <button class="top-btn" id="upgradeClicksBtn">Upgrade Clicks</button>
       <button class="top-btn" id="codeBtn">Enter Code</button>
+      <button class="top-btn" id="signOutBtn">Sign Out</button>
     </div>
     
     <header>
@@ -682,6 +797,20 @@
     </div>
   </div>
 
+  <!-- Tutorial Prompt Modal -->
+  <div class="modal" id="tutorialPrompt">
+    <div class="modal-content">
+      <div class="tutorial-prompt">
+        <h3 class="modal-title">Need Help Getting Started?</h3>
+        <p>Would you like a quick interactive tutorial?</p>
+        <div class="tutorial-options">
+          <button class="tutorial-btn tutorial-yes" id="startTutorial">Yes, please!</button>
+          <button class="tutorial-btn tutorial-no" id="skipTutorial">No, thanks</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Visual Tutorial Overlay -->
   <div class="tutorial-overlay" id="tutorialOverlay">
     <div class="tutorial-step" id="tutorialStep1" style="top: 50%; left: 50%; transform: translate(-50%, -50%);">
@@ -690,7 +819,31 @@
     </div>
   </div>
 
+  <!-- Rebirth Modal -->
+  <div class="rebirth-modal" id="rebirthModal">
+    <div class="rebirth-content">
+      <h2 class="rebirth-title">REBIRTH COMPLETE!</h2>
+      <p class="rebirth-message">You have been reborn with greater power!<br>All upgrades are now 2x more effective!</p>
+      <button class="rebirth-btn" id="continueBtn">Continue Your Empire</button>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+
   <script>
+    // Initialize Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBL4JJwAYnOSCqrJ3-LE800nR6avRHL-ms",
+      authDomain: "clicker-fd141.firebaseapp.com",
+      projectId: "clicker-fd141",
+      storageBucket: "clicker-fd141.firebasestorage.app",
+      messagingSenderId: "878297616592",
+      appId: "1:878297616592:web:788eaaf63290ef6486ced5"
+    };
+    firebase.initializeApp(firebaseConfig);
+
     // Game state
     let coins = 0;
     let coinsPerClick = 1;
@@ -699,6 +852,12 @@
     let spaceCooldown = false;
     let highestVisibleUpgrade = 3;
     let tutorialStep = 1;
+    let tutorialActive = false;
+    let rebirthMultiplier = 1;
+    let playerName = "Guest";
+    let playerEmail = "";
+    let playerPicture = "";
+    let isSignedIn = false;
     
     // Click upgrades data
     const clickUpgrades = [
@@ -712,9 +871,9 @@
       { id: 8, name: "+1M Clicks", amount: 1000000, cost: 100000000, purchased: false }
     ];
     
-    // Upgrades data (19 upgrades)
+    // Upgrades data (19 upgrades + Death)
     const upgrades = [
-      { id: 1, name: "TikTok Shop", baseCost: 5, owned: 0, effect: 0.5, desc: "Basic viral commerce" },
+      { id: 1, name: "TikTok Shop", baseCost: 10, owned: 0, effect: 0.5, desc: "Basic viral commerce" },
       { id: 2, name: "YouTube Ads", baseCost: 50, owned: 0, effect: 2, desc: "Monetize attention" },
       { id: 3, name: "Instagram Store", baseCost: 100, owned: 0, effect: 3, desc: "Aesthetic capitalism" },
       { id: 4, name: "Dropshipping", baseCost: 200, owned: 0, effect: 5, desc: "Sell what you don't own" },
@@ -732,7 +891,8 @@
       { id: 16, name: "Godhood", baseCost: 5000000, owned: 0, effect: 600, desc: "Become divine" },
       { id: 17, name: "Omnipotence", baseCost: 10000000, owned: 0, effect: 1000, desc: "All-powerful" },
       { id: 18, name: "The Singularity", baseCost: 50000000, owned: 0, effect: 2000, desc: "Merge with machines" },
-      { id: 19, name: "The Meaning of Life", baseCost: 100000000, owned: 0, effect: 5000, desc: "Ultimate truth" }
+      { id: 19, name: "The Meaning of Life", baseCost: 100000000, owned: 0, effect: 5000, desc: "Ultimate truth" },
+      { id: 20, name: "DEATH", baseCost: 1000000000, owned: 0, effect: 0, desc: "Rebirth with 2x power" }
     ];
     
     // DOM elements
@@ -740,6 +900,8 @@
     const cpsDisplay = document.getElementById("cps");
     const clicker = document.getElementById("clicker");
     const upgradesContainer = document.getElementById("upgrades");
+    const signInBtn = document.getElementById("signInBtn");
+    const signOutBtn = document.getElementById("signOutBtn");
     
     // Modal elements
     const upgradeClicksBtn = document.getElementById("upgradeClicksBtn");
@@ -756,21 +918,41 @@
     const codeMessage = document.getElementById("codeMessage");
     
     // Tutorial elements
+    const tutorialPrompt = document.getElementById("tutorialPrompt");
+    const startTutorial = document.getElementById("startTutorial");
+    const skipTutorial = document.getElementById("skipTutorial");
     const tutorialOverlay = document.getElementById("tutorialOverlay");
     const tutorialStep1 = document.getElementById("tutorialStep1");
     const nextStep1 = document.getElementById("nextStep1");
+    
+    // Rebirth elements
+    const rebirthModal = document.getElementById("rebirthModal");
+    const continueBtn = document.getElementById("continueBtn");
     
     // Initialize
     renderUpgrades();
     renderClickUpgrades();
     setInterval(gameLoop, 1000);
     updateClickerText();
+    signOutBtn.style.display = "none";
     
-    // Show tutorial on first load
-    window.addEventListener('load', () => {
-      setTimeout(() => {
-        startTutorial();
-      }, 1000);
+    // Check auth state on load
+    firebase.auth().onAuthStateChanged((user) => {
+      if (user) {
+        // User is signed in
+        playerName = user.displayName;
+        playerEmail = user.email;
+        playerPicture = user.photoURL;
+        isSignedIn = true;
+        signInBtn.innerHTML = `<img src="${playerPicture}" style="width:20px;height:20px;border-radius:50%;margin-right:5px;"> ${playerName}`;
+        signOutBtn.style.display = "block";
+        loadGame();
+      } else {
+        // User is signed out
+        isSignedIn = false;
+        signInBtn.textContent = "Sign In with Google";
+        signOutBtn.style.display = "none";
+      }
     });
     
     // Event listeners
@@ -779,10 +961,29 @@
     // Button listeners
     upgradeClicksBtn.addEventListener("click", () => clickUpgradesModal.style.display = "flex");
     codeBtn.addEventListener("click", () => codeModal.style.display = "flex");
+    signInBtn.addEventListener("click", handleGoogleSignIn);
+    signOutBtn.addEventListener("click", handleSignOut);
     
     // Close modal listeners
     closeClickUpgrades.addEventListener("click", () => clickUpgradesModal.style.display = "none");
     closeCodeModal.addEventListener("click", () => codeModal.style.display = "none");
+    
+    // Tutorial prompt listeners
+    startTutorial.addEventListener("click", () => {
+      tutorialPrompt.style.display = "none";
+      startInteractiveTutorial();
+    });
+    
+    skipTutorial.addEventListener("click", () => {
+      tutorialPrompt.style.display = "none";
+    });
+    
+    // Tutorial navigation
+    nextStep1.addEventListener("click", () => {
+      tutorialStep1.style.display = "none";
+      tutorialStep = 2;
+      highlightClicker();
+    });
     
     // Code redemption
     submitCode.addEventListener("click", redeemCode);
@@ -792,11 +993,11 @@
       }
     });
     
-    // Tutorial navigation
-    nextStep1.addEventListener("click", () => {
-      tutorialStep1.style.display = "none";
-      tutorialStep = 2;
-      highlightClicker();
+    // Rebirth continue button
+    continueBtn.addEventListener("click", () => {
+      rebirthModal.style.display = "none";
+      renderUpgrades();
+      renderClickUpgrades();
     });
     
     // Spacebar handling with cooldown
@@ -835,13 +1036,14 @@
       coins += coinsPerClick;
       updateDisplay();
       checkForNewUpgrades();
+      saveGame();
       
       // Visual feedback
       coinsDisplay.classList.add("pulse");
       setTimeout(() => coinsDisplay.classList.remove("pulse"), 300);
       
       // Tutorial progress
-      if (tutorialStep === 2 && coins >= 5) {
+      if (tutorialActive && tutorialStep === 2 && coins >= 5) {
         completeTutorialStep(2);
         tutorialStep = 3;
         highlightUpgrades();
@@ -855,7 +1057,7 @@
     }
     
     function updateClickerText() {
-      clicker.textContent = `Earn Coins (${coinsPerClick.toLocaleString()} per click)`;
+      clicker.textContent = `Earn Coins (${(coinsPerClick * rebirthMultiplier).toLocaleString()} per click)`;
     }
     
     function checkForNewUpgrades() {
@@ -880,6 +1082,7 @@
         
         const upgradeEl = document.createElement("div");
         upgradeEl.className = `upgrade ${canAfford ? "unlocked" : "locked"}`;
+        upgradeEl.setAttribute('data-id', upgrade.id);
         
         const progress = Math.min(1, coins / cost);
         
@@ -914,7 +1117,7 @@
         
         upgradeEl.innerHTML = `
           <div class="click-upgrade-name">${upgrade.name}</div>
-          <div class="click-upgrade-desc">+${upgrade.amount.toLocaleString()} coins per click</div>
+          <div class="click-upgrade-desc">+${(upgrade.amount * rebirthMultiplier).toLocaleString()} coins per click</div>
           <div class="click-upgrade-cost">${upgrade.cost.toLocaleString()} coins</div>
           ${upgrade.purchased ? '<div class="click-upgrade-owned">Purchased</div>' : ''}
         `;
@@ -934,14 +1137,23 @@
       if (coins >= cost) {
         coins -= cost;
         upgrade.owned++;
-        coinsPerSecond += upgrade.effect;
+        
+        // Special handling for DEATH upgrade
+        if (upgrade.name === "DEATH") {
+          triggerRebirth();
+          return;
+        }
+        
+        coinsPerSecond += upgrade.effect * rebirthMultiplier;
         updateDisplay();
         renderUpgrades();
+        saveGame();
         
-        // Tutorial progress
-        if (tutorialStep === 3) {
+        // Tutorial progress - only complete if we're actually in the tutorial
+        if (tutorialActive && tutorialStep === 3) {
           completeTutorialStep(3);
           tutorialOverlay.style.display = "none";
+          tutorialActive = false;
         }
       }
     }
@@ -951,11 +1163,44 @@
       
       if (!upgrade.purchased && coins >= upgrade.cost) {
         coins -= upgrade.cost;
-        coinsPerClick += upgrade.amount;
+        coinsPerClick += upgrade.amount * rebirthMultiplier;
         upgrade.purchased = true;
         updateDisplay();
         renderClickUpgrades();
+        saveGame();
       }
+    }
+    
+    function triggerRebirth() {
+      // Reset all game state
+      coins = 0;
+      coinsPerClick = 1;
+      coinsPerSecond = 0;
+      highestVisibleUpgrade = 3;
+      
+      // Reset all upgrades
+      upgrades.forEach(upgrade => {
+        upgrade.owned = 0;
+      });
+      
+      // Reset click upgrades
+      clickUpgrades.forEach(upgrade => {
+        upgrade.purchased = false;
+      });
+      
+      // Increase rebirth multiplier
+      rebirthMultiplier *= 2;
+      
+      // Show rebirth modal
+      rebirthModal.style.display = "flex";
+      
+      // Save immediately
+      saveGame();
+      
+      // Update displays
+      updateDisplay();
+      renderUpgrades();
+      renderClickUpgrades();
     }
     
     function redeemCode() {
@@ -968,6 +1213,7 @@
         updateDisplay();
         codeMessage.textContent = "Success! Infinite coins granted!";
         codeMessage.style.color = "var(--accent)";
+        saveGame();
         
         // Close modal after 2 seconds
         setTimeout(() => {
@@ -985,8 +1231,89 @@
       return Math.floor(upgrade.baseCost * Math.pow(1.5, upgrade.owned));
     }
     
+    // Authentication functions
+    function handleGoogleSignIn() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      firebase.auth().signInWithPopup(provider)
+        .then((result) => {
+          // User signed in automatically via onAuthStateChanged
+        })
+        .catch((error) => {
+          console.error("Sign in error:", error);
+        });
+    }
+    
+    function handleSignOut() {
+      firebase.auth().signOut().then(() => {
+        // User signed out automatically via onAuthStateChanged
+      });
+    }
+    
+    // Save game function
+    function saveGame() {
+      const gameData = {
+        coins,
+        coinsPerClick,
+        coinsPerSecond,
+        highestVisibleUpgrade,
+        upgrades: upgrades.map(u => ({ id: u.id, owned: u.owned })),
+        clickUpgrades: clickUpgrades.map(cu => ({ id: cu.id, purchased: cu.purchased })),
+        rebirthMultiplier,
+        lastSaved: Date.now()
+      };
+      
+      localStorage.setItem('businessEmpireSave', JSON.stringify(gameData));
+      
+      if (isSignedIn) {
+        // Here you would send data to Firestore when you're ready
+        console.log("Would save to Firestore for:", playerEmail);
+      }
+    }
+    
+    // Load game function
+    function loadGame() {
+      const savedData = localStorage.getItem('businessEmpireSave');
+      if (savedData) {
+        try {
+          const gameData = JSON.parse(savedData);
+          
+          coins = gameData.coins || 0;
+          coinsPerClick = gameData.coinsPerClick || 1;
+          coinsPerSecond = gameData.coinsPerSecond || 0;
+          highestVisibleUpgrade = gameData.highestVisibleUpgrade || 3;
+          rebirthMultiplier = gameData.rebirthMultiplier || 1;
+          
+          // Merge upgrades
+          if (gameData.upgrades) {
+            gameData.upgrades.forEach(savedUpgrade => {
+              const existingUpgrade = upgrades.find(u => u.id === savedUpgrade.id);
+              if (existingUpgrade) {
+                existingUpgrade.owned = savedUpgrade.owned || 0;
+              }
+            });
+          }
+          
+          if (gameData.clickUpgrades) {
+            gameData.clickUpgrades.forEach(savedClickUpgrade => {
+              const existingClickUpgrade = clickUpgrades.find(cu => cu.id === savedClickUpgrade.id);
+              if (existingClickUpgrade) {
+                existingClickUpgrade.purchased = savedClickUpgrade.purchased || false;
+              }
+            });
+          }
+          
+          updateDisplay();
+          renderUpgrades();
+          renderClickUpgrades();
+        } catch (e) {
+          console.error("Error loading game:", e);
+        }
+      }
+    }
+    
     // Tutorial functions
-    function startTutorial() {
+    function startInteractiveTutorial() {
+      tutorialActive = true;
       tutorialOverlay.style.display = "flex";
       tutorialStep1.style.display = "block";
       clicker.classList.add("tutorial-highlight");
@@ -1036,7 +1363,6 @@
   </script>
 </body>
 </html>
-
 
 
 
