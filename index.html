@@ -419,6 +419,7 @@
       right: 0;
       display: flex;
       gap: 0.5rem;
+      align-items: center;
     }
     
     .top-btn {
@@ -432,23 +433,6 @@
       transition: all 0.2s;
     }
     
-    #signInBtn {
-      background: #4285F4;
-      color: white;
-    }
-    
-    #signInBtn:hover {
-      background: #3367D6;
-    }
-    
-    #signInBtn img {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      margin-right: 5px;
-      vertical-align: middle;
-    }
-    
     #signOutBtn {
       display: none;
       background: #ff6b6b;
@@ -458,6 +442,43 @@
     .top-btn:hover {
       background: rgba(255, 255, 255, 0.2);
       color: var(--accent);
+    }
+    
+    /* Google Sign-In Button Customization */
+    #g_id_onload {
+      display: none;
+    }
+    
+    .g_id_signin {
+      border: none !important;
+      background: #4285F4 !important;
+      color: white !important;
+      border-radius: 20px !important;
+      height: 36px !important;
+      padding: 0 12px !important;
+    }
+    
+    .g_id_signin:hover {
+      background: #3367D6 !important;
+    }
+    
+    /* User Profile Display */
+    .user-profile {
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    
+    .user-name {
+      font-size: 0.9rem;
+      color: white;
     }
     
     /* Modals */
@@ -746,11 +767,36 @@
       to { opacity: 1; }
     }
   </style>
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
   <div class="container">
     <div class="top-buttons">
-      <button class="top-btn" id="signInBtn">Sign In with Google</button>
+      <!-- Google Sign-In Button -->
+      <div id="g_id_onload"
+           data-client_id="626223048098-078etpvps2clhd02vs3g5h22sa60537g.apps.googleusercontent.com"
+           data-callback="handleGoogleSignIn"
+           data-login_uri="https://clickerv2fromyug.netlify.app"
+           data-context="signin"
+           data-ux_mode="popup"
+           data-auto_prompt="false">
+      </div>
+      <div class="g_id_signin"
+           data-type="standard"
+           data-size="medium"
+           data-theme="filled_blue"
+           data-text="sign_in_with"
+           data-shape="pill"
+           data-logo_alignment="left">
+      </div>
+      
+      <!-- User Profile (shown after sign-in) -->
+      <div class="user-profile" id="userProfile">
+        <img class="user-avatar" id="userAvatar" src="" alt="Profile">
+        <span class="user-name" id="userName"></span>
+      </div>
+      
       <button class="top-btn" id="upgradeClicksBtn">Upgrade Clicks</button>
       <button class="top-btn" id="codeBtn">Enter Code</button>
       <button class="top-btn" id="signOutBtn">Sign Out</button>
@@ -828,23 +874,105 @@
     </div>
   </div>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
-
   <script>
-    // Initialize Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyBL4JJwAYnOSCqrJ3-LE800nR6avRHL-ms",
-      authDomain: "clicker-fd141.firebaseapp.com",
-      projectId: "clicker-fd141",
-      storageBucket: "clicker-fd141.firebasestorage.app",
-      messagingSenderId: "878297616592",
-      appId: "1:878297616592:web:788eaaf63290ef6486ced5"
-    };
-    firebase.initializeApp(firebaseConfig);
+    // ======================
+    // UPDATED AUTH SYSTEM
+    // ======================
+    let playerName = "Guest";
+    let playerEmail = "";
+    let playerPicture = "";
+    let isSignedIn = false;
+    let userId = ""; // Unique identifier for the user
 
-    // Game state
+    function handleGoogleSignIn(response) {
+      const userData = parseJWT(response.credential);
+      playerName = userData.name;
+      playerEmail = userData.email;
+      playerPicture = userData.picture;
+      userId = userData.sub; // Google's unique user ID
+      isSignedIn = true;
+      
+      // Update UI
+      document.querySelector('.g_id_signin').style.display = 'none';
+      document.getElementById('userProfile').style.display = 'flex';
+      document.getElementById('userAvatar').src = playerPicture;
+      document.getElementById('userName').textContent = playerName;
+      document.getElementById('signOutBtn').style.display = "block";
+      
+      // Save user info to localStorage
+      localStorage.setItem('googleUser', JSON.stringify({
+        name: playerName,
+        email: playerEmail,
+        picture: playerPicture,
+        id: userId
+      }));
+      
+      // Load the user's saved game from cloud/local storage
+      loadGame();
+      
+      console.log("Signed in as:", playerName);
+    }
+
+    function signOut() {
+      google.accounts.id.disableAutoSelect();
+      google.accounts.id.revoke(localStorage.getItem('googleUserEmail'), () => {
+        console.log('Consent revoked');
+      });
+      
+      isSignedIn = false;
+      playerName = "Guest";
+      userId = "";
+      
+      // Update UI
+      document.querySelector('.g_id_signin').style.display = 'block';
+      document.getElementById('userProfile').style.display = 'none';
+      document.getElementById('signOutBtn').style.display = "none";
+      
+      // Clear user data
+      localStorage.removeItem('googleUser');
+      
+      // Switch to local save for guest mode
+      loadGame();
+    }
+
+    function parseJWT(token) {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      return JSON.parse(atob(base64));
+    }
+
+    // Check existing session on load
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedUser = localStorage.getItem('googleUser');
+      if (savedUser) {
+        const user = JSON.parse(savedUser);
+        playerName = user.name;
+        playerEmail = user.email;
+        playerPicture = user.picture;
+        userId = user.id;
+        isSignedIn = true;
+        
+        // Update UI
+        document.querySelector('.g_id_signin').style.display = 'none';
+        document.getElementById('userProfile').style.display = 'flex';
+        document.getElementById('userAvatar').src = playerPicture;
+        document.getElementById('userName').textContent = playerName;
+        document.getElementById('signOutBtn').style.display = "block";
+      }
+      
+      // Initialize your game
+      renderUpgrades();
+      renderClickUpgrades();
+      setInterval(gameLoop, 1000);
+      updateClickerText();
+      
+      // Load game data
+      loadGame();
+    });
+
+    // ======================
+    // GAME STATE
+    // ======================
     let coins = 0;
     let coinsPerClick = 1;
     let coinsPerSecond = 0;
@@ -854,10 +982,6 @@
     let tutorialStep = 1;
     let tutorialActive = false;
     let rebirthMultiplier = 1;
-    let playerName = "Guest";
-    let playerEmail = "";
-    let playerPicture = "";
-    let isSignedIn = false;
     
     // Click upgrades data
     const clickUpgrades = [
@@ -900,7 +1024,6 @@
     const cpsDisplay = document.getElementById("cps");
     const clicker = document.getElementById("clicker");
     const upgradesContainer = document.getElementById("upgrades");
-    const signInBtn = document.getElementById("signInBtn");
     const signOutBtn = document.getElementById("signOutBtn");
     
     // Modal elements
@@ -929,40 +1052,13 @@
     const rebirthModal = document.getElementById("rebirthModal");
     const continueBtn = document.getElementById("continueBtn");
     
-    // Initialize
-    renderUpgrades();
-    renderClickUpgrades();
-    setInterval(gameLoop, 1000);
-    updateClickerText();
-    signOutBtn.style.display = "none";
-    
-    // Check auth state on load
-    firebase.auth().onAuthStateChanged((user) => {
-      if (user) {
-        // User is signed in
-        playerName = user.displayName;
-        playerEmail = user.email;
-        playerPicture = user.photoURL;
-        isSignedIn = true;
-        signInBtn.innerHTML = `<img src="${playerPicture}" style="width:20px;height:20px;border-radius:50%;margin-right:5px;"> ${playerName}`;
-        signOutBtn.style.display = "block";
-        loadGame();
-      } else {
-        // User is signed out
-        isSignedIn = false;
-        signInBtn.textContent = "Sign In with Google";
-        signOutBtn.style.display = "none";
-      }
-    });
-    
     // Event listeners
     clicker.addEventListener("click", handleClick);
     
     // Button listeners
     upgradeClicksBtn.addEventListener("click", () => clickUpgradesModal.style.display = "flex");
     codeBtn.addEventListener("click", () => codeModal.style.display = "flex");
-    signInBtn.addEventListener("click", handleGoogleSignIn);
-    signOutBtn.addEventListener("click", handleSignOut);
+    signOutBtn.addEventListener("click", signOut);
     
     // Close modal listeners
     closeClickUpgrades.addEventListener("click", () => clickUpgradesModal.style.display = "none");
@@ -1030,6 +1126,7 @@
       checkForNewUpgrades();
       renderUpgrades();
       renderClickUpgrades();
+      saveGame(); // Auto-save every second
     }
     
     function handleClick() {
@@ -1231,42 +1328,9 @@
       return Math.floor(upgrade.baseCost * Math.pow(1.5, upgrade.owned));
     }
     
-    // Authentication functions - FIXED VERSION
-    function handleGoogleSignIn() {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      provider.addScope('profile');
-      provider.addScope('email');
-      
-      // First try popup
-      firebase.auth().signInWithPopup(provider)
-        .then((result) => {
-          // Success - handled by onAuthStateChanged
-        })
-        .catch((error) => {
-          console.error("Popup sign in error:", error);
-          
-          // If popup was blocked, fall back to redirect
-          if (error.code === 'auth/popup-blocked') {
-            firebase.auth().signInWithRedirect(provider)
-              .then(() => {
-                // Success - handled by onAuthStateChanged
-              })
-              .catch((redirectError) => {
-                console.error("Redirect sign in error:", redirectError);
-              });
-          }
-        });
-    }
-    
-    function handleSignOut() {
-      firebase.auth().signOut().then(() => {
-        // Sign-out successful - handled by onAuthStateChanged
-      }).catch((error) => {
-        console.error("Sign out error:", error);
-      });
-    }
-    
-    // Save game function
+    // ======================
+    // SAVE & LOAD SYSTEM
+    // ======================
     function saveGame() {
       const gameData = {
         coins,
@@ -1279,53 +1343,63 @@
         lastSaved: Date.now()
       };
       
+      // Always save to localStorage
       localStorage.setItem('businessEmpireSave', JSON.stringify(gameData));
       
-      if (isSignedIn) {
-        // Here you would send data to Firestore when you're ready
-        console.log("Would save to Firestore for:", playerEmail);
+      // If signed in, also save to cloud (simulated here with localStorage)
+      if (isSignedIn && userId) {
+        localStorage.setItem(`businessEmpireSave_${userId}`, JSON.stringify(gameData));
       }
     }
     
-    // Load game function
     function loadGame() {
-      const savedData = localStorage.getItem('businessEmpireSave');
-      if (savedData) {
-        try {
-          const gameData = JSON.parse(savedData);
-          
-          coins = gameData.coins || 0;
-          coinsPerClick = gameData.coinsPerClick || 1;
-          coinsPerSecond = gameData.coinsPerSecond || 0;
-          highestVisibleUpgrade = gameData.highestVisibleUpgrade || 3;
-          rebirthMultiplier = gameData.rebirthMultiplier || 1;
-          
-          // Merge upgrades
-          if (gameData.upgrades) {
-            gameData.upgrades.forEach(savedUpgrade => {
-              const existingUpgrade = upgrades.find(u => u.id === savedUpgrade.id);
-              if (existingUpgrade) {
-                existingUpgrade.owned = savedUpgrade.owned || 0;
-              }
-            });
-          }
-          
-          if (gameData.clickUpgrades) {
-            gameData.clickUpgrades.forEach(savedClickUpgrade => {
-              const existingClickUpgrade = clickUpgrades.find(cu => cu.id === savedClickUpgrade.id);
-              if (existingClickUpgrade) {
-                existingClickUpgrade.purchased = savedClickUpgrade.purchased || false;
-              }
-            });
-          }
-          
-          updateDisplay();
-          renderUpgrades();
-          renderClickUpgrades();
-        } catch (e) {
-          console.error("Error loading game:", e);
+      // Try to load from cloud (simulated) first if signed in
+      if (isSignedIn && userId) {
+        const cloudSave = localStorage.getItem(`businessEmpireSave_${userId}`);
+        if (cloudSave) {
+          loadGameData(JSON.parse(cloudSave));
+          return;
         }
       }
+      
+      // Fall back to local save
+      const localSave = localStorage.getItem('businessEmpireSave');
+      if (localSave) {
+        loadGameData(JSON.parse(localSave));
+      }
+    }
+    
+    function loadGameData(gameData) {
+      if (!gameData) return;
+      
+      coins = gameData.coins || 0;
+      coinsPerClick = gameData.coinsPerClick || 1;
+      coinsPerSecond = gameData.coinsPerSecond || 0;
+      highestVisibleUpgrade = gameData.highestVisibleUpgrade || 3;
+      rebirthMultiplier = gameData.rebirthMultiplier || 1;
+      
+      // Merge upgrades
+      if (gameData.upgrades) {
+        gameData.upgrades.forEach(savedUpgrade => {
+          const existingUpgrade = upgrades.find(u => u.id === savedUpgrade.id);
+          if (existingUpgrade) {
+            existingUpgrade.owned = savedUpgrade.owned || 0;
+          }
+        });
+      }
+      
+      if (gameData.clickUpgrades) {
+        gameData.clickUpgrades.forEach(savedClickUpgrade => {
+          const existingClickUpgrade = clickUpgrades.find(cu => cu.id === savedClickUpgrade.id);
+          if (existingClickUpgrade) {
+            existingClickUpgrade.purchased = savedClickUpgrade.purchased || false;
+          }
+        });
+      }
+      
+      updateDisplay();
+      renderUpgrades();
+      renderClickUpgrades();
     }
     
     // Tutorial functions
