@@ -1,227 +1,1943 @@
-<!-- Add to your CSS -->
-<style>
-  /* Modern Dark Patch Notes Modal with Transparent BG */
-  .patch-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1000;
-    justify-content: center;
-    align-items: center;
-    animation: fadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-  
-  .patch-content {
-    background: rgba(22, 25, 28, 0.95);
-    border-radius: 18px;
-    width: 90%;
-    max-width: 500px;
-    padding: 2.5rem;
-    position: relative;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    overflow: hidden;
-    color: #fff;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    backdrop-filter: blur(16px);
-  }
-  
-  .patch-content::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 4px;
-    background: linear-gradient(90deg, var(--primary), var(--accent));
-  }
-  
-  .close-patch {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 50%;
-    color: rgba(255, 255, 255, 0.8);
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-    font-size: 1.3rem;
-    border: none;
-    backdrop-filter: blur(4px);
-  }
-  
-  .close-patch:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: rotate(90deg);
-    color: white;
-  }
-  
-  .patch-title {
-    font-size: 1.9rem;
-    margin-bottom: 1.5rem;
-    color: white;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-    line-height: 1.3;
-  }
-  
-  .patch-text {
-    line-height: 1.7;
-    margin-bottom: 1.5rem;
-    color: rgba(255, 255, 255, 0.85);
-    font-size: 1.1rem;
-    font-weight: 400;
-  }
-  
-  .patch-badge {
-    display: inline-block;
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    color: white;
-    padding: 0.4rem 1.2rem;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    margin-bottom: 1.8rem;
-    letter-spacing: 0.5px;
-    box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3);
-  }
-  
-  .patch-features {
-    margin: 1.8rem 0;
-  }
-  
-  .patch-feature {
-    display: flex;
-    align-items: flex-start;
-    margin-bottom: 1rem;
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 1.05rem;
-  }
-  
-  .patch-feature::before {
-    content: '▹';
-    color: var(--accent);
-    font-size: 1.1rem;
-    margin-right: 0.8rem;
-    line-height: 1;
-  }
-  
-  .feedback-link {
-    color: var(--accent);
-    text-decoration: none;
-    font-weight: 500;
-    border-bottom: 1px solid rgba(0, 206, 201, 0.3);
-    transition: all 0.25s ease;
-    padding-bottom: 2px;
-    display: inline-block;
-  }
-  
-  .feedback-link:hover {
-    color: white;
-    border-bottom-color: var(--accent);
-  }
-  
-  .warning-text {
-    color: #ff6b6b;
-    background: rgba(255, 107, 107, 0.1);
-    padding: 0.8rem;
-    border-radius: 6px;
-    margin: 1.2rem 0;
-    border-left: 3px solid #ff6b6b;
-    font-weight: 500;
-  }
-  
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-</style>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Business Empire Clicker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    :root {
+      --primary: #6c5ce7;
+      --secondary: #a29bfe;
+      --accent: #00cec9;
+      --text: #f5f6fa;
+      --bg: #2d3436;
+      --card-bg: #3d4548;
+      --disabled: #636e72;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem;
+      line-height: 1.6;
+      touch-action: manipulation;
+    }
+    
+    .container {
+      width: 100%;
+      max-width: 800px;
+      position: relative;
+    }
+    
+    header {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    
+    h1 {
+      font-size: clamp(1.8rem, 5vw, 2.5rem);
+      margin-bottom: 0.5rem;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+      padding: 1rem;
+      border-radius: 12px;
+      margin-bottom: 1rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      width: 100%;
+    }
+    
+    .coins-display {
+      font-size: clamp(1.5rem, 5vw, 2rem);
+      font-weight: bold;
+      color: var(--accent);
+    }
+    
+    .cps-display {
+      color: var(--secondary);
+      font-size: clamp(0.8rem, 3vw, 1rem);
+    }
+    
+    .click-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.8rem;
+      margin-bottom: 1.5rem;
+      width: 100%;
+    }
+    
+    .click-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 1rem;
+      font-size: clamp(1rem, 4vw, 1.2rem);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+      max-width: 300px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .click-btn:active {
+      transform: scale(0.98);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    
+    .hint {
+      color: var(--secondary);
+      font-size: clamp(0.7rem, 3vw, 0.9rem);
+      text-align: center;
+    }
+    
+    .upgrades-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 0.8rem;
+      margin-bottom: 1.5rem;
+      width: 100%;
+    }
+    
+    .upgrade {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 0.8rem;
+      transition: all 0.2s;
+      border-left: 4px solid var(--primary);
+      font-size: clamp(0.8rem, 3vw, 1rem);
+    }
+    
+    .upgrade.unlocked {
+      cursor: pointer;
+    }
+    
+    .upgrade.unlocked:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .upgrade.locked {
+      opacity: 0.6;
+      border-left-color: var(--disabled);
+    }
+    
+    .upgrade-name {
+      font-weight: bold;
+      margin-bottom: 0.3rem;
+      color: var(--accent);
+      font-size: clamp(0.9rem, 3vw, 1rem);
+    }
+    
+    .upgrade-desc {
+      font-size: clamp(0.7rem, 3vw, 0.9rem);
+      margin-bottom: 0.3rem;
+    }
+    
+    .upgrade-cost {
+      color: var(--secondary);
+      font-weight: bold;
+      font-size: clamp(0.7rem, 3vw, 0.9rem);
+    }
+    
+    .upgrade-owned {
+      float: right;
+      color: var(--text);
+      font-size: clamp(0.7rem, 3vw, 0.9rem);
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    
+    .pulse {
+      animation: pulse 0.3s ease;
+    }
+    
+    .progress-bar {
+      height: 4px;
+      background: var(--disabled);
+      border-radius: 2px;
+      margin-top: 0.5rem;
+      overflow: hidden;
+    }
+    
+    .progress {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    
+    /* Top Buttons */
+    .top-buttons {
+      position: absolute;
+      top: 0.5rem;
+      right: 0;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    
+    .top-btn {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--secondary);
+      border: none;
+      padding: 0.5rem 0.8rem;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: clamp(0.7rem, 3vw, 0.9rem);
+      transition: all 0.2s;
+      margin-bottom: 0.5rem;
+    }
+    
+    #signOutBtn {
+      display: none;
+      background: #ff6b6b;
+      color: white;
+    }
+    
+    .top-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: var(--accent);
+    }
+    
+    /* Google Sign-In Button Customization */
+    #g_id_onload {
+      display: none;
+    }
+    
+    .g_id_signin {
+      border: none !important;
+      background: #4285F4 !important;
+      color: white !important;
+      border-radius: 20px !important;
+      height: 36px !important;
+      padding: 0 12px !important;
+      margin-bottom: 0.5rem;
+    }
+    
+    .g_id_signin:hover {
+      background: #3367D6 !important;
+    }
+    
+    /* User Profile Display */
+    .user-profile {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 0.5rem;
+    }
+    
+    .user-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    
+    .username-container {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+    }
+    
+    .username-edit {
+      width: 14px;
+      height: 14px;
+      opacity: 0.6;
+      transition: all 0.2s;
+    }
+    
+    .username-container:hover .username-edit {
+      opacity: 1;
+    }
+    
+    .user-name {
+      font-size: clamp(0.7rem, 3vw, 0.9rem);
+      color: white;
+    }
+    
+    /* Modals */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      animation: fadeIn 0.3s ease;
+      overflow-y: auto;
+      padding: 1rem;
+    }
+    
+    .modal-content {
+      background: var(--card-bg);
+      padding: 1.5rem;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      position: relative;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    
+    .close-modal {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      background: none;
+      border: none;
+      color: var(--secondary);
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0.5rem;
+    }
+    
+    .modal-title {
+      font-size: clamp(1.2rem, 5vw, 1.5rem);
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+    
+    /* Username Modal Specific */
+    #usernameInput {
+      margin: 1rem 0;
+      width: 100%;
+      padding: 0.8rem;
+      font-size: 1rem;
+    }
+    
+    /* Click Upgrades Modal */
+    .click-upgrades-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 0.8rem;
+    }
+    
+    .click-upgrade {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+      padding: 0.8rem;
+      border-left: 3px solid var(--primary);
+      transition: all 0.2s;
+      font-size: clamp(0.8rem, 3vw, 1rem);
+    }
+    
+    .click-upgrade.unlocked {
+      cursor: pointer;
+    }
+    
+    .click-upgrade.unlocked:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .click-upgrade.locked {
+      opacity: 0.6;
+      border-left-color: var(--disabled);
+    }
+    
+    .click-upgrade-name {
+      font-weight: bold;
+      margin-bottom: 0.3rem;
+      color: var(--accent);
+      font-size: clamp(0.9rem, 3vw, 1rem);
+    }
+    
+    .click-upgrade-desc {
+      font-size: clamp(0.7rem, 3vw, 0.8rem);
+      margin-bottom: 0.3rem;
+    }
+    
+    .click-upgrade-cost {
+      color: var(--secondary);
+      font-weight: bold;
+      font-size: clamp(0.7rem, 3vw, 0.9rem);
+    }
+    
+    .click-upgrade-owned {
+      color: var(--text);
+      font-size: clamp(0.7rem, 3vw, 0.8rem);
+      font-style: italic;
+    }
+    
+    /* Code Modal */
+    .code-input {
+      width: 100%;
+      padding: 0.8rem;
+      margin: 1rem 0;
+      background: var(--bg);
+      border: 1px solid var(--primary);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 1rem;
+    }
+    
+    .submit-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.8rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.2s;
+      width: 100%;
+    }
+    
+    .submit-btn:hover {
+      background: var(--accent);
+    }
+    
+    .code-message {
+      margin-top: 1rem;
+      color: var(--accent);
+      font-weight: bold;
+      text-align: center;
+      font-size: clamp(0.8rem, 3vw, 1rem);
+    }
+    
+    /* Tutorial Prompt Modal */
+    .tutorial-prompt {
+      text-align: center;
+    }
+    
+    .tutorial-options {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+    }
+    
+    .tutorial-btn {
+      padding: 0.8rem 1.2rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s;
+      font-size: clamp(0.8rem, 3vw, 1rem);
+    }
+    
+    .tutorial-yes {
+      background: var(--primary);
+      color: white;
+      border: none;
+    }
+    
+    .tutorial-yes:hover {
+      background: var(--accent);
+    }
+    
+    .tutorial-no {
+      background: transparent;
+      color: var(--secondary);
+      border: 1px solid var(--secondary);
+    }
+    
+    .tutorial-no:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+    
+    /* Visual Tutorial Overlay */
+    .tutorial-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2000;
+      display: none;
+      pointer-events: none;
+    }
+    
+    .tutorial-step {
+      position: absolute;
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 1rem;
+      max-width: 90%;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      border: 2px solid var(--accent);
+      animation: pulse 1.5s infinite;
+      pointer-events: auto;
+    }
+    
+    .tutorial-pointer {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      background: var(--accent);
+      transform: rotate(45deg);
+      z-index: -1;
+    }
+    
+    .tutorial-message {
+      margin-bottom: 0.8rem;
+      font-weight: bold;
+      color: var(--accent);
+      font-size: clamp(0.9rem, 3vw, 1.1rem);
+    }
+    
+    .tutorial-next {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 0.8rem;
+      font-size: clamp(0.8rem, 3vw, 1rem);
+    }
+    
+    /* Rebirth Modal */
+    .rebirth-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 3000;
+      justify-content: center;
+      align-items: center;
+      animation: fadeIn 0.5s ease;
+    }
+    
+    .rebirth-content {
+      background: var(--card-bg);
+      padding: 1.5rem;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      text-align: center;
+      border: 3px solid var(--accent);
+    }
+    
+    .rebirth-title {
+      font-size: clamp(1.5rem, 5vw, 2rem);
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+    
+    .rebirth-message {
+      font-size: clamp(1rem, 4vw, 1.2rem);
+      margin-bottom: 1.5rem;
+    }
+    
+    .rebirth-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 1rem;
+      font-size: clamp(1rem, 4vw, 1.2rem);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+      max-width: 300px;
+    }
+    
+    .rebirth-btn:hover {
+      background: var(--accent);
+    }
+    
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    
+    .tutorial-highlight {
+      position: relative;
+      z-index: 2001;
+      animation: bounce 1s infinite;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
 
-<!-- Add to your HTML (before </body>) -->
-<div class="patch-modal" id="patchModal">
-  <div class="patch-content">
-    <button class="close-patch" id="closePatch">&times;</button>
-    <div class="patch-badge">BETA TESTING</div>
-    <h3 class="patch-title">Development Update</h3>
+    /* NEW LEADERBOARD STYLES */
+    .leaderboard-container {
+      margin-top: 1rem;
+      min-height: 300px;
+      width: 100%;
+    }
     
-    <div class="warning-text">
-      Note: Your progress won't carry over to the full release
+    .leaderboard-entry {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.6rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      align-items: center;
+      transition: all 0.3s ease;
+      font-size: clamp(0.8rem, 3vw, 1rem);
+    }
+    
+    .leaderboard-entry:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .leaderboard-rank {
+      width: 24px;
+      text-align: center;
+      font-weight: bold;
+      color: var(--secondary);
+      flex-shrink: 0;
+    }
+    
+    .leaderboard-user {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-grow: 1;
+      margin: 0 0.5rem;
+      overflow: hidden;
+    }
+    
+    .leaderboard-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+    
+    .leaderboard-score {
+      font-weight: bold;
+      color: var(--accent);
+      min-width: 80px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    
+    .leaderboard-rebirths {
+      color: var(--primary);
+      font-weight: bold;
+      min-width: 60px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    
+    /* Podium positions */
+    .leaderboard-entry:nth-child(1) {
+      background: linear-gradient(90deg, rgba(255, 215, 0, 0.1), transparent);
+      border-left: 3px solid gold;
+    }
+    
+    .leaderboard-entry:nth-child(2) {
+      background: linear-gradient(90deg, rgba(192, 192, 192, 0.1), transparent);
+      border-left: 3px solid silver;
+    }
+    
+    .leaderboard-entry:nth-child(3) {
+      background: linear-gradient(90deg, rgba(205, 127, 50, 0.1), transparent);
+      border-left: 3px solid #cd7f32;
+    }
+    
+    /* Loading spinner */
+    .loading-spinner {
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      border-top: 3px solid var(--accent);
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 2rem auto;
+    }
+    
+    /* Tabs */
+    .leaderboard-tabs {
+      display: flex;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--disabled);
+      flex-wrap: wrap;
+    }
+    
+    .tab-btn {
+      background: none;
+      border: none;
+      padding: 0.5rem;
+      color: var(--secondary);
+      cursor: pointer;
+      position: relative;
+      font-size: clamp(0.7rem, 3vw, 0.9rem);
+      white-space: nowrap;
+    }
+    
+    .tab-btn.active {
+      color: var(--accent);
+    }
+    
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--accent);
+    }
+    
+    /* Countdown timer */
+    .leaderboard-countdown {
+      text-align: center;
+      margin-top: 1rem;
+      color: var(--secondary);
+      font-size: clamp(0.8rem, 3vw, 1rem);
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Compact Patch Notes Modal */
+    .patch-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      animation: fadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+      overflow-y: auto;
+      padding: 1rem;
+    }
+    
+    .patch-content {
+      background: rgba(22, 25, 28, 0.95);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 400px;
+      padding: 1.5rem;
+      position: relative;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+      color: #fff;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      backdrop-filter: blur(16px);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    
+    .patch-content::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+    }
+    
+    .close-patch {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      color: rgba(255, 255, 255, 0.8);
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+      font-size: 1.1rem;
+      border: none;
+      backdrop-filter: blur(4px);
+    }
+    
+    .close-patch:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: rotate(90deg);
+      color: white;
+    }
+    
+    .patch-title {
+      font-size: clamp(1.3rem, 5vw, 1.6rem);
+      margin-bottom: 1rem;
+      color: white;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+    
+    .patch-text {
+      line-height: 1.5;
+      margin-bottom: 1rem;
+      color: rgba(255, 255, 255, 0.85);
+      font-size: clamp(0.9rem, 3vw, 1rem);
+      font-weight: 400;
+    }
+    
+    .patch-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      padding: 0.3rem 1rem;
+      border-radius: 6px;
+      font-size: clamp(0.7rem, 3vw, 0.9rem);
+      font-weight: 600;
+      margin-bottom: 1rem;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3);
+    }
+    
+    .patch-features {
+      margin: 1rem 0;
+    }
+    
+    .patch-feature {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 0.8rem;
+      color: rgba(255, 255, 255, 0.9);
+      font-size: clamp(0.8rem, 3vw, 0.95rem);
+    }
+    
+    .patch-feature::before {
+      content: '▹';
+      color: var(--accent);
+      font-size: clamp(0.9rem, 3vw, 1rem);
+      margin-right: 0.6rem;
+      line-height: 1;
+    }
+    
+    .feedback-link {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+      border-bottom: 1px solid rgba(0, 206, 201, 0.3);
+      transition: all 0.25s ease;
+      padding-bottom: 2px;
+      display: inline-block;
+      font-size: clamp(0.8rem, 3vw, 1rem);
+    }
+    
+    .feedback-link:hover {
+      color: white;
+      border-bottom-color: var(--accent);
+    }
+    
+    .warning-text {
+      color: #ff6b6b;
+      background: rgba(255, 107, 107, 0.1);
+      padding: 0.6rem;
+      border-radius: 6px;
+      margin: 1rem 0;
+      border-left: 3px solid #ff6b6b;
+      font-weight: 500;
+      font-size: clamp(0.8rem, 3vw, 1rem);
+    }
+  </style>
+  
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <div class="container">
+    <div class="top-buttons">
+      <!-- Google Sign-In Button -->
+      <div id="g_id_onload"
+           data-client_id="626223048098-078etpvps2clhd02vs3g5h22sa60537g.apps.googleusercontent.com"
+           data-callback="handleGoogleSignIn"
+           data-context="signin"
+           data-ux_mode="popup"
+           data-auto_prompt="false">
+      </div>
+      <div class="g_id_signin"
+           data-type="standard"
+           data-size="medium"
+           data-theme="filled_blue"
+           data-text="sign_in_with"
+           data-shape="pill"
+           data-logo_alignment="left">
+      </div>
+      
+      <!-- User Profile (shown after sign-in) -->
+      <div class="user-profile" id="userProfile">
+        <img class="user-avatar" id="userAvatar" src="" alt="Profile">
+        <div class="username-container" id="usernameContainer">
+          <span class="user-name" id="userName"></span>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="username-edit">
+            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+          </svg>
+        </div>
+      </div>
+      
+      <button class="top-btn" id="upgradeClicksBtn">Upgrade Clicks</button>
+      <button class="top-btn" id="codeBtn">Enter Code</button>
+      <button class="top-btn" id="leaderboardBtn">Leaderboard</button>
+      <button class="top-btn" id="signOutBtn">Sign Out</button>
     </div>
     
-    <p class="patch-text">
-      Thank you for helping test this beta! The official version launches 
-      <span style="color: var(--accent); font-weight: 500;">this Monday or Friday</span> 
-      with additional content and features.
-    </p>
+    <header>
+      <h1>Business Empire Clicker</h1>
+      <p>Build your economic dynasty one click at a time</p>
+    </header>
     
-    <div class="patch-features">
-      <div class="patch-feature">
-        <span>19 business upgrades with scaling progression</span>
-      </div>
-      <div class="patch-feature">
-        <span>Keyboard shortcuts (SPACE to click)</span>
-      </div>
-      <div class="patch-feature">
-        <span>Redesigned UI with dark theme</span>
-      </div>
-      <div class="patch-feature">
-        <span>More content coming in full release</span>
+    <div class="stats">
+      <div>
+        <div class="coins-display" id="coins">0</div>
+        <div class="cps-display" id="cps">0 coins/sec</div>
       </div>
     </div>
     
-    <p class="patch-text">
-      <a href="https://docs.google.com/forms/d/e/1FAIpQLScPOqrRMIviZR163cYp2wIqkGQigwTR8jU-Qb7Hrl3tMUinGA/viewform?usp=dialog" 
-         class="feedback-link" 
-         target="_blank"
-         rel="noopener noreferrer">
-        Click here to submit feedback →
-      </a>
-    </p>
+    <div class="click-area">
+      <button class="click-btn" id="clicker">Earn Coins (1 per click)</button>
+      <div class="hint">(Click or press SPACE - no holding!)</div>
+    </div>
+    
+    <h2>Business Upgrades</h2>
+    <div class="upgrades-container" id="upgrades"></div>
   </div>
-</div>
 
-<!-- Add to your JavaScript -->
-<script>
-  // Enhanced Patch Notes Modal
-  const patchModal = document.getElementById("patchModal");
-  const closePatch = document.getElementById("closePatch");
-  
-  // Show modal with delay
-  window.addEventListener('load', () => {
-    setTimeout(() => {
-      patchModal.style.display = 'flex';
-      document.body.style.overflow = 'hidden';
-    }, 1200);
-  });
-  
-  // Close handlers
-  closePatch.addEventListener('click', () => {
-    patchModal.style.animation = 'fadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) reverse';
-    setTimeout(() => {
-      patchModal.style.display = 'none';
-      document.body.style.overflow = 'auto';
-    }, 350);
-  });
-  
-  // Close when clicking outside
-  patchModal.addEventListener('click', (e) => {
-    if (e.target === patchModal) {
+  <!-- Click Upgrades Modal -->
+  <div class="modal" id="clickUpgradesModal">
+    <div class="modal-content">
+      <button class="close-modal" id="closeClickUpgrades">&times;</button>
+      <h3 class="modal-title">Click Upgrades</h3>
+      <div class="click-upgrades-grid" id="clickUpgradesGrid"></div>
+    </div>
+  </div>
+
+  <!-- Code Modal -->
+  <div class="modal" id="codeModal">
+    <div class="modal-content">
+      <button class="close-modal" id="closeCodeModal">&times;</button>
+      <h3 class="modal-title">Redeem Code</h3>
+      <input type="text" class="code-input" id="codeInput" placeholder="Enter code...">
+      <button class="submit-btn" id="submitCode">Submit</button>
+      <div class="code-message" id="codeMessage"></div>
+    </div>
+  </div>
+
+  <!-- Username Modal -->
+  <div class="modal" id="usernameModal">
+    <div class="modal-content">
+      <h3 class="modal-title">Choose Your Username</h3>
+      <p>Pick a unique display name (3-20 chars, a-z, 0-9, _):</p>
+      <input type="text" class="code-input" id="usernameInput" placeholder="Enter username..." maxlength="20">
+      <button class="submit-btn" id="saveUsernameBtn">Continue</button>
+      <div class="code-message" id="usernameMessage"></div>
+    </div>
+  </div>
+
+  <!-- Tutorial Prompt Modal -->
+  <div class="modal" id="tutorialPrompt">
+    <div class="modal-content">
+      <div class="tutorial-prompt">
+        <h3 class="modal-title">Need Help Getting Started?</h3>
+        <p>Would you like a quick interactive tutorial?</p>
+        <div class="tutorial-options">
+          <button class="tutorial-btn tutorial-yes" id="startTutorial">Yes, please!</button>
+          <button class="tutorial-btn tutorial-no" id="skipTutorial">No, thanks</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Visual Tutorial Overlay -->
+  <div class="tutorial-overlay" id="tutorialOverlay">
+    <div class="tutorial-step" id="tutorialStep1" style="top: 50%; left: 50%; transform: translate(-50%, -50%);">
+      <div class="tutorial-message">Click this button to earn coins!</div>
+      <button class="tutorial-next" id="nextStep1">Got it!</button>
+    </div>
+  </div>
+
+  <!-- Rebirth Modal -->
+  <div class="rebirth-modal" id="rebirthModal">
+    <div class="rebirth-content">
+      <h2 class="rebirth-title">REBIRTH COMPLETE!</h2>
+      <p class="rebirth-message">You have been reborn with greater power!<br>All upgrades are now 2x more effective!</p>
+      <button class="rebirth-btn" id="continueBtn">Continue Your Empire</button>
+    </div>
+  </div>
+
+  <!-- Leaderboard Modal -->
+  <div class="modal" id="leaderboardModal">
+    <div class="modal-content">
+      <button class="close-modal" id="closeLeaderboard">&times;</button>
+      <h3 class="modal-title">Top Business Tycoons</h3>
+      <div class="leaderboard-tabs">
+        <button class="tab-btn active" data-tab="coins">Highest Net Worth</button>
+        <button class="tab-btn" data-tab="rebirths">Most Rebirths</button>
+      </div>
+      <div class="leaderboard-container" id="leaderboardList">
+        <div class="loading-spinner"></div>
+      </div>
+      <div class="leaderboard-countdown" id="leaderboardCountdown"></div>
+    </div>
+  </div>
+
+  <!-- Patch Notes Modal -->
+  <div class="patch-modal" id="patchModal">
+    <div class="patch-content">
+      <button class="close-patch" id="closePatch">&times;</button>
+      <div class="patch-badge">BETA TESTING</div>
+      <h3 class="patch-title">Development Update</h3>
+      
+      <div class="warning-text">
+        Note: Your progress won't carry over to the full release
+      </div>
+      
+      <p class="patch-text">
+        Thank you for helping test this beta! The official version launches 
+        <span style="color: var(--accent); font-weight: 500;">this Monday or Friday</span> 
+        with additional content and features.
+      </p>
+      
+      <div class="patch-features">
+        <div class="patch-feature">
+          <span>19 business upgrades with scaling progression</span>
+        </div>
+        <div class="patch-feature">
+          <span>Keyboard shortcuts (SPACE to click)</span>
+        </div>
+        <div class="patch-feature">
+          <span>Redesigned UI with dark theme</span>
+        </div>
+        <div class="patch-feature">
+          <span>More content coming in full release</span>
+        </div>
+      </div>
+      
+      <p class="patch-text">
+        <a href="https://docs.google.com/forms/d/e/1FAIpQLScPOqrRMIviZR163cYp2wIqkGQigwTR8jU-Qb7Hrl3tMUinGA/viewform?usp=dialog" 
+           class="feedback-link" 
+           target="_blank"
+           rel="noopener noreferrer">
+          Click here to submit feedback →
+        </a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // ======================
+    // UPDATED AUTH SYSTEM WITH USERNAMES
+    // ======================
+    let playerName = "Guest";
+    let playerUsername = "";
+    let playerEmail = "";
+    let playerPicture = "";
+    let isSignedIn = false;
+    let userId = "";
+    let rebirthCount = 0;
+    let currentTab = 'coins';
+    const JSONBIN_BIN_ID = "67e767bc8960c979a57a8524";
+    const JSONBIN_API_KEY = "$2a$10$OGaFtpC7qZuCcWqcFuuVoeo5qZL2DTw30lpCqPuQdIDXDCPON1vxu";
+    let leaderboardData = [];
+    let lastLeaderboardUpdate = 0;
+    let leaderboardUpdateInterval = 10 * 60 * 1000; // 10 minutes in ms
+
+    // DOM elements for username system
+    const usernameModal = document.getElementById("usernameModal");
+    const usernameInput = document.getElementById("usernameInput");
+    const saveUsernameBtn = document.getElementById("saveUsernameBtn");
+    const usernameMessage = document.getElementById("usernameMessage");
+    const usernameContainer = document.getElementById("usernameContainer");
+
+    // Leaderboard elements
+    const leaderboardBtn = document.getElementById("leaderboardBtn");
+    const leaderboardModal = document.getElementById("leaderboardModal");
+    const closeLeaderboard = document.getElementById("closeLeaderboard");
+    const leaderboardList = document.getElementById("leaderboardList");
+    const leaderboardCountdown = document.getElementById("leaderboardCountdown");
+    const tabButtons = document.querySelectorAll(".tab-btn");
+
+    function handleGoogleSignIn(response) {
+      const userData = parseJWT(response.credential);
+      playerName = userData.name;
+      playerEmail = userData.email;
+      playerPicture = userData.picture;
+      userId = userData.sub;
+      isSignedIn = true;
+      
+      // Hide Google sign-in button
+      document.querySelector('.g_id_signin').style.display = 'none';
+      document.getElementById('signOutBtn').style.display = "block";
+      
+      // Check if user already has a username
+      const savedUser = localStorage.getItem(`user_${userId}`);
+      if (savedUser) {
+        const user = JSON.parse(savedUser);
+        playerUsername = user.username || playerName;
+        updateUserDisplay();
+        loadGame();
+      } else {
+        // Show username selection modal
+        usernameModal.style.display = "flex";
+        usernameInput.value = playerName; // Pre-fill with Google name
+        usernameInput.focus();
+      }
+      
+      // Save basic user info
+      localStorage.setItem('googleUser', JSON.stringify({
+        name: playerName,
+        email: playerEmail,
+        picture: playerPicture,
+        id: userId
+      }));
+    }
+
+    function saveUsername() {
+      const newUsername = usernameInput.value.trim();
+      
+      // Validate username
+      if (newUsername.length < 3) {
+        usernameMessage.textContent = "Username must be at least 3 characters";
+        usernameMessage.style.color = "#ff6b6b";
+        return;
+      }
+      
+      if (newUsername.length > 20) {
+        usernameMessage.textContent = "Username must be 20 characters or less";
+        usernameMessage.style.color = "#ff6b6b";
+        return;
+      }
+      
+      // Check for valid characters (alphanumeric + underscore)
+      if (!/^[a-zA-Z0-9_]+$/.test(newUsername)) {
+        usernameMessage.textContent = "Only letters, numbers and underscores allowed";
+        usernameMessage.style.color = "#ff6b6b";
+        return;
+      }
+      
+      // Save the username
+      playerUsername = newUsername;
+      
+      // Save user profile
+      localStorage.setItem(`user_${userId}`, JSON.stringify({
+        username: playerUsername,
+        picture: playerPicture
+      }));
+      
+      // Close modal and update UI
+      usernameModal.style.display = "none";
+      updateUserDisplay();
+      loadGame();
+    }
+
+    function updateUserDisplay() {
+      document.getElementById("userProfile").style.display = "flex";
+      document.getElementById("userAvatar").src = playerPicture;
+      document.getElementById("userName").textContent = playerUsername;
+    }
+
+    function signOut() {
+      google.accounts.id.disableAutoSelect();
+      google.accounts.id.revoke(localStorage.getItem('googleUserEmail'), () => {
+        console.log('Consent revoked');
+      });
+      
+      isSignedIn = false;
+      playerName = "Guest";
+      playerUsername = "";
+      userId = "";
+      
+      document.querySelector('.g_id_signin').style.display = 'block';
+      document.getElementById('userProfile').style.display = 'none';
+      document.getElementById('signOutBtn').style.display = "none";
+      
+      localStorage.removeItem('googleUser');
+      loadGame();
+    }
+
+    function parseJWT(token) {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      return JSON.parse(atob(base64));
+    }
+
+    // ======================
+    // GAME STATE
+    // ======================
+    let coins = 0;
+    let coinsPerClick = 1;
+    let coinsPerSecond = 0;
+    let spacePressed = false;
+    let spaceCooldown = false;
+    let highestVisibleUpgrade = 3;
+    let tutorialStep = 1;
+    let tutorialActive = false;
+    let rebirthMultiplier = 1;
+    
+    // Click upgrades data
+    const clickUpgrades = [
+      { id: 1, name: "+1 Click", amount: 1, cost: 100, purchased: false },
+      { id: 2, name: "+5 Clicks", amount: 5, cost: 500, purchased: false },
+      { id: 3, name: "+10 Clicks", amount: 10, cost: 1000, purchased: false },
+      { id: 4, name: "+100 Clicks", amount: 100, cost: 10000, purchased: false },
+      { id: 5, name: "+1K Clicks", amount: 1000, cost: 100000, purchased: false },
+      { id: 6, name: "+10K Clicks", amount: 10000, cost: 1000000, purchased: false },
+      { id: 7, name: "+100K Clicks", amount: 100000, cost: 10000000, purchased: false },
+      { id: 8, name: "+1M Clicks", amount: 1000000, cost: 100000000, purchased: false }
+    ];
+    
+    // Upgrades data (19 upgrades + Death)
+    const upgrades = [
+      { id: 1, name: "TikTok Shop", baseCost: 10, owned: 0, effect: 0.5, desc: "Basic viral commerce" },
+      { id: 2, name: "YouTube Ads", baseCost: 50, owned: 0, effect: 2, desc: "Monetize attention" },
+      { id: 3, name: "Instagram Store", baseCost: 100, owned: 0, effect: 3, desc: "Aesthetic capitalism" },
+      { id: 4, name: "Dropshipping", baseCost: 200, owned: 0, effect: 5, desc: "Sell what you don't own" },
+      { id: 5, name: "Amazon FBA", baseCost: 500, owned: 0, effect: 8, desc: "Warehouse domination" },
+      { id: 6, name: "Cryptocurrency", baseCost: 1000, owned: 0, effect: 12, desc: "Digital gold rush" },
+      { id: 7, name: "NFT Marketplace", baseCost: 2000, owned: 0, effect: 18, desc: "Tokenize everything" },
+      { id: 8, name: "VC Funding", baseCost: 5000, owned: 0, effect: 25, desc: "Other people's money" },
+      { id: 9, name: "AI Startup", baseCost: 10000, owned: 0, effect: 35, desc: "Automate the future" },
+      { id: 10, name: "Tesla Competitor", baseCost: 20000, owned: 0, effect: 50, desc: "Disrupt transportation" },
+      { id: 11, name: "Space Tourism", baseCost: 50000, owned: 0, effect: 75, desc: "The final frontier" },
+      { id: 12, name: "Time Travel Tech", baseCost: 100000, owned: 0, effect: 100, desc: "Sell yesterday today" },
+      { id: 13, name: "Dyson Sphere", baseCost: 250000, owned: 0, effect: 150, desc: "Harvest a star" },
+      { id: 14, name: "Galactic Empire", baseCost: 500000, owned: 0, effect: 225, desc: "Rule the cosmos" },
+      { id: 15, name: "Multiverse Corp", baseCost: 1000000, owned: 0, effect: 350, desc: "Infinite markets" },
+      { id: 16, name: "Godhood", baseCost: 5000000, owned: 0, effect: 600, desc: "Become divine" },
+      { id: 17, name: "Omnipotence", baseCost: 10000000, owned: 0, effect: 1000, desc: "All-powerful" },
+      { id: 18, name: "The Singularity", baseCost: 50000000, owned: 0, effect: 2000, desc: "Merge with machines" },
+      { id: 19, name: "The Meaning of Life", baseCost: 100000000, owned: 0, effect: 5000, desc: "Ultimate truth" },
+      { id: 20, name: "DEATH", baseCost: 1000000000, owned: 0, effect: 0, desc: "Rebirth with 2x power" }
+    ];
+    
+    // DOM elements
+    const coinsDisplay = document.getElementById("coins");
+    const cpsDisplay = document.getElementById("cps");
+    const clicker = document.getElementById("clicker");
+    const upgradesContainer = document.getElementById("upgrades");
+    const signOutBtn = document.getElementById("signOutBtn");
+    
+    // Modal elements
+    const upgradeClicksBtn = document.getElementById("upgradeClicksBtn");
+    const codeBtn = document.getElementById("codeBtn");
+    
+    const clickUpgradesModal = document.getElementById("clickUpgradesModal");
+    const closeClickUpgrades = document.getElementById("closeClickUpgrades");
+    const clickUpgradesGrid = document.getElementById("clickUpgradesGrid");
+    
+    const codeModal = document.getElementById("codeModal");
+    const closeCodeModal = document.getElementById("closeCodeModal");
+    const codeInput = document.getElementById("codeInput");
+    const submitCode = document.getElementById("submitCode");
+    const codeMessage = document.getElementById("codeMessage");
+    
+    // Tutorial elements
+    const tutorialPrompt = document.getElementById("tutorialPrompt");
+    const startTutorial = document.getElementById("startTutorial");
+    const skipTutorial = document.getElementById("skipTutorial");
+    const tutorialOverlay = document.getElementById("tutorialOverlay");
+    const tutorialStep1 = document.getElementById("tutorialStep1");
+    const nextStep1 = document.getElementById("nextStep1");
+    
+    // Rebirth elements
+    const rebirthModal = document.getElementById("rebirthModal");
+    const continueBtn = document.getElementById("continueBtn");
+    
+    // Patch notes elements
+    const patchModal = document.getElementById("patchModal");
+    const closePatch = document.getElementById("closePatch");
+    
+    // Event listeners
+    clicker.addEventListener("click", handleClick);
+    
+    // Button listeners
+    upgradeClicksBtn.addEventListener("click", () => clickUpgradesModal.style.display = "flex");
+    codeBtn.addEventListener("click", () => codeModal.style.display = "flex");
+    signOutBtn.addEventListener("click", signOut);
+    saveUsernameBtn.addEventListener("click", saveUsername);
+    closePatch.addEventListener("click", () => {
       patchModal.style.animation = 'fadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) reverse';
       setTimeout(() => {
         patchModal.style.display = 'none';
         document.body.style.overflow = 'auto';
       }, 350);
+    });
+    
+    // Close modal listeners
+    closeClickUpgrades.addEventListener("click", () => clickUpgradesModal.style.display = "none");
+    closeCodeModal.addEventListener("click", () => codeModal.style.display = "none");
+    
+    // Tutorial prompt listeners
+    startTutorial.addEventListener("click", () => {
+      tutorialPrompt.style.display = "none";
+      startInteractiveTutorial();
+    });
+    
+    skipTutorial.addEventListener("click", () => {
+      tutorialPrompt.style.display = "none";
+    });
+    
+    // Tutorial navigation
+    nextStep1.addEventListener("click", () => {
+      tutorialStep1.style.display = "none";
+      tutorialStep = 2;
+      highlightClicker();
+    });
+    
+    // Code redemption
+    submitCode.addEventListener("click", redeemCode);
+    codeInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        redeemCode();
+      }
+    });
+    
+    // Rebirth continue button
+    continueBtn.addEventListener("click", () => {
+      rebirthModal.style.display = "none";
+      renderUpgrades();
+      renderClickUpgrades();
+    });
+    
+    // Leaderboard events
+    leaderboardBtn.addEventListener("click", () => {
+      leaderboardModal.style.display = "flex";
+      updateLeaderboard();
+    });
+
+    closeLeaderboard.addEventListener("click", () => {
+      leaderboardModal.style.display = "none";
+    });
+
+    tabButtons.forEach(button => {
+      button.addEventListener("click", () => {
+        tabButtons.forEach(btn => btn.classList.remove("active"));
+        button.classList.add("active");
+        currentTab = button.dataset.tab;
+        updateLeaderboardDisplay();
+      });
+    });
+    
+    // Spacebar handling with cooldown
+    document.addEventListener("keydown", (e) => {
+      if (e.code === "Space" && !spacePressed && !spaceCooldown) {
+        e.preventDefault();
+        spacePressed = true;
+        handleClick();
+        
+        // Visual feedback
+        clicker.classList.add("pulse");
+        setTimeout(() => clicker.classList.remove("pulse"), 300);
+        
+        // Cooldown
+        spaceCooldown = true;
+        setTimeout(() => spaceCooldown = false, 300);
+      }
+    });
+    
+    document.addEventListener("keyup", (e) => {
+      if (e.code === "Space") {
+        spacePressed = false;
+      }
+    });
+    
+    // Game functions
+    function gameLoop() {
+      coins += coinsPerSecond;
+      updateDisplay();
+      checkForNewUpgrades();
+      renderUpgrades();
+      renderClickUpgrades();
+      saveGame(); // Auto-save every second
     }
-  });
-</script>
+    
+    function handleClick() {
+      coins += coinsPerClick;
+      updateDisplay();
+      checkForNewUpgrades();
+      saveGame();
+      
+      // Visual feedback
+      coinsDisplay.classList.add("pulse");
+      setTimeout(() => coinsDisplay.classList.remove("pulse"), 300);
+      
+      // Tutorial progress
+      if (tutorialActive && tutorialStep === 2 && coins >= 5) {
+        completeTutorialStep(2);
+        tutorialStep = 3;
+        highlightUpgrades();
+      }
+    }
+    
+    function updateDisplay() {
+      coinsDisplay.textContent = Math.floor(coins).toLocaleString();
+      cpsDisplay.textContent = `${coinsPerSecond.toFixed(1)} coins/sec`;
+      updateClickerText();
+    }
+    
+    function updateClickerText() {
+      clicker.textContent = `Earn Coins (${(coinsPerClick * rebirthMultiplier).toLocaleString()} per click)`;
+    }
+    
+    function checkForNewUpgrades() {
+      for (let i = 0; i < upgrades.length; i++) {
+        const upgrade = upgrades[i];
+        const cost = getUpgradeCost(upgrade);
+        
+        if (coins >= cost && i + 2 < upgrades.length && i + 2 > highestVisibleUpgrade) {
+          highestVisibleUpgrade = i + 2;
+        }
+      }
+    }
+    
+    function renderUpgrades() {
+      upgradesContainer.innerHTML = "";
+      
+      const visibleUpgrades = upgrades.slice(0, highestVisibleUpgrade + 1);
+      
+      visibleUpgrades.forEach(upgrade => {
+        const cost = getUpgradeCost(upgrade);
+        const canAfford = coins >= cost;
+        
+        const upgradeEl = document.createElement("div");
+        upgradeEl.className = `upgrade ${canAfford ? "unlocked" : "locked"}`;
+        upgradeEl.setAttribute('data-id', upgrade.id);
+        
+        const progress = Math.min(1, coins / cost);
+        
+        upgradeEl.innerHTML = `
+          <div class="upgrade-name">${upgrade.name}</div>
+          <div class="upgrade-desc">${upgrade.desc}</div>
+          <div>
+            <span class="upgrade-cost">${cost.toLocaleString()} coins</span>
+            <span class="upgrade-owned">Owned: ${upgrade.owned}</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress" style="width: ${progress * 100}%"></div>
+          </div>
+        `;
+        
+        if (canAfford) {
+          upgradeEl.addEventListener("click", () => buyUpgrade(upgrade.id));
+        }
+        
+        upgradesContainer.appendChild(upgradeEl);
+      });
+    }
+    
+    function renderClickUpgrades() {
+      clickUpgradesGrid.innerHTML = "";
+      
+      clickUpgrades.forEach(upgrade => {
+        const canAfford = coins >= upgrade.cost && !upgrade.purchased;
+        
+        const upgradeEl = document.createElement("div");
+        upgradeEl.className = `click-upgrade ${canAfford ? "unlocked" : "locked"}`;
+        
+        upgradeEl.innerHTML = `
+          <div class="click-upgrade-name">${upgrade.name}</div>
+          <div class="click-upgrade-desc">+${(upgrade.amount * rebirthMultiplier).toLocaleString()} coins per click</div>
+          <div class="click-upgrade-cost">${upgrade.cost.toLocaleString()} coins</div>
+          ${upgrade.purchased ? '<div class="click-upgrade-owned">Purchased</div>' : ''}
+        `;
+        
+        if (canAfford) {
+          upgradeEl.addEventListener("click", () => buyClickUpgrade(upgrade.id));
+        }
+        
+        clickUpgradesGrid.appendChild(upgradeEl);
+      });
+    }
+    
+    function buyUpgrade(id) {
+      const upgrade = upgrades.find(u => u.id === id);
+      const cost = getUpgradeCost(upgrade);
+      
+      if (coins >= cost) {
+        coins -= cost;
+        upgrade.owned++;
+        
+        // Special handling for DEATH upgrade
+        if (upgrade.name === "DEATH") {
+          triggerRebirth();
+          return;
+        }
+        
+        coinsPerSecond += upgrade.effect * rebirthMultiplier;
+        updateDisplay();
+        renderUpgrades();
+        saveGame();
+        
+        // Tutorial progress - only complete if we're actually in the tutorial
+        if (tutorialActive && tutorialStep === 3) {
+          completeTutorialStep(3);
+          tutorialOverlay.style.display = "none";
+          tutorialActive = false;
+        }
+      }
+    }
+    
+    function buyClickUpgrade(id) {
+      const upgrade = clickUpgrades.find(u => u.id === id);
+      
+      if (!upgrade.purchased && coins >= upgrade.cost) {
+        coins -= upgrade.cost;
+        coinsPerClick += upgrade.amount * rebirthMultiplier;
+        upgrade.purchased = true;
+        updateDisplay();
+        renderClickUpgrades();
+        saveGame();
+      }
+    }
+    
+    function triggerRebirth() {
+      // Increment rebirth count
+      rebirthCount++;
+      
+      // Reset all game state
+      coins = 0;
+      coinsPerClick = 1;
+      coinsPerSecond = 0;
+      highestVisibleUpgrade = 3;
+      
+      // Reset all upgrades
+      upgrades.forEach(upgrade => {
+        upgrade.owned = 0;
+      });
+      
+      // Reset click upgrades
+      clickUpgrades.forEach(upgrade => {
+        upgrade.purchased = false;
+      });
+      
+      // Increase rebirth multiplier
+      rebirthMultiplier *= 2;
+      
+      // Show rebirth modal
+      rebirthModal.style.display = "flex";
+      
+      // Save immediately
+      saveGame();
+      
+      // Update displays
+      updateDisplay();
+      renderUpgrades();
+      renderClickUpgrades();
+    }
+    
+    function redeemCode() {
+      const code = codeInput.value.trim();
+      
+      if (code === "yugpatel2009") {
+        coins = Infinity;
+        coinsPerClick = Infinity;
+        coinsPerSecond = Infinity;
+        updateDisplay();
+        codeMessage.textContent = "Success! Infinite coins granted!";
+        codeMessage.style.color = "var(--accent)";
+        saveGame();
+        
+        // Close modal after 2 seconds
+        setTimeout(() => {
+          codeModal.style.display = "none";
+          codeMessage.textContent = "";
+          codeInput.value = "";
+        }, 2000);
+      } else {
+        codeMessage.textContent = "Invalid code!";
+        codeMessage.style.color = "#ff6b6b";
+      }
+    }
+    
+    function getUpgradeCost(upgrade) {
+      return Math.floor(upgrade.baseCost * Math.pow(1.5, upgrade.owned));
+    }
+    
+    // ======================
+    // LEADERBOARD FUNCTIONS
+    // ======================
+    async function updateLeaderboard() {
+      const now = Date.now();
+      
+      // Only fetch from API if data is stale (older than 10 minutes)
+      if (now - lastLeaderboardUpdate > leaderboardUpdateInterval) {
+        leaderboardList.innerHTML = '<div class="loading-spinner"></div>';
+        
+        try {
+          const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+            headers: {
+              'X-Master-Key': JSONBIN_API_KEY
+            }
+          });
+          
+          const data = await response.json();
+          leaderboardData = data.record.players || [];
+          lastLeaderboardUpdate = now;
+          localStorage.setItem('leaderboardCache', JSON.stringify({
+            data: leaderboardData,
+            timestamp: lastLeaderboardUpdate
+          }));
+        } catch (error) {
+          console.error("Error loading leaderboard:", error);
+          // Try to load from cache if API fails
+          const cached = localStorage.getItem('leaderboardCache');
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            leaderboardData = parsed.data || [];
+            lastLeaderboardUpdate = parsed.timestamp || 0;
+          } else {
+            leaderboardData = [];
+          }
+        }
+      }
+      
+      updateLeaderboardDisplay();
+      startCountdown();
+    }
+
+    function updateLeaderboardDisplay() {
+      if (leaderboardData.length === 0) {
+        leaderboardList.innerHTML = '<p>No leaderboard data available</p>';
+        return;
+      }
+
+      // Sort based on current tab
+      const sortedData = [...leaderboardData].sort((a, b) => {
+        if (currentTab === 'coins') {
+          return (b.coins || 0) - (a.coins || 0);
+        } else {
+          return (b.rebirthCount || 0) - (a.rebirthCount || 0);
+        }
+      });
+
+      renderLeaderboard(sortedData.slice(0, 20));
+    }
+
+    function renderLeaderboard(data) {
+      leaderboardList.innerHTML = '';
+
+      data.forEach((entry, index) => {
+        const entryEl = document.createElement('div');
+        entryEl.className = 'leaderboard-entry';
+        
+        entryEl.innerHTML = `
+          <div class="leaderboard-rank">${index + 1}</div>
+          <div class="leaderboard-user">
+            ${entry.avatar ? `<img src="${entry.avatar}" class="leaderboard-avatar" alt="${entry.username}">` : ''}
+            <span>${entry.username || "Anonymous"}</span>
+          </div>
+          ${currentTab === 'coins' ? 
+            `<div class="leaderboard-score">${Math.floor(entry.coins || 0).toLocaleString()} coins</div>` :
+            `<div class="leaderboard-rebirths">${entry.rebirthCount || 0} rebirths</div>`
+          }
+        `;
+
+        // Highlight current user
+        if (entry.id === userId) {
+          entryEl.style.background = 'rgba(108, 92, 231, 0.2)';
+          entryEl.style.borderLeft = '3px solid var(--primary)';
+        }
+
+        leaderboardList.appendChild(entryEl);
+      });
+
+      // Add current user if not in top 20
+      if (userId && !data.some(e => e.id === userId)) {
+        const userEntry = leaderboardData.find(e => e.id === userId);
+        if (userEntry) {
+          const entryEl = document.createElement('div');
+          entryEl.className = 'leaderboard-entry';
+          entryEl.style.background = 'rgba(108, 92, 231, 0.2)';
+          entryEl.style.borderLeft = '3px solid var(--primary)';
+          
+          entryEl.innerHTML = `
+            <div class="leaderboard-rank">${data.length + 1}</div>
+            <div class="leaderboard-user">
+              ${userEntry.avatar ? `<img src="${userEntry.avatar}" class="leaderboard-avatar">` : ''}
+              <span>${userEntry.username || "You"}</span>
+            </div>
+            ${currentTab === 'coins' ? 
+              `<div class="leaderboard-score">${Math.floor(userEntry.coins || 0).toLocaleString()} coins</div>` :
+              `<div class="leaderboard-rebirths">${userEntry.rebirthCount || 0} rebirths</div>`
+            }
+          `;
+          
+          leaderboardList.appendChild(entryEl);
+        }
+      }
+    }
+    
+    function startCountdown() {
+      const now = Date.now();
+      const nextUpdate = lastLeaderboardUpdate + leaderboardUpdateInterval;
+      const timeLeft = Math.max(0, nextUpdate - now);
+      
+      updateCountdownDisplay(timeLeft);
+      
+      // Update countdown every second
+      const countdownInterval = setInterval(() => {
+        const now = Date.now();
+        const timeLeft = Math.max(0, nextUpdate - now);
+        
+        if (timeLeft <= 0) {
+          clearInterval(countdownInterval);
+          leaderboardCountdown.textContent = "Updating leaderboard...";
+          // Refresh the leaderboard
+          lastLeaderboardUpdate = 0;
+          updateLeaderboard();
+        } else {
+          updateCountdownDisplay(timeLeft);
+        }
+      }, 1000);
+    }
+    
+    function updateCountdownDisplay(ms) {
+      const minutes = Math.floor(ms / (60 * 1000));
+      const seconds = Math.floor((ms % (60 * 1000)) / 1000);
+      leaderboardCountdown.textContent = `Next update in: ${minutes}m ${seconds}s`;
+    }
+    
+    // ======================
+    // SAVE & LOAD SYSTEM
+    // ======================
+    async function saveGame() {
+      const gameData = {
+        coins,
+        coinsPerClick,
+        coinsPerSecond,
+        highestVisibleUpgrade,
+        rebirthMultiplier,
+        rebirthCount,
+        upgrades: upgrades.map(u => ({ id: u.id, owned: u.owned })),
+        clickUpgrades: clickUpgrades.map(cu => ({ id: cu.id, purchased: cu.purchased })),
+        username: playerUsername,
+        avatar: playerPicture || "",
+        id: userId,
+        lastUpdated: Date.now()
+      };
+
+      // Save locally
+      localStorage.setItem('businessEmpireSave', JSON.stringify(gameData));
+
+      // Save to JSONbin if signed in (only updates every 10 minutes)
+      if (isSignedIn && userId) {
+        const now = Date.now();
+        const lastSaved = localStorage.getItem('lastCloudSave') || 0;
+        
+        // Only save to cloud every 10 minutes to avoid API limits
+        if (now - lastSaved > leaderboardUpdateInterval) {
+          try {
+            // First get current leaderboard data
+            const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+              headers: {
+                'X-Master-Key': JSONBIN_API_KEY
+              }
+            });
+            
+            let allPlayers = [];
+            if (response.ok) {
+              const data = await response.json();
+              allPlayers = data.record.players || [];
+            }
+            
+            // Update or add current player
+            const existingPlayerIndex = allPlayers.findIndex(p => p.id === userId);
+            if (existingPlayerIndex >= 0) {
+              allPlayers[existingPlayerIndex] = gameData;
+            } else {
+              allPlayers.push(gameData);
+            }
+            
+            // Save back to JSONbin
+            await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Master-Key': JSONBIN_API_KEY
+              },
+              body: JSON.stringify({ players: allPlayers })
+            });
+            
+            localStorage.setItem('lastCloudSave', now);
+            console.log("Game saved to leaderboard!");
+          } catch (error) {
+            console.error("Error saving to leaderboard:", error);
+          }
+        }
+      }
+    }
+    
+    function loadGame() {
+      const localSave = localStorage.getItem('businessEmpireSave');
+      if (localSave) {
+        loadGameData(JSON.parse(localSave));
+      }
+      
+      // Try to load cached leaderboard data
+      const cached = localStorage.getItem('leaderboardCache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        leaderboardData = parsed.data || [];
+        lastLeaderboardUpdate = parsed.timestamp || 0;
+      }
+    }
+    
+    function loadGameData(gameData) {
+      if (!gameData) return;
+      
+      coins = gameData.coins || 0;
+      coinsPerClick = gameData.coinsPerClick || 1;
+      coinsPerSecond = gameData.coinsPerSecond || 0;
+      highestVisibleUpgrade = gameData.highestVisibleUpgrade || 3;
+      rebirthMultiplier = gameData.rebirthMultiplier || 1;
+      rebirthCount = gameData.rebirthCount || 0;
+      
+      // Merge upgrades
+      if (gameData.upgrades) {
+        gameData.upgrades.forEach(savedUpgrade => {
+          const existingUpgrade = upgrades.find(u => u.id === savedUpgrade.id);
+          if (existingUpgrade) {
+            existingUpgrade.owned = savedUpgrade.owned || 0;
+          }
+        });
+      }
+      
+      if (gameData.clickUpgrades) {
+        gameData.clickUpgrades.forEach(savedClickUpgrade => {
+          const existingClickUpgrade = clickUpgrades.find(cu => cu.id === savedClickUpgrade.id);
+          if (existingClickUpgrade) {
+            existingClickUpgrade.purchased = savedClickUpgrade.purchased || false;
+          }
+        });
+      }
+      
+      updateDisplay();
+      renderUpgrades();
+      renderClickUpgrades();
+    }
+    
+    // Tutorial functions
+    function startInteractiveTutorial() {
+      tutorialActive = true;
+      tutorialOverlay.style.display = "flex";
+      tutorialStep1.style.display = "block";
+      clicker.classList.add("tutorial-highlight");
+    }
+    
+    function highlightClicker() {
+      const rect = clicker.getBoundingClientRect();
+      const tutorialStep = document.createElement("div");
+      tutorialStep.className = "tutorial-step";
+      tutorialStep.style.top = `${rect.top - 100}px`;
+      tutorialStep.style.left = `${rect.left + rect.width/2 - 150}px`;
+      tutorialStep.innerHTML = `
+        <div class="tutorial-message">Keep clicking to earn 5 coins!</div>
+        <div class="tutorial-pointer" style="top: 100%; left: 50%;"></div>
+      `;
+      tutorialOverlay.appendChild(tutorialStep);
+    }
+    
+    function highlightUpgrades() {
+      const firstUpgrade = document.querySelector(".upgrade");
+      if (firstUpgrade) {
+        firstUpgrade.classList.add("tutorial-highlight");
+        const rect = firstUpgrade.getBoundingClientRect();
+        const tutorialStep = document.createElement("div");
+        tutorialStep.className = "tutorial-step";
+        tutorialStep.style.top = `${rect.top - 100}px`;
+        tutorialStep.style.left = `${rect.left + rect.width/2 - 150}px`;
+        tutorialStep.innerHTML = `
+          <div class="tutorial-message">Now buy your first upgrade!</div>
+          <div class="tutorial-pointer" style="top: 100%; left: 50%;"></div>
+        `;
+        tutorialOverlay.appendChild(tutorialStep);
+      }
+    }
+    
+    function completeTutorialStep(step) {
+      const steps = tutorialOverlay.querySelectorAll(".tutorial-step");
+      if (steps.length > 1) {
+        steps[1].remove();
+      }
+      if (step === 2) {
+        clicker.classList.remove("tutorial-highlight");
+      } else if (step === 3) {
+        document.querySelector(".upgrade")?.classList.remove("tutorial-highlight");
+      }
+    }
+
+    // Initialize game
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedUser = localStorage.getItem('googleUser');
+      if (savedUser) {
+        const user = JSON.parse(savedUser);
+        playerName = user.name;
+        playerEmail = user.email;
+        playerPicture = user.picture;
+        userId = user.id;
+        isSignedIn = true;
+        
+        // Update UI
+        document.querySelector('.g_id_signin').style.display = 'none';
+        document.getElementById('signOutBtn').style.display = "block";
+        
+        // Load username if exists
+        const userData = localStorage.getItem(`user_${userId}`);
+        if (userData) {
+          const user = JSON.parse(userData);
+          playerUsername = user.username || playerName;
+          updateUserDisplay();
+        }
+      }
+      
+      // Initialize game
+      renderUpgrades();
+      renderClickUpgrades();
+      setInterval(gameLoop, 1000);
+      updateClickerText();
+      loadGame();
+      
+      // Show patch notes modal after delay (only once per session)
+      if (!sessionStorage.getItem('patchNotesShown')) {
+        setTimeout(() => {
+          patchModal.style.display = 'flex';
+          document.body.style.overflow = 'hidden';
+          sessionStorage.setItem('patchNotesShown', 'true');
+        }, 1200);
+      }
+    });
+  </script>
+</body>
+</html>
 
 
 
