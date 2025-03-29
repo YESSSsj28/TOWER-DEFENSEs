@@ -266,10 +266,63 @@
       line-height: 1.6;
     }
     
+    /* Login Screen Styles */
+    .login-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      text-align: center;
+      padding: 2rem;
+    }
+    
+    .login-content {
+      max-width: 500px;
+      width: 90%;
+      background: var(--card-bg);
+      padding: 3rem 2rem;
+      border-radius: 16px;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .login-title {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .login-message {
+      margin-bottom: 2rem;
+      color: rgba(255, 255, 255, 0.8);
+      line-height: 1.6;
+    }
+    
+    .login-badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--accent);
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      font-weight: 600;
+    }
+    
+    /* Rest of your existing styles... */
     .container {
       width: 100%;
       max-width: 800px;
       position: relative;
+      display: none; /* Initially hidden */
     }
     
     header {
@@ -454,12 +507,17 @@
       background: #4285F4 !important;
       color: white !important;
       border-radius: 20px !important;
-      height: 36px !important;
-      padding: 0 12px !important;
+      height: 40px !important;
+      padding: 0 24px !important;
+      font-size: 1rem !important;
+      font-weight: 500 !important;
+      transition: all 0.2s !important;
     }
     
     .g_id_signin:hover {
       background: #3367D6 !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
     }
     
     /* User Profile Display */
@@ -795,8 +853,13 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
-  <div class="container">
-    <div class="top-buttons">
+  <!-- Login Screen -->
+  <div class="login-screen" id="loginScreen">
+    <div class="login-content">
+      <div class="login-badge">BUSINESS EMPIRE CLICKER</div>
+      <h2 class="login-title">Welcome to Business Empire</h2>
+      <p class="login-message">You must sign in with Google to continue playing and save your progress across devices.</p>
+      
       <!-- Google Sign-In Button -->
       <div id="g_id_onload"
            data-client_id="626223048098-078etpvps2clhd02vs3g5h22sa60537g.apps.googleusercontent.com"
@@ -807,13 +870,18 @@
       </div>
       <div class="g_id_signin"
            data-type="standard"
-           data-size="medium"
+           data-size="large"
            data-theme="filled_blue"
            data-text="sign_in_with"
            data-shape="pill"
            data-logo_alignment="left">
       </div>
-      
+    </div>
+  </div>
+
+  <!-- Game Container (hidden until login) -->
+  <div class="container" id="gameContainer">
+    <div class="top-buttons">
       <!-- User Profile (shown after sign-in) -->
       <div class="user-profile" id="userProfile">
         <img class="user-avatar" id="userAvatar" src="" alt="Profile">
@@ -924,7 +992,9 @@
     let isSignedIn = false;
     let userId = "";
 
-    // DOM elements for username system
+    // DOM elements
+    const loginScreen = document.getElementById("loginScreen");
+    const gameContainer = document.getElementById("gameContainer");
     const usernameModal = document.getElementById("usernameModal");
     const usernameInput = document.getElementById("usernameInput");
     const saveUsernameBtn = document.getElementById("saveUsernameBtn");
@@ -939,8 +1009,11 @@
       userId = userData.sub;
       isSignedIn = true;
       
+      // Hide login screen and show game
+      loginScreen.style.display = "none";
+      gameContainer.style.display = "block";
+      
       // Hide Google sign-in button
-      document.querySelector('.g_id_signin').style.display = 'none';
       document.getElementById('signOutBtn').style.display = "block";
       
       // Check if user already has a username
@@ -1033,12 +1106,11 @@
       playerUsername = "";
       userId = "";
       
-      document.querySelector('.g_id_signin').style.display = 'block';
-      document.getElementById('userProfile').style.display = 'none';
-      document.getElementById('signOutBtn').style.display = "none";
+      // Show login screen and hide game
+      loginScreen.style.display = "flex";
+      gameContainer.style.display = "none";
       
       localStorage.removeItem('googleUser');
-      loadGame();
     }
 
     function parseJWT(token) {
@@ -1070,8 +1142,11 @@
         userId = user.id;
         isSignedIn = true;
         
+        // Hide login screen and show game
+        loginScreen.style.display = "none";
+        gameContainer.style.display = "block";
+        
         // Update UI
-        document.querySelector('.g_id_signin').style.display = 'none';
         document.getElementById('signOutBtn').style.display = "block";
         
         // Load username if exists
@@ -1081,14 +1156,18 @@
           playerUsername = user.username || playerName;
           updateUserDisplay();
         }
+        
+        // Initialize game
+        renderUpgrades();
+        renderClickUpgrades();
+        setInterval(gameLoop, 1000);
+        updateClickerText();
+        loadGame();
+      } else {
+        // Show login screen
+        loginScreen.style.display = "flex";
+        gameContainer.style.display = "none";
       }
-      
-      // Initialize game
-      renderUpgrades();
-      renderClickUpgrades();
-      setInterval(gameLoop, 1000);
-      updateClickerText();
-      loadGame();
     });
 
     // ======================
@@ -1575,7 +1654,6 @@
   </script>
 </body>
 </html>
-
 
 
 
