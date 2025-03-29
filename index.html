@@ -230,7 +230,6 @@
 
 
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -266,63 +265,10 @@
       line-height: 1.6;
     }
     
-    /* Login Screen Styles */
-    .login-screen {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: var(--bg);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-      text-align: center;
-      padding: 2rem;
-    }
-    
-    .login-content {
-      max-width: 500px;
-      width: 90%;
-      background: var(--card-bg);
-      padding: 3rem 2rem;
-      border-radius: 16px;
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    
-    .login-title {
-      font-size: 2rem;
-      margin-bottom: 1rem;
-      background: linear-gradient(90deg, var(--primary), var(--accent));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    
-    .login-message {
-      margin-bottom: 2rem;
-      color: rgba(255, 255, 255, 0.8);
-      line-height: 1.6;
-    }
-    
-    .login-badge {
-      display: inline-block;
-      background: rgba(255, 255, 255, 0.1);
-      color: var(--accent);
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      margin-bottom: 1.5rem;
-      font-weight: 600;
-    }
-    
-    /* Rest of your existing styles... */
     .container {
       width: 100%;
       max-width: 800px;
       position: relative;
-      display: none; /* Initially hidden */
     }
     
     header {
@@ -507,17 +453,12 @@
       background: #4285F4 !important;
       color: white !important;
       border-radius: 20px !important;
-      height: 40px !important;
-      padding: 0 24px !important;
-      font-size: 1rem !important;
-      font-weight: 500 !important;
-      transition: all 0.2s !important;
+      height: 36px !important;
+      padding: 0 12px !important;
     }
     
     .g_id_signin:hover {
       background: #3367D6 !important;
-      transform: translateY(-2px) !important;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
     }
     
     /* User Profile Display */
@@ -848,18 +789,174 @@
       from { opacity: 0; }
       to { opacity: 1; }
     }
+
+    /* NEW LEADERBOARD STYLES */
+    .leaderboard-container {
+      margin-top: 1rem;
+      min-height: 300px;
+    }
+    
+    .leaderboard-entry {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.8rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      align-items: center;
+      transition: all 0.3s ease;
+    }
+    
+    .leaderboard-entry:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .leaderboard-rank {
+      width: 24px;
+      text-align: center;
+      font-weight: bold;
+      color: var(--secondary);
+    }
+    
+    .leaderboard-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-grow: 1;
+      margin: 0 1rem;
+    }
+    
+    .leaderboard-avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    
+    .leaderboard-score {
+      font-weight: bold;
+      color: var(--accent);
+      min-width: 100px;
+      text-align: right;
+    }
+    
+    .leaderboard-rebirths {
+      color: var(--primary);
+      font-weight: bold;
+      min-width: 80px;
+      text-align: right;
+    }
+    
+    /* Podium positions */
+    .leaderboard-entry:nth-child(1) {
+      background: linear-gradient(90deg, rgba(255, 215, 0, 0.1), transparent);
+      border-left: 3px solid gold;
+    }
+    
+    .leaderboard-entry:nth-child(2) {
+      background: linear-gradient(90deg, rgba(192, 192, 192, 0.1), transparent);
+      border-left: 3px solid silver;
+    }
+    
+    .leaderboard-entry:nth-child(3) {
+      background: linear-gradient(90deg, rgba(205, 127, 50, 0.1), transparent);
+      border-left: 3px solid #cd7f32;
+    }
+    
+    /* Loading spinner */
+    .loading-spinner {
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      border-top: 3px solid var(--accent);
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 2rem auto;
+    }
+    
+    /* Tabs */
+    .leaderboard-tabs {
+      display: flex;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--disabled);
+    }
+    
+    .tab-btn {
+      background: none;
+      border: none;
+      padding: 0.5rem 1rem;
+      color: var(--secondary);
+      cursor: pointer;
+      position: relative;
+    }
+    
+    .tab-btn.active {
+      color: var(--accent);
+    }
+    
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--accent);
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
+  
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-analytics.js";
+    import { getFirestore, collection, doc, setDoc, onSnapshot, query, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAb7WnjEMxtktfCkifl128Lh4oJm3XrybE",
+      authDomain: "create-a-new-p.firebaseapp.com",
+      databaseURL: "https://create-a-new-p-default-rtdb.firebaseio.com",
+      projectId: "create-a-new-p",
+      storageBucket: "create-a-new-p.firebasestorage.app",
+      messagingSenderId: "282547350316",
+      appId: "1:282547350316:web:aab3245f8b7536f5fe5a89",
+      measurementId: "G-FMWSJW15D8"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+
+    // Make these available globally
+    window.firebase = { 
+      db, 
+      auth, 
+      provider, 
+      signInWithPopup, 
+      signOut, 
+      serverTimestamp,
+      onAuthStateChanged,
+      collection,
+      doc,
+      setDoc,
+      query,
+      orderBy,
+      limit,
+      onSnapshot
+    };
+  </script>
   <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
-  <!-- Login Screen -->
-  <div class="login-screen" id="loginScreen">
-    <div class="login-content">
-      <div class="login-badge">BUSINESS EMPIRE CLICKER</div>
-      <h2 class="login-title">Welcome to Business Empire</h2>
-      <p class="login-message">You must sign in with Google to continue playing and save your progress across devices.</p>
-      
+  <div class="container">
+    <div class="top-buttons">
       <!-- Google Sign-In Button -->
       <div id="g_id_onload"
            data-client_id="626223048098-078etpvps2clhd02vs3g5h22sa60537g.apps.googleusercontent.com"
@@ -870,18 +967,13 @@
       </div>
       <div class="g_id_signin"
            data-type="standard"
-           data-size="large"
+           data-size="medium"
            data-theme="filled_blue"
            data-text="sign_in_with"
            data-shape="pill"
            data-logo_alignment="left">
       </div>
-    </div>
-  </div>
-
-  <!-- Game Container (hidden until login) -->
-  <div class="container" id="gameContainer">
-    <div class="top-buttons">
+      
       <!-- User Profile (shown after sign-in) -->
       <div class="user-profile" id="userProfile">
         <img class="user-avatar" id="userAvatar" src="" alt="Profile">
@@ -895,6 +987,7 @@
       
       <button class="top-btn" id="upgradeClicksBtn">Upgrade Clicks</button>
       <button class="top-btn" id="codeBtn">Enter Code</button>
+      <button class="top-btn" id="leaderboardBtn">Leaderboard</button>
       <button class="top-btn" id="signOutBtn">Sign Out</button>
     </div>
     
@@ -981,6 +1074,21 @@
     </div>
   </div>
 
+  <!-- NEW LEADERBOARD MODAL -->
+  <div class="modal" id="leaderboardModal">
+    <div class="modal-content">
+      <button class="close-modal" id="closeLeaderboard">&times;</button>
+      <h3 class="modal-title">Top Business Tycoons</h3>
+      <div class="leaderboard-tabs">
+        <button class="tab-btn active" data-tab="coins">Highest Net Worth</button>
+        <button class="tab-btn" data-tab="rebirths">Most Rebirths</button>
+      </div>
+      <div class="leaderboard-container" id="leaderboardList">
+        <div class="loading-spinner"></div>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ======================
     // UPDATED AUTH SYSTEM WITH USERNAMES
@@ -991,15 +1099,23 @@
     let playerPicture = "";
     let isSignedIn = false;
     let userId = "";
+    let rebirthCount = 0;
+    let leaderboardListener = null;
+    let currentTab = 'coins';
 
-    // DOM elements
-    const loginScreen = document.getElementById("loginScreen");
-    const gameContainer = document.getElementById("gameContainer");
+    // DOM elements for username system
     const usernameModal = document.getElementById("usernameModal");
     const usernameInput = document.getElementById("usernameInput");
     const saveUsernameBtn = document.getElementById("saveUsernameBtn");
     const usernameMessage = document.getElementById("usernameMessage");
     const usernameContainer = document.getElementById("usernameContainer");
+
+    // Leaderboard elements
+    const leaderboardBtn = document.getElementById("leaderboardBtn");
+    const leaderboardModal = document.getElementById("leaderboardModal");
+    const closeLeaderboard = document.getElementById("closeLeaderboard");
+    const leaderboardList = document.getElementById("leaderboardList");
+    const tabButtons = document.querySelectorAll(".tab-btn");
 
     function handleGoogleSignIn(response) {
       const userData = parseJWT(response.credential);
@@ -1009,11 +1125,8 @@
       userId = userData.sub;
       isSignedIn = true;
       
-      // Hide login screen and show game
-      loginScreen.style.display = "none";
-      gameContainer.style.display = "block";
-      
       // Hide Google sign-in button
+      document.querySelector('.g_id_signin').style.display = 'none';
       document.getElementById('signOutBtn').style.display = "block";
       
       // Check if user already has a username
@@ -1062,20 +1175,8 @@
         return;
       }
       
-      // Check if username is already taken by another user
-      const allUsernames = JSON.parse(localStorage.getItem('allUsernames') || '{}');
-      if (allUsernames[newUsername] && allUsernames[newUsername] !== userId) {
-        usernameMessage.textContent = "Username already taken";
-        usernameMessage.style.color = "#ff6b6b";
-        return;
-      }
-      
       // Save the username
       playerUsername = newUsername;
-      
-      // Update username tracking
-      allUsernames[newUsername] = userId;
-      localStorage.setItem('allUsernames', JSON.stringify(allUsernames));
       
       // Save user profile
       localStorage.setItem(`user_${userId}`, JSON.stringify({
@@ -1106,11 +1207,13 @@
       playerUsername = "";
       userId = "";
       
-      // Show login screen and hide game
-      loginScreen.style.display = "flex";
-      gameContainer.style.display = "none";
+      document.querySelector('.g_id_signin').style.display = 'block';
+      document.getElementById('userProfile').style.display = 'none';
+      document.getElementById('signOutBtn').style.display = "none";
+      stopLeaderboardUpdates();
       
       localStorage.removeItem('googleUser');
+      loadGame();
     }
 
     function parseJWT(token) {
@@ -1118,57 +1221,6 @@
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
       return JSON.parse(atob(base64));
     }
-
-    // Event listeners for username system
-    saveUsernameBtn.addEventListener("click", saveUsername);
-    usernameInput.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") saveUsername();
-    });
-    
-    usernameContainer.addEventListener("click", () => {
-      usernameModal.style.display = "flex";
-      usernameInput.value = playerUsername;
-      usernameInput.focus();
-    });
-
-    // Check existing session on load
-    window.addEventListener('DOMContentLoaded', () => {
-      const savedUser = localStorage.getItem('googleUser');
-      if (savedUser) {
-        const user = JSON.parse(savedUser);
-        playerName = user.name;
-        playerEmail = user.email;
-        playerPicture = user.picture;
-        userId = user.id;
-        isSignedIn = true;
-        
-        // Hide login screen and show game
-        loginScreen.style.display = "none";
-        gameContainer.style.display = "block";
-        
-        // Update UI
-        document.getElementById('signOutBtn').style.display = "block";
-        
-        // Load username if exists
-        const userData = localStorage.getItem(`user_${userId}`);
-        if (userData) {
-          const user = JSON.parse(userData);
-          playerUsername = user.username || playerName;
-          updateUserDisplay();
-        }
-        
-        // Initialize game
-        renderUpgrades();
-        renderClickUpgrades();
-        setInterval(gameLoop, 1000);
-        updateClickerText();
-        loadGame();
-      } else {
-        // Show login screen
-        loginScreen.style.display = "flex";
-        gameContainer.style.display = "none";
-      }
-    });
 
     // ======================
     // GAME STATE
@@ -1294,6 +1346,26 @@
       rebirthModal.style.display = "none";
       renderUpgrades();
       renderClickUpgrades();
+    });
+    
+    // Leaderboard events
+    leaderboardBtn.addEventListener("click", () => {
+      leaderboardModal.style.display = "flex";
+      startLeaderboardUpdates();
+    });
+
+    closeLeaderboard.addEventListener("click", () => {
+      leaderboardModal.style.display = "none";
+      stopLeaderboardUpdates();
+    });
+
+    tabButtons.forEach(button => {
+      button.addEventListener("click", () => {
+        tabButtons.forEach(btn => btn.classList.remove("active"));
+        button.classList.add("active");
+        currentTab = button.dataset.tab;
+        updateLeaderboard();
+      });
     });
     
     // Spacebar handling with cooldown
@@ -1469,6 +1541,9 @@
     }
     
     function triggerRebirth() {
+      // Increment rebirth count
+      rebirthCount++;
+      
       // Reset all game state
       coins = 0;
       coinsPerClick = 1;
@@ -1529,26 +1604,147 @@
     }
     
     // ======================
+    // LEADERBOARD FUNCTIONS
+    // ======================
+    function startLeaderboardUpdates() {
+      updateLeaderboard();
+    }
+
+    function stopLeaderboardUpdates() {
+      if (leaderboardListener) {
+        leaderboardListener(); // Unsubscribe
+      }
+    }
+
+    function updateLeaderboard() {
+      leaderboardList.innerHTML = '<div class="loading-spinner"></div>';
+      
+      const orderByField = currentTab === 'coins' ? 'coins' : 'rebirthCount';
+      
+      leaderboardListener = firebase.onSnapshot(
+        firebase.query(
+          firebase.collection(firebase.db, "players"),
+          firebase.orderBy(orderByField, "desc"),
+          firebase.limit(20)
+        ),
+        (snapshot) => {
+          const leaderboardData = [];
+          snapshot.forEach((doc) => {
+            leaderboardData.push({ id: doc.id, ...doc.data() });
+          });
+          renderLeaderboard(leaderboardData);
+        },
+        (error) => {
+          console.error("Leaderboard error:", error);
+          leaderboardList.innerHTML = '<p>Error loading leaderboard. Please refresh.</p>';
+        }
+      );
+    }
+
+    function renderLeaderboard(data) {
+      leaderboardList.innerHTML = '';
+
+      if (data.length === 0) {
+        leaderboardList.innerHTML = '<p>No players yet. Be the first!</p>';
+        return;
+      }
+
+      data.forEach((entry, index) => {
+        const entryEl = document.createElement('div');
+        entryEl.className = 'leaderboard-entry';
+        
+        entryEl.innerHTML = `
+          <div class="leaderboard-rank">${index + 1}</div>
+          <div class="leaderboard-user">
+            ${entry.avatar ? `<img src="${entry.avatar}" class="leaderboard-avatar" alt="${entry.username}">` : ''}
+            <span>${entry.username || "Anonymous"}</span>
+          </div>
+          ${currentTab === 'coins' ? 
+            `<div class="leaderboard-score">${Math.floor(entry.coins || 0).toLocaleString()} coins</div>` :
+            `<div class="leaderboard-rebirths">${entry.rebirthCount || 0} rebirths</div>`
+          }
+        `;
+
+        // Highlight current user
+        if (entry.id === userId) {
+          entryEl.style.background = 'rgba(108, 92, 231, 0.2)';
+          entryEl.style.borderLeft = '3px solid var(--primary)';
+        }
+
+        leaderboardList.appendChild(entryEl);
+      });
+
+      // Add current user if not in top 20
+      if (userId && !data.some(e => e.id === userId)) {
+        getUserData().then(userEntry => {
+          if (userEntry) {
+            const entryEl = document.createElement('div');
+            entryEl.className = 'leaderboard-entry';
+            entryEl.style.background = 'rgba(108, 92, 231, 0.2)';
+            entryEl.style.borderLeft = '3px solid var(--primary)';
+            
+            entryEl.innerHTML = `
+              <div class="leaderboard-rank">${data.length + 1}</div>
+              <div class="leaderboard-user">
+                ${userEntry.avatar ? `<img src="${userEntry.avatar}" class="leaderboard-avatar">` : ''}
+                <span>${userEntry.username || "You"}</span>
+              </div>
+              ${currentTab === 'coins' ? 
+                `<div class="leaderboard-score">${Math.floor(userEntry.coins || 0).toLocaleString()} coins</div>` :
+                `<div class="leaderboard-rebirths">${userEntry.rebirthCount || 0} rebirths</div>`
+              }
+            `;
+            
+            leaderboardList.appendChild(entryEl);
+          }
+        });
+      }
+    }
+    
+    async function getUserData() {
+      if (!userId) return null;
+      
+      try {
+        const docRef = firebase.doc(firebase.db, "players", userId);
+        const docSnap = await firebase.getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          return { id: userId, ...docSnap.data() };
+        }
+        return null;
+      } catch (error) {
+        console.error("Error getting user data:", error);
+        return null;
+      }
+    }
+    
+    // ======================
     // SAVE & LOAD SYSTEM
     // ======================
-    function saveGame() {
+    async function saveGame() {
       const gameData = {
         coins,
         coinsPerClick,
         coinsPerSecond,
         highestVisibleUpgrade,
-        upgrades: upgrades.map(u => ({ id: u.id, owned: u.owned })),
-        clickUpgrades: clickUpgrades.map(cu => ({ id: cu.id, purchased: cu.purchased })),
         rebirthMultiplier,
-        lastSaved: Date.now()
+        rebirthCount,
+        username: playerUsername,
+        avatar: playerPicture || "",
+        lastUpdated: firebase.serverTimestamp()
       };
-      
-      // Always save to localStorage
+
+      // Save locally
       localStorage.setItem('businessEmpireSave', JSON.stringify(gameData));
-      
-      // If signed in, also save to cloud (simulated here with localStorage)
+
+      // Save to Firebase if signed in
       if (isSignedIn && userId) {
-        localStorage.setItem(`businessEmpireSave_${userId}`, JSON.stringify(gameData));
+        try {
+          await firebase.setDoc(firebase.doc(firebase.db, "players", userId), gameData);
+          console.log("Game saved to Firebase!");
+        } catch (error) {
+          console.error("Error saving to Firebase:", error);
+        }
       }
     }
     
@@ -1577,6 +1773,7 @@
       coinsPerSecond = gameData.coinsPerSecond || 0;
       highestVisibleUpgrade = gameData.highestVisibleUpgrade || 3;
       rebirthMultiplier = gameData.rebirthMultiplier || 1;
+      rebirthCount = gameData.rebirthCount || 0;
       
       // Merge upgrades
       if (gameData.upgrades) {
@@ -1651,10 +1848,41 @@
         document.querySelector(".upgrade")?.classList.remove("tutorial-highlight");
       }
     }
+
+    // Initialize game
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedUser = localStorage.getItem('googleUser');
+      if (savedUser) {
+        const user = JSON.parse(savedUser);
+        playerName = user.name;
+        playerEmail = user.email;
+        playerPicture = user.picture;
+        userId = user.id;
+        isSignedIn = true;
+        
+        // Update UI
+        document.querySelector('.g_id_signin').style.display = 'none';
+        document.getElementById('signOutBtn').style.display = "block";
+        
+        // Load username if exists
+        const userData = localStorage.getItem(`user_${userId}`);
+        if (userData) {
+          const user = JSON.parse(userData);
+          playerUsername = user.username || playerName;
+          updateUserDisplay();
+        }
+      }
+      
+      // Initialize game
+      renderUpgrades();
+      renderClickUpgrades();
+      setInterval(gameLoop, 1000);
+      updateClickerText();
+      loadGame();
+    });
   </script>
 </body>
 </html>
-
 
 
 
