@@ -467,6 +467,7 @@
       display: none;
       align-items: center;
       gap: 8px;
+      cursor: pointer;
     }
     
     .user-avatar {
@@ -479,6 +480,93 @@
     .user-name {
       font-size: 0.9rem;
       color: white;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .edit-icon {
+      width: 14px;
+      height: 14px;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+    
+    .user-name:hover .edit-icon {
+      opacity: 1;
+    }
+    
+    /* Username Modal */
+    .username-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 4000;
+      justify-content: center;
+      align-items: center;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    .username-content {
+      background: var(--card-bg);
+      padding: 2rem;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      position: relative;
+    }
+    
+    .username-title {
+      font-size: 1.5rem;
+      color: var(--accent);
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+    
+    .username-input {
+      width: 100%;
+      padding: 1rem;
+      margin: 1rem 0;
+      background: var(--bg);
+      border: 1px solid var(--primary);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 1rem;
+    }
+    
+    .username-submit {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.8rem 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.2s;
+      width: 100%;
+      margin-top: 1rem;
+    }
+    
+    .username-submit:hover {
+      background: var(--accent);
+    }
+    
+    .username-error {
+      color: #ff6b6b;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+      min-height: 20px;
+    }
+    
+    .username-rules {
+      font-size: 0.8rem;
+      color: var(--secondary);
+      margin-top: 1rem;
     }
     
     /* Modals */
@@ -794,7 +882,14 @@
       <!-- User Profile (shown after sign-in) -->
       <div class="user-profile" id="userProfile">
         <img class="user-avatar" id="userAvatar" src="" alt="Profile">
-        <span class="user-name" id="userName"></span>
+        <span class="user-name" id="userName">
+          <span id="displayName"></span>
+          <svg class="edit-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M13.293 6.293L7.586 12 7 14 9 13.414 14.707 7.707 13.293 6.293z" fill="currentColor"/>
+            <path d="M19 9.414L14.586 5 16 3.586 20.414 8 19 9.414z" fill="currentColor"/>
+            <path d="M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5v2H6v10h10v-4h2z" fill="currentColor"/>
+          </svg>
+        </span>
       </div>
       
       <button class="top-btn" id="upgradeClicksBtn">Upgrade Clicks</button>
@@ -821,6 +916,19 @@
     
     <h2>Business Upgrades</h2>
     <div class="upgrades-container" id="upgrades"></div>
+  </div>
+
+  <!-- Username Selection Modal -->
+  <div class="username-modal" id="usernameModal">
+    <div class="username-content">
+      <h3 class="username-title">Choose Your Username</h3>
+      <input type="text" class="username-input" id="usernameInput" placeholder="Enter username" maxlength="15">
+      <div class="username-error" id="usernameError"></div>
+      <div class="username-rules">
+        3-15 characters, letters and numbers only. Must be unique.
+      </div>
+      <button class="username-submit" id="usernameSubmit">Continue</button>
+    </div>
   </div>
 
   <!-- Click Upgrades Modal -->
@@ -876,39 +984,156 @@
 
   <script>
     // ======================
-    // UPDATED AUTH SYSTEM
+    // UPDATED AUTH SYSTEM WITH USERNAMES
     // ======================
     let playerName = "Guest";
+    let playerUsername = "";
     let playerEmail = "";
     let playerPicture = "";
     let isSignedIn = false;
-    let userId = ""; // Unique identifier for the user
+    let userId = "";
+    let allUsernames = {};
+    let usernameModalShown = false;
+
+    // Load all usernames from localStorage
+    function loadAllUsernames() {
+      const usernamesData = localStorage.getItem('businessEmpireUsernames');
+      if (usernamesData) {
+        allUsernames = JSON.parse(usernamesData);
+      }
+    }
+
+    // Save all usernames to localStorage
+    function saveAllUsernames() {
+      localStorage.setItem('businessEmpireUsernames', JSON.stringify(allUsernames));
+    }
+
+    // Check if username is valid and available
+    function validateUsername(username) {
+      const errorElement = document.getElementById('usernameError');
+      
+      // Check length
+      if (username.length < 3 || username.length > 15) {
+        errorElement.textContent = "Username must be 3-15 characters";
+        return false;
+      }
+      
+      // Check characters (alphanumeric only)
+      if (!/^[a-zA-Z0-9]+$/.test(username)) {
+        errorElement.textContent = "Only letters and numbers allowed";
+        return false;
+      }
+      
+      // Check if username is already taken (and not by current user)
+      if (allUsernames[username.toLowerCase()] && allUsernames[username.toLowerCase()] !== userId) {
+        errorElement.textContent = "Username already taken";
+        return false;
+      }
+      
+      errorElement.textContent = "";
+      return true;
+    }
+
+    // Set the player's username
+    function setUsername(username) {
+      // Remove old username from allUsernames if it exists
+      if (playerUsername && allUsernames[playerUsername.toLowerCase()] === userId) {
+        delete allUsernames[playerUsername.toLowerCase()];
+      }
+      
+      playerUsername = username;
+      document.getElementById('displayName').textContent = username;
+      
+      // Add new username to allUsernames
+      allUsernames[username.toLowerCase()] = userId;
+      saveAllUsernames();
+      
+      // Save to user profile
+      const userData = JSON.parse(localStorage.getItem('googleUser')) || {};
+      userData.username = username;
+      localStorage.setItem('googleUser', JSON.stringify(userData));
+      
+      // Close modal and enable game
+      document.getElementById('usernameModal').style.display = 'none';
+      usernameModalShown = false;
+      initializeGame();
+    }
+
+    // Show username selection modal
+    function showUsernameModal() {
+      const modal = document.getElementById('usernameModal');
+      const input = document.getElementById('usernameInput');
+      const submit = document.getElementById('usernameSubmit');
+      
+      modal.style.display = 'flex';
+      usernameModalShown = true;
+      input.focus();
+      
+      // Clear any previous input
+      input.value = '';
+      document.getElementById('usernameError').textContent = '';
+      
+      // Handle submit
+      submit.onclick = function() {
+        const username = input.value.trim();
+        if (validateUsername(username)) {
+          setUsername(username);
+        }
+      };
+      
+      // Also allow Enter key
+      input.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          const username = input.value.trim();
+          if (validateUsername(username)) {
+            setUsername(username);
+          }
+        }
+      });
+    }
+
+    // Handle username edit
+    function setupUsernameEdit() {
+      document.getElementById('userProfile').addEventListener('click', function() {
+        showUsernameModal();
+      });
+    }
 
     function handleGoogleSignIn(response) {
       const userData = parseJWT(response.credential);
       playerName = userData.name;
       playerEmail = userData.email;
       playerPicture = userData.picture;
-      userId = userData.sub; // Google's unique user ID
+      userId = userData.sub;
       isSignedIn = true;
       
       // Update UI
       document.querySelector('.g_id_signin').style.display = 'none';
       document.getElementById('userProfile').style.display = 'flex';
       document.getElementById('userAvatar').src = playerPicture;
-      document.getElementById('userName').textContent = playerName;
       document.getElementById('signOutBtn').style.display = "block";
       
       // Save user info to localStorage
-      localStorage.setItem('googleUser', JSON.stringify({
+      const userToSave = {
         name: playerName,
         email: playerEmail,
         picture: playerPicture,
         id: userId
-      }));
+      };
+      localStorage.setItem('googleUser', JSON.stringify(userToSave));
       
-      // Load the user's saved game from cloud/local storage
-      loadGame();
+      // Check if username already exists for this user
+      loadAllUsernames();
+      const savedUser = JSON.parse(localStorage.getItem('googleUser'));
+      if (savedUser && savedUser.username) {
+        // User already has a username
+        playerUsername = savedUser.username;
+        document.getElementById('displayName').textContent = playerUsername;
+        initializeGame();
+      } else {
+        // Need to select a username
+        showUsernameModal();
+      }
       
       console.log("Signed in as:", playerName);
     }
@@ -921,6 +1146,7 @@
       
       isSignedIn = false;
       playerName = "Guest";
+      playerUsername = "";
       userId = "";
       
       // Update UI
@@ -941,8 +1167,85 @@
       return JSON.parse(atob(base64));
     }
 
+    // Initialize the game after username is set
+    function initializeGame() {
+      setupEventListeners();
+      renderUpgrades();
+      renderClickUpgrades();
+      setInterval(gameLoop, 1000);
+      updateClickerText();
+      loadGame();
+    }
+
+    // Set up all event listeners
+    function setupEventListeners() {
+      clicker.addEventListener("click", handleClick);
+      upgradeClicksBtn.addEventListener("click", () => clickUpgradesModal.style.display = "flex");
+      codeBtn.addEventListener("click", () => codeModal.style.display = "flex");
+      signOutBtn.addEventListener("click", signOut);
+      
+      closeClickUpgrades.addEventListener("click", () => clickUpgradesModal.style.display = "none");
+      closeCodeModal.addEventListener("click", () => codeModal.style.display = "none");
+      
+      startTutorial.addEventListener("click", () => {
+        tutorialPrompt.style.display = "none";
+        startInteractiveTutorial();
+      });
+      
+      skipTutorial.addEventListener("click", () => {
+        tutorialPrompt.style.display = "none";
+      });
+      
+      nextStep1.addEventListener("click", () => {
+        tutorialStep1.style.display = "none";
+        tutorialStep = 2;
+        highlightClicker();
+      });
+      
+      submitCode.addEventListener("click", redeemCode);
+      codeInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          redeemCode();
+        }
+      });
+      
+      continueBtn.addEventListener("click", () => {
+        rebirthModal.style.display = "none";
+        renderUpgrades();
+        renderClickUpgrades();
+      });
+      
+      // Spacebar handling with cooldown
+      document.addEventListener("keydown", (e) => {
+        if (e.code === "Space" && !spacePressed && !spaceCooldown) {
+          e.preventDefault();
+          spacePressed = true;
+          handleClick();
+          
+          // Visual feedback
+          clicker.classList.add("pulse");
+          setTimeout(() => clicker.classList.remove("pulse"), 300);
+          
+          // Cooldown
+          spaceCooldown = true;
+          setTimeout(() => spaceCooldown = false, 300);
+        }
+      });
+      
+      document.addEventListener("keyup", (e) => {
+        if (e.code === "Space") {
+          spacePressed = false;
+        }
+      });
+      
+      // Set up username editing
+      setupUsernameEdit();
+    }
+
     // Check existing session on load
     window.addEventListener('DOMContentLoaded', () => {
+      loadAllUsernames();
+      
       const savedUser = localStorage.getItem('googleUser');
       if (savedUser) {
         const user = JSON.parse(savedUser);
@@ -950,24 +1253,19 @@
         playerEmail = user.email;
         playerPicture = user.picture;
         userId = user.id;
+        playerUsername = user.username || "";
         isSignedIn = true;
         
         // Update UI
         document.querySelector('.g_id_signin').style.display = 'none';
         document.getElementById('userProfile').style.display = 'flex';
         document.getElementById('userAvatar').src = playerPicture;
-        document.getElementById('userName').textContent = playerName;
+        document.getElementById('displayName').textContent = playerUsername || "Guest";
         document.getElementById('signOutBtn').style.display = "block";
       }
       
-      // Initialize your game
-      renderUpgrades();
-      renderClickUpgrades();
-      setInterval(gameLoop, 1000);
-      updateClickerText();
-      
-      // Load game data
-      loadGame();
+      // Initialize the game
+      initializeGame();
     });
 
     // ======================
@@ -1025,99 +1323,6 @@
     const clicker = document.getElementById("clicker");
     const upgradesContainer = document.getElementById("upgrades");
     const signOutBtn = document.getElementById("signOutBtn");
-    
-    // Modal elements
-    const upgradeClicksBtn = document.getElementById("upgradeClicksBtn");
-    const codeBtn = document.getElementById("codeBtn");
-    
-    const clickUpgradesModal = document.getElementById("clickUpgradesModal");
-    const closeClickUpgrades = document.getElementById("closeClickUpgrades");
-    const clickUpgradesGrid = document.getElementById("clickUpgradesGrid");
-    
-    const codeModal = document.getElementById("codeModal");
-    const closeCodeModal = document.getElementById("closeCodeModal");
-    const codeInput = document.getElementById("codeInput");
-    const submitCode = document.getElementById("submitCode");
-    const codeMessage = document.getElementById("codeMessage");
-    
-    // Tutorial elements
-    const tutorialPrompt = document.getElementById("tutorialPrompt");
-    const startTutorial = document.getElementById("startTutorial");
-    const skipTutorial = document.getElementById("skipTutorial");
-    const tutorialOverlay = document.getElementById("tutorialOverlay");
-    const tutorialStep1 = document.getElementById("tutorialStep1");
-    const nextStep1 = document.getElementById("nextStep1");
-    
-    // Rebirth elements
-    const rebirthModal = document.getElementById("rebirthModal");
-    const continueBtn = document.getElementById("continueBtn");
-    
-    // Event listeners
-    clicker.addEventListener("click", handleClick);
-    
-    // Button listeners
-    upgradeClicksBtn.addEventListener("click", () => clickUpgradesModal.style.display = "flex");
-    codeBtn.addEventListener("click", () => codeModal.style.display = "flex");
-    signOutBtn.addEventListener("click", signOut);
-    
-    // Close modal listeners
-    closeClickUpgrades.addEventListener("click", () => clickUpgradesModal.style.display = "none");
-    closeCodeModal.addEventListener("click", () => codeModal.style.display = "none");
-    
-    // Tutorial prompt listeners
-    startTutorial.addEventListener("click", () => {
-      tutorialPrompt.style.display = "none";
-      startInteractiveTutorial();
-    });
-    
-    skipTutorial.addEventListener("click", () => {
-      tutorialPrompt.style.display = "none";
-    });
-    
-    // Tutorial navigation
-    nextStep1.addEventListener("click", () => {
-      tutorialStep1.style.display = "none";
-      tutorialStep = 2;
-      highlightClicker();
-    });
-    
-    // Code redemption
-    submitCode.addEventListener("click", redeemCode);
-    codeInput.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") {
-        redeemCode();
-      }
-    });
-    
-    // Rebirth continue button
-    continueBtn.addEventListener("click", () => {
-      rebirthModal.style.display = "none";
-      renderUpgrades();
-      renderClickUpgrades();
-    });
-    
-    // Spacebar handling with cooldown
-    document.addEventListener("keydown", (e) => {
-      if (e.code === "Space" && !spacePressed && !spaceCooldown) {
-        e.preventDefault();
-        spacePressed = true;
-        handleClick();
-        
-        // Visual feedback
-        clicker.classList.add("pulse");
-        setTimeout(() => clicker.classList.remove("pulse"), 300);
-        
-        // Cooldown
-        spaceCooldown = true;
-        setTimeout(() => spaceCooldown = false, 300);
-      }
-    });
-    
-    document.addEventListener("keyup", (e) => {
-      if (e.code === "Space") {
-        spacePressed = false;
-      }
-    });
     
     // Game functions
     function gameLoop() {
