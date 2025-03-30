@@ -659,6 +659,14 @@
       flex-shrink: 0;
     }
     
+    .leaderboard-combined {
+      color: var(--accent);
+      font-weight: bold;
+      min-width: 80px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    
     /* Podium positions */
     .leaderboard-entry:nth-child(1) {
       background: linear-gradient(90deg, rgba(255, 215, 0, 0.1), transparent);
@@ -1238,8 +1246,7 @@
       <button class="close-modal" id="closeLeaderboard">&times;</button>
       <h3 class="modal-title">Top Business Tycoons</h3>
       <div class="leaderboard-tabs">
-        <button class="tab-btn active" data-tab="coins">Highest Net Worth</button>
-        <button class="tab-btn" data-tab="rebirths">Most Rebirths</button>
+        <button class="tab-btn active" data-tab="combined">Global Leaderboard</button>
       </div>
       <div class="leaderboard-container" id="leaderboardList">
         <div class="loading-spinner"></div>
@@ -1345,7 +1352,7 @@
     let isSignedIn = false;
     let userId = "";
     let rebirthCount = 0;
-    let currentTab = 'coins';
+    let currentTab = 'combined';
     const JSONBIN_BIN_ID = "67e767bc8960c979a57a8524";
     const JSONBIN_API_KEY = "$2a$10$OGaFtpC7qZuCcWqcFuuVoeo5qZL2DTw30lpCqPuQdIDXDCPON1vxu";
     let leaderboardData = [];
@@ -1831,13 +1838,11 @@
         return;
       }
 
-      // Sort based on current tab
+      // Sort based on combined score (coins + rebirths*1M)
       const sortedData = [...leaderboardData].sort((a, b) => {
-        if (currentTab === 'coins') {
-          return (b.coins || 0) - (a.coins || 0);
-        } else {
-          return (b.rebirthCount || 0) - (a.rebirthCount || 0);
-        }
+        const aScore = (a.coins || 0) + (a.rebirthCount || 0) * 1000000;
+        const bScore = (b.coins || 0) + (b.rebirthCount || 0) * 1000000;
+        return bScore - aScore;
       });
 
       renderLeaderboard(sortedData);
@@ -1847,19 +1852,17 @@
       const leaderboardList = document.getElementById("leaderboardList");
       leaderboardList.innerHTML = '';
 
-      // Filter out banned users and those with no coins
+      // Filter out banned users and those with no coins or rebirths
       const filteredData = data.filter(user => {
         const isBanned = localStorage.getItem(`banned_${user.id}`) === 'true';
-        return !isBanned && (user.coins > 0 || user.rebirthCount > 0);
+        return !isBanned && ((user.coins > 0 || user.rebirthCount > 0));
       });
 
       // Sort again after filtering
       const sortedData = [...filteredData].sort((a, b) => {
-        if (currentTab === 'coins') {
-          return (b.coins || 0) - (a.coins || 0);
-        } else {
-          return (b.rebirthCount || 0) - (a.rebirthCount || 0);
-        }
+        const aScore = (a.coins || 0) + (a.rebirthCount || 0) * 1000000;
+        const bScore = (b.coins || 0) + (b.rebirthCount || 0) * 1000000;
+        return bScore - aScore;
       });
 
       // Show top 20
@@ -1867,16 +1870,17 @@
         const entryEl = document.createElement('div');
         entryEl.className = 'leaderboard-entry';
         
+        const score = (entry.coins || 0) + (entry.rebirthCount || 0) * 1000000;
+        
         entryEl.innerHTML = `
           <div class="leaderboard-rank">${index + 1}</div>
           <div class="leaderboard-user">
             ${entry.avatar ? `<img src="${entry.avatar}" class="leaderboard-avatar" alt="${entry.username}">` : ''}
             <span>${entry.username || "Anonymous"}</span>
           </div>
-          ${currentTab === 'coins' ? 
-            `<div class="leaderboard-score">${Math.floor(entry.coins || 0).toLocaleString()} coins</div>` :
-            `<div class="leaderboard-rebirths">${entry.rebirthCount || 0} rebirths</div>`
-          }
+          <div class="leaderboard-combined">${formatScore(score)}</div>
+          <div class="leaderboard-score">${Math.floor(entry.coins || 0).toLocaleString()}</div>
+          <div class="leaderboard-rebirths">${entry.rebirthCount || 0}</div>
         `;
 
         // Highlight current user
@@ -1899,22 +1903,50 @@
             entryEl.style.background = 'rgba(108, 92, 231, 0.2)';
             entryEl.style.borderLeft = '3px solid var(--primary)';
             
+            const score = (userEntry.coins || 0) + (userEntry.rebirthCount || 0) * 1000000;
+            
             entryEl.innerHTML = `
               <div class="leaderboard-rank">${userPosition + 1}</div>
               <div class="leaderboard-user">
                 ${userEntry.avatar ? `<img src="${userEntry.avatar}" class="leaderboard-avatar">` : ''}
                 <span>${userEntry.username || "You"}</span>
               </div>
-              ${currentTab === 'coins' ? 
-                `<div class="leaderboard-score">${Math.floor(userEntry.coins || 0).toLocaleString()} coins</div>` :
-                `<div class="leaderboard-rebirths">${userEntry.rebirthCount || 0} rebirths</div>`
-              }
+              <div class="leaderboard-combined">${formatScore(score)}</div>
+              <div class="leaderboard-score">${Math.floor(userEntry.coins || 0).toLocaleString()}</div>
+              <div class="leaderboard-rebirths">${userEntry.rebirthCount || 0}</div>
             `;
             
             leaderboardList.appendChild(entryEl);
           }
         }
       }
+      
+      // Add headers
+      const headerEl = document.createElement('div');
+      headerEl.className = 'leaderboard-entry';
+      headerEl.style.fontWeight = 'bold';
+      headerEl.style.borderBottom = '2px solid var(--accent)';
+      headerEl.innerHTML = `
+        <div class="leaderboard-rank">#</div>
+        <div class="leaderboard-user">Player</div>
+        <div class="leaderboard-combined">Score</div>
+        <div class="leaderboard-score">Coins</div>
+        <div class="leaderboard-rebirths">Rebirths</div>
+      `;
+      leaderboardList.insertBefore(headerEl, leaderboardList.firstChild);
+    }
+    
+    function formatScore(score) {
+      if (score >= 1000000000) {
+        return (score / 1000000000).toFixed(1) + 'B';
+      }
+      if (score >= 1000000) {
+        return (score / 1000000).toFixed(1) + 'M';
+      }
+      if (score >= 1000) {
+        return (score / 1000).toFixed(1) + 'K';
+      }
+      return score.toLocaleString();
     }
     
     function startCountdown() {
@@ -2001,8 +2033,12 @@
         return;
       }
       
-      // Sort users by coins
-      const sortedUsers = [...leaderboardData].sort((a, b) => (b.coins || 0) - (a.coins || 0));
+      // Sort users by combined score
+      const sortedUsers = [...leaderboardData].sort((a, b) => {
+        const aScore = (a.coins || 0) + (a.rebirthCount || 0) * 1000000;
+        const bScore = (b.coins || 0) + (b.rebirthCount || 0) * 1000000;
+        return bScore - aScore;
+      });
       
       sortedUsers.forEach(user => {
         const isBanned = localStorage.getItem(`banned_${user.id}`) === 'true';
@@ -2016,7 +2052,7 @@
             <span class="admin-username">${user.username || "Anonymous"}</span>
           </div>
           <div class="admin-user-actions">
-            <button class="admin-action-btn edit-btn" data-id="${user.id}">Edit Coins</button>
+            <button class="admin-action-btn edit-btn" data-id="${user.id}">Edit</button>
             ${isBanned ? 
               `<button class="admin-action-btn unban-btn" data-id="${user.id}">Unban</button>` : 
               `<button class="admin-action-btn ban-btn" data-id="${user.id}">Ban</button>`
@@ -2037,7 +2073,7 @@
       });
       
       document.querySelectorAll('.edit-btn').forEach(btn => {
-        btn.addEventListener('click', () => editUserCoins(btn.dataset.id));
+        btn.addEventListener('click', () => editUser(btn.dataset.id));
       });
     }
     
@@ -2047,8 +2083,12 @@
         const userStatus = document.getElementById("userStatus");
         userStatus.textContent = 'User banned successfully';
         userStatus.className = 'admin-status success';
+        
+        // Update both admin panel and leaderboard immediately
         renderUserList();
-        updateLeaderboardDisplay();
+        if (document.getElementById("leaderboardModal").style.display === 'flex') {
+          updateLeaderboardDisplay();
+        }
       } catch (error) {
         console.error("Error banning user:", error);
       }
@@ -2060,19 +2100,23 @@
         const userStatus = document.getElementById("userStatus");
         userStatus.textContent = 'User unbanned successfully';
         userStatus.className = 'admin-status success';
+        
+        // Update both admin panel and leaderboard immediately
         renderUserList();
-        updateLeaderboardDisplay();
+        if (document.getElementById("leaderboardModal").style.display === 'flex') {
+          updateLeaderboardDisplay();
+        }
       } catch (error) {
         console.error("Error unbanning user:", error);
       }
     }
     
-    function editUserCoins(userId) {
+    function editUser(userId) {
       try {
         const user = leaderboardData.find(u => u.id === userId);
         if (!user) return;
         
-        const newCoins = prompt(`Enter new coin amount for ${user.username || 'user'}:`, user.coins || 0);
+        const newCoins = prompt(`Enter new coins for ${user.username || 'user'}:`, user.coins || 0);
         if (newCoins === null) return;
         
         const coinsValue = newCoins.toLowerCase() === 'infinity' ? Infinity : parseFloat(newCoins);
@@ -2083,7 +2127,19 @@
           return;
         }
         
+        const newRebirths = prompt(`Enter new rebirth count for ${user.username || 'user'}:`, user.rebirthCount || 0);
+        if (newRebirths === null) return;
+        
+        const rebirthsValue = parseInt(newRebirths);
+        if (isNaN(rebirthsValue)) {
+          const userStatus = document.getElementById("userStatus");
+          userStatus.textContent = 'Invalid rebirth count';
+          userStatus.className = 'admin-status error';
+          return;
+        }
+        
         user.coins = coinsValue;
+        user.rebirthCount = rebirthsValue;
         
         // Update local data
         const cached = localStorage.getItem('leaderboardCache');
@@ -2092,6 +2148,7 @@
           const userIndex = parsed.data.findIndex(u => u.id === userId);
           if (userIndex !== -1) {
             parsed.data[userIndex].coins = coinsValue;
+            parsed.data[userIndex].rebirthCount = rebirthsValue;
             localStorage.setItem('leaderboardCache', JSON.stringify(parsed));
           }
         }
@@ -2100,25 +2157,30 @@
         const userIndex = leaderboardData.findIndex(u => u.id === userId);
         if (userIndex !== -1) {
           leaderboardData[userIndex].coins = coinsValue;
+          leaderboardData[userIndex].rebirthCount = rebirthsValue;
         }
         
         // Update cloud data if this is the current user
         if (userId === this.userId) {
           coins = coinsValue;
+          rebirthCount = rebirthsValue;
           updateDisplay();
           saveGame();
         }
         
         const userStatus = document.getElementById("userStatus");
-        userStatus.textContent = `Updated ${user.username || 'user'}'s coins to ${coinsValue}`;
+        userStatus.textContent = `Updated ${user.username || 'user'}'s stats`;
         userStatus.className = 'admin-status success';
         
         // Update leaderboard display if open
         if (document.getElementById("leaderboardModal").style.display === 'flex') {
           updateLeaderboardDisplay();
         }
+        
+        // Update user list
+        renderUserList();
       } catch (error) {
-        console.error("Error editing user coins:", error);
+        console.error("Error editing user:", error);
       }
     }
     
@@ -2142,9 +2204,14 @@
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         localStorage.setItem('adminBroadcastMessage', message);
+        localStorage.setItem('adminBroadcastTime', Date.now().toString());
+        
         messageStatus.textContent = 'Message sent to all players';
         messageStatus.className = 'admin-status success';
         adminMessage.value = '';
+        
+        // Show the message immediately if on the game page
+        showBroadcastMessage();
       } catch (error) {
         console.error("Error sending message:", error);
         messageStatus.textContent = 'Error sending message';
@@ -2153,6 +2220,38 @@
         const sendBtn = document.getElementById("sendMessageBtn");
         sendBtn.classList.remove('btn-loading');
         sendBtn.disabled = false;
+      }
+    }
+    
+    function showBroadcastMessage() {
+      const message = localStorage.getItem('adminBroadcastMessage');
+      if (message) {
+        // Create or update broadcast message display
+        let broadcastEl = document.getElementById('broadcastMessage');
+        if (!broadcastEl) {
+          broadcastEl = document.createElement('div');
+          broadcastEl.id = 'broadcastMessage';
+          broadcastEl.style.position = 'fixed';
+          broadcastEl.style.bottom = '20px';
+          broadcastEl.style.left = '50%';
+          broadcastEl.style.transform = 'translateX(-50%)';
+          broadcastEl.style.backgroundColor = 'var(--primary)';
+          broadcastEl.style.color = 'white';
+          broadcastEl.style.padding = '10px 20px';
+          broadcastEl.style.borderRadius = '8px';
+          broadcastEl.style.zIndex = '5000';
+          broadcastEl.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
+          broadcastEl.style.maxWidth = '90%';
+          broadcastEl.style.textAlign = 'center';
+          document.body.appendChild(broadcastEl);
+        }
+        
+        broadcastEl.textContent = message;
+        
+        // Auto-hide after 10 seconds
+        setTimeout(() => {
+          broadcastEl.style.display = 'none';
+        }, 10000);
       }
     }
     
@@ -2508,6 +2607,9 @@
             sessionStorage.setItem('patchNotesShown', 'true');
           }, 1200);
         }
+        
+        // Check for broadcast messages
+        showBroadcastMessage();
         
         // Add all button event listeners
         setupEventListeners();
