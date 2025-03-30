@@ -1114,6 +1114,55 @@
       from { transform: rotate(0turn); }
       to { transform: rotate(1turn); }
     }
+
+    /* Broadcast Message Style */
+    .broadcast-message {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(0, 0, 0, 0.8);
+      color: #ff6b6b;
+      font-size: 1.5rem;
+      font-weight: bold;
+      text-align: center;
+      padding: 1rem 2rem;
+      border-radius: 8px;
+      z-index: 5000;
+      max-width: 90%;
+      box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+      animation: fadeIn 0.3s ease;
+    }
+
+    /* Banned User Style */
+    .banned-message {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      color: #ff6b6b;
+      font-size: 2rem;
+      text-align: center;
+      padding: 2rem;
+      flex-direction: column;
+    }
+
+    .banned-message button {
+      margin-top: 2rem;
+      padding: 1rem 2rem;
+      background: #ff6b6b;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
   </style>
   
   <!-- Google Identity Services -->
@@ -1413,7 +1462,7 @@
     ];
 
     // ======================
-    // IMPROVED AUTHENTICATION SYSTEM
+    // IMPROVED AUTHENTICATION SYSTEM WITH BAN CHECK
     // ======================
     function handleGoogleSignIn(response) {
       try {
@@ -1423,6 +1472,12 @@
         playerPicture = userData.picture;
         userId = userData.sub;
         isSignedIn = true;
+        
+        // First check if user is banned
+        if (localStorage.getItem(`banned_${userId}`)) {
+          showBannedMessage();
+          return;
+        }
         
         // Check if admin
         if (playerEmail === "yhpatel@lcstudents.com") {
@@ -1468,6 +1523,25 @@
         console.error("Error handling Google sign-in:", error);
         alert("There was an error signing in. Please try again.");
       }
+    }
+
+    function showBannedMessage() {
+      // Create banned message overlay
+      const bannedEl = document.createElement('div');
+      bannedEl.className = 'banned-message';
+      bannedEl.innerHTML = `
+        <h2>You have been banned!</h2>
+        <p>Your account has been restricted from playing this game.</p>
+        <button id="signOutAfterBan">Sign Out</button>
+      `;
+      document.body.appendChild(bannedEl);
+      
+      // Add sign out button listener
+      document.getElementById('signOutAfterBan').addEventListener('click', signOut);
+      
+      // Hide all game elements
+      document.querySelector('.container').style.display = 'none';
+      document.querySelector('.top-buttons').style.display = 'none';
     }
 
     function checkUsernameUniqueness(username) {
@@ -1580,6 +1654,17 @@
         document.getElementById('adminBtn').style.display = "none";
         
         localStorage.removeItem('googleUser');
+        
+        // Remove banned message if exists
+        const bannedEl = document.querySelector('.banned-message');
+        if (bannedEl) {
+          bannedEl.remove();
+        }
+        
+        // Show game elements again
+        document.querySelector('.container').style.display = 'block';
+        document.querySelector('.top-buttons').style.display = 'flex';
+        
         loadGame();
       } catch (error) {
         console.error("Error signing out:", error);
@@ -1593,7 +1678,7 @@
     }
 
     // ======================
-    // ENHANCED SAVE SYSTEM
+    // ENHANCED SAVE SYSTEM WITH ACCOUNT SWITCHING SUPPORT
     // ======================
     function startAutoSave() {
       // Clear any existing interval
@@ -1686,9 +1771,21 @@
 
     function loadGame() {
       try {
+        // Check if we have a saved game for this user
         const localSave = localStorage.getItem('businessEmpireSave');
         if (localSave) {
-          loadGameData(JSON.parse(localSave));
+          const savedData = JSON.parse(localSave);
+          
+          // Only load if the saved data matches the current user
+          if (!isSignedIn || !userId || savedData.id === userId) {
+            loadGameData(savedData);
+          } else {
+            // Different user - start fresh
+            resetGameState();
+          }
+        } else {
+          // No saved game - start fresh
+          resetGameState();
         }
         
         // Try to load cached leaderboard data
@@ -1707,7 +1804,31 @@
         }
       } catch (error) {
         console.error("Error loading game:", error);
+        resetGameState();
       }
+    }
+    
+    function resetGameState() {
+      coins = 0;
+      coinsPerClick = 1;
+      coinsPerSecond = 0;
+      highestVisibleUpgrade = 3;
+      rebirthMultiplier = 1;
+      rebirthCount = 0;
+      
+      // Reset upgrades
+      upgrades.forEach(upgrade => {
+        upgrade.owned = 0;
+      });
+      
+      // Reset click upgrades
+      clickUpgrades.forEach(upgrade => {
+        upgrade.purchased = false;
+      });
+      
+      updateDisplay();
+      renderUpgrades();
+      renderClickUpgrades();
     }
     
     function loadGameData(gameData) {
@@ -1745,7 +1866,7 @@
     }
 
     // ======================
-    // IMPROVED LEADERBOARD SYSTEM
+    // IMPROVED LEADERBOARD SYSTEM WITH REBIRTH SORTING
     // ======================
     async function updateLeaderboard() {
       const now = Date.now();
@@ -1838,11 +1959,14 @@
         return;
       }
 
-      // Sort based on combined score (coins + rebirths*1M)
+      // Sort based on rebirths first, then coins
       const sortedData = [...leaderboardData].sort((a, b) => {
-        const aScore = (a.coins || 0) + (a.rebirthCount || 0) * 1000000;
-        const bScore = (b.coins || 0) + (b.rebirthCount || 0) * 1000000;
-        return bScore - aScore;
+        // First sort by rebirths (descending)
+        if ((b.rebirthCount || 0) !== (a.rebirthCount || 0)) {
+          return (b.rebirthCount || 0) - (a.rebirthCount || 0);
+        }
+        // If rebirths are equal, sort by coins (descending)
+        return (b.coins || 0) - (a.coins || 0);
       });
 
       renderLeaderboard(sortedData);
@@ -1858,11 +1982,12 @@
         return !isBanned && ((user.coins > 0 || user.rebirthCount > 0));
       });
 
-      // Sort again after filtering
+      // Sort again after filtering (same logic as above)
       const sortedData = [...filteredData].sort((a, b) => {
-        const aScore = (a.coins || 0) + (a.rebirthCount || 0) * 1000000;
-        const bScore = (b.coins || 0) + (b.rebirthCount || 0) * 1000000;
-        return bScore - aScore;
+        if ((b.rebirthCount || 0) !== (a.rebirthCount || 0)) {
+          return (b.rebirthCount || 0) - (a.rebirthCount || 0);
+        }
+        return (b.coins || 0) - (a.coins || 0);
       });
 
       // Show top 20
@@ -1870,17 +1995,14 @@
         const entryEl = document.createElement('div');
         entryEl.className = 'leaderboard-entry';
         
-        const score = (entry.coins || 0) + (entry.rebirthCount || 0) * 1000000;
-        
         entryEl.innerHTML = `
           <div class="leaderboard-rank">${index + 1}</div>
           <div class="leaderboard-user">
             ${entry.avatar ? `<img src="${entry.avatar}" class="leaderboard-avatar" alt="${entry.username}">` : ''}
             <span>${entry.username || "Anonymous"}</span>
           </div>
-          <div class="leaderboard-combined">${formatScore(score)}</div>
-          <div class="leaderboard-score">${Math.floor(entry.coins || 0).toLocaleString()}</div>
           <div class="leaderboard-rebirths">${entry.rebirthCount || 0}</div>
+          <div class="leaderboard-score">${Math.floor(entry.coins || 0).toLocaleString()}</div>
         `;
 
         // Highlight current user
@@ -1903,17 +2025,14 @@
             entryEl.style.background = 'rgba(108, 92, 231, 0.2)';
             entryEl.style.borderLeft = '3px solid var(--primary)';
             
-            const score = (userEntry.coins || 0) + (userEntry.rebirthCount || 0) * 1000000;
-            
             entryEl.innerHTML = `
               <div class="leaderboard-rank">${userPosition + 1}</div>
               <div class="leaderboard-user">
                 ${userEntry.avatar ? `<img src="${userEntry.avatar}" class="leaderboard-avatar">` : ''}
                 <span>${userEntry.username || "You"}</span>
               </div>
-              <div class="leaderboard-combined">${formatScore(score)}</div>
-              <div class="leaderboard-score">${Math.floor(userEntry.coins || 0).toLocaleString()}</div>
               <div class="leaderboard-rebirths">${userEntry.rebirthCount || 0}</div>
+              <div class="leaderboard-score">${Math.floor(userEntry.coins || 0).toLocaleString()}</div>
             `;
             
             leaderboardList.appendChild(entryEl);
@@ -1929,24 +2048,10 @@
       headerEl.innerHTML = `
         <div class="leaderboard-rank">#</div>
         <div class="leaderboard-user">Player</div>
-        <div class="leaderboard-combined">Score</div>
-        <div class="leaderboard-score">Coins</div>
         <div class="leaderboard-rebirths">Rebirths</div>
+        <div class="leaderboard-score">Coins</div>
       `;
       leaderboardList.insertBefore(headerEl, leaderboardList.firstChild);
-    }
-    
-    function formatScore(score) {
-      if (score >= 1000000000) {
-        return (score / 1000000000).toFixed(1) + 'B';
-      }
-      if (score >= 1000000) {
-        return (score / 1000000).toFixed(1) + 'M';
-      }
-      if (score >= 1000) {
-        return (score / 1000).toFixed(1) + 'K';
-      }
-      return score.toLocaleString();
     }
     
     function startCountdown() {
@@ -1981,7 +2086,7 @@
     }
 
     // ======================
-    // ADMIN PANEL FUNCTIONS
+    // ADMIN PANEL FUNCTIONS WITH IMPROVED BROADCAST
     // ======================
     async function loadUserList() {
       const userList = document.getElementById("userList");
@@ -2033,11 +2138,12 @@
         return;
       }
       
-      // Sort users by combined score
+      // Sort users by rebirths then coins
       const sortedUsers = [...leaderboardData].sort((a, b) => {
-        const aScore = (a.coins || 0) + (a.rebirthCount || 0) * 1000000;
-        const bScore = (b.coins || 0) + (b.rebirthCount || 0) * 1000000;
-        return bScore - aScore;
+        if ((b.rebirthCount || 0) !== (a.rebirthCount || 0)) {
+          return (b.rebirthCount || 0) - (a.rebirthCount || 0);
+        }
+        return (b.coins || 0) - (a.coins || 0);
       });
       
       sortedUsers.forEach(user => {
@@ -2088,6 +2194,11 @@
         renderUserList();
         if (document.getElementById("leaderboardModal").style.display === 'flex') {
           updateLeaderboardDisplay();
+        }
+        
+        // If banning current user, show banned message
+        if (userId === this.userId) {
+          showBannedMessage();
         }
       } catch (error) {
         console.error("Error banning user:", error);
@@ -2210,7 +2321,7 @@
         messageStatus.className = 'admin-status success';
         adminMessage.value = '';
         
-        // Show the message immediately if on the game page
+        // Show the message immediately
         showBroadcastMessage();
       } catch (error) {
         console.error("Error sending message:", error);
@@ -2226,31 +2337,22 @@
     function showBroadcastMessage() {
       const message = localStorage.getItem('adminBroadcastMessage');
       if (message) {
-        // Create or update broadcast message display
-        let broadcastEl = document.getElementById('broadcastMessage');
-        if (!broadcastEl) {
-          broadcastEl = document.createElement('div');
-          broadcastEl.id = 'broadcastMessage';
-          broadcastEl.style.position = 'fixed';
-          broadcastEl.style.bottom = '20px';
-          broadcastEl.style.left = '50%';
-          broadcastEl.style.transform = 'translateX(-50%)';
-          broadcastEl.style.backgroundColor = 'var(--primary)';
-          broadcastEl.style.color = 'white';
-          broadcastEl.style.padding = '10px 20px';
-          broadcastEl.style.borderRadius = '8px';
-          broadcastEl.style.zIndex = '5000';
-          broadcastEl.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
-          broadcastEl.style.maxWidth = '90%';
-          broadcastEl.style.textAlign = 'center';
-          document.body.appendChild(broadcastEl);
+        // Remove any existing broadcast message
+        const existingMessage = document.getElementById('broadcastMessage');
+        if (existingMessage) {
+          existingMessage.remove();
         }
         
+        // Create new broadcast message display
+        const broadcastEl = document.createElement('div');
+        broadcastEl.id = 'broadcastMessage';
+        broadcastEl.className = 'broadcast-message';
         broadcastEl.textContent = message;
+        document.body.appendChild(broadcastEl);
         
         // Auto-hide after 10 seconds
         setTimeout(() => {
-          broadcastEl.style.display = 'none';
+          broadcastEl.remove();
         }, 10000);
       }
     }
@@ -2567,6 +2669,12 @@
           playerPicture = user.picture;
           userId = user.id;
           isSignedIn = true;
+          
+          // First check if user is banned
+          if (localStorage.getItem(`banned_${userId}`)) {
+            showBannedMessage();
+            return;
+          }
           
           // Check if admin
           if (playerEmail === "yhpatel@lcstudents.com") {
