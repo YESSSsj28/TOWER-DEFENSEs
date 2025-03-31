@@ -972,19 +972,19 @@
     /* Broadcast Message Style */
     .broadcast-message {
       position: fixed;
-      top: 50%;
+      top: 20px;
       left: 50%;
-      transform: translate(-50%, -50%);
+      transform: translateX(-50%);
       background-color: rgba(0, 0, 0, 0.9);
       color: #ff6b6b;
-      font-size: 1.5rem;
+      font-size: 1.2rem;
       font-weight: bold;
       text-align: center;
-      padding: 1.5rem 2rem;
-      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
       z-index: 5000;
       max-width: 90%;
-      box-shadow: 0 0 30px rgba(255, 0, 0, 0.5);
+      box-shadow: 0 0 20px rgba(255, 0, 0, 0.4);
       animation: fadeIn 0.3s ease;
       border: 2px solid #ff6b6b;
       backdrop-filter: blur(4px);
@@ -1078,6 +1078,58 @@
     
     .purchase-effect {
       animation: purchaseEffect 0.3s ease;
+    }
+
+    /* Tutorial Modal */
+    .tutorial-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    .tutorial-content {
+      background: var(--card-bg);
+      padding: 2rem;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      position: relative;
+      border: 1px solid var(--border);
+    }
+    
+    .tutorial-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 2rem;
+    }
+    
+    .tutorial-btn {
+      padding: 0.75rem 1.5rem;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .skip-tutorial {
+      background: var(--danger);
+      color: white;
+      border: none;
+    }
+    
+    .next-tutorial {
+      background: var(--accent);
+      color: white;
+      border: none;
     }
 
     /* Responsive adjustments */
@@ -1254,11 +1306,18 @@
     </div>
   </div>
 
-  <!-- Broadcast Message Display -->
-  <div id="broadcastMessage" style="display: none;"></div>
-
-  <!-- Banned Message Display -->
-  <div id="bannedMessage" style="display: none;"></div>
+  <!-- Tutorial Modal -->
+  <div class="tutorial-modal" id="tutorialModal">
+    <div class="tutorial-content">
+      <h3 class="modal-title">Welcome to Business Empire Clicker!</h3>
+      <p>Click the button to earn coins. Use those coins to buy upgrades that generate coins automatically.</p>
+      <p>As you progress, you'll unlock more powerful businesses and upgrades.</p>
+      <div class="tutorial-buttons">
+        <button class="tutorial-btn skip-tutorial" id="skipTutorial">Skip</button>
+        <button class="tutorial-btn next-tutorial" id="nextTutorial">Got It!</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     // ======================
@@ -1285,6 +1344,7 @@
     let saveInterval;
     let messageCheckInterval;
     let lastBroadcastCheck = 0;
+    let hasSeenTutorial = localStorage.getItem('hasSeenTutorial') === 'true';
 
     // Game state variables
     let coins = 0;
@@ -1397,11 +1457,26 @@
           // Start frequent saving and message checking
           startAutoSave();
           startMessageChecking();
+          
+          // Show tutorial if first time
+          if (!hasSeenTutorial) {
+            showTutorial();
+          }
         });
       } catch (error) {
         console.error("Error handling Google sign-in:", error);
         alert("There was an error signing in. Please try again.");
       }
+    }
+
+    function showTutorial() {
+      document.getElementById("tutorialModal").style.display = "flex";
+    }
+
+    function closeTutorial() {
+      document.getElementById("tutorialModal").style.display = "none";
+      localStorage.setItem('hasSeenTutorial', 'true');
+      hasSeenTutorial = true;
     }
 
     async function checkBanStatus() {
@@ -2391,10 +2466,10 @@
       broadcastEl.textContent = message;
       document.body.appendChild(broadcastEl);
       
-      // Auto-hide after 10 seconds
+      // Auto-hide after 3 seconds
       setTimeout(() => {
         broadcastEl.remove();
-      }, 10000);
+      }, 3000);
     }
     
     function saveAdminSettings() {
@@ -2712,6 +2787,11 @@
             // Start auto-save and message checking
             startAutoSave();
             startMessageChecking();
+            
+            // Show tutorial if first time
+            if (!hasSeenTutorial) {
+              showTutorial();
+            }
           });
         }
         
@@ -2760,6 +2840,10 @@
       document.getElementById('closeAdminPanel').addEventListener('click', () => {
         document.getElementById("adminPanel").style.display = "none";
       });
+      
+      // Tutorial buttons
+      document.getElementById('skipTutorial').addEventListener('click', closeTutorial);
+      document.getElementById('nextTutorial').addEventListener('click', closeTutorial);
       
       // Admin panel tab switching
       document.querySelectorAll('.admin-tab').forEach(tab => {
