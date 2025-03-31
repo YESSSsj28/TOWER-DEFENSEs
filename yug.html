@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Refresh Button</title>
+  <style>
+    .admin-refresh-btn {
+      background: #f59e0b;
+      color: white;
+      border: none;
+      padding: 0.6rem 1rem;
+      border-radius: 24px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      border: 1px solid #d97706;
+      white-space: nowrap;
+      display: none; /* Hidden by default */
+    }
+    
+    .admin-refresh-btn:hover {
+      background: #d97706;
+    }
+  </style>
+</head>
+<body>
+  <!-- Add this button next to your admin panel button -->
+  <button class="admin-refresh-btn" id="refreshAllBtn">Refresh All Players</button>
+
+  <script>
+    // Global variables
+    let isAdmin = false; // Set this based on your admin check
+    const JSONBIN_BIN_ID = "67e767bc8960c979a57a8524";
+    const JSONBIN_API_KEY = "$2a$10$OGaFtpC7qZuCcWqcFuuVoeo5qZL2DTw30lpCqPuQdIDXDCPON1vxu";
+
+    // Function to check if user is admin (replace with your actual admin check)
+    function checkAdminStatus() {
+      // Example: Check if user email matches admin email
+      const adminEmail = "yhpatel@lcstudents.com";
+      const userEmail = localStorage.getItem('userEmail') || "";
+      isAdmin = userEmail === adminEmail;
+      
+      if (isAdmin) {
+        document.getElementById('refreshAllBtn').style.display = "block";
+      }
+    }
+
+    // Function to send refresh command to all players
+    async function refreshAllPlayers() {
+      if (!isAdmin) return;
+      
+      try {
+        // Get current data
+        const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+          headers: {
+            'X-Master-Key': JSONBIN_API_KEY
+          }
+        });
+        
+        let allData = { players: [], bannedUsers: [], broadcastMessage: null, adminCommands: {} };
+        if (response.ok) {
+          const data = await response.json();
+          allData.players = data.record.players || [];
+          allData.bannedUsers = data.record.bannedUsers || [];
+          allData.broadcastMessage = data.record.broadcastMessage || null;
+          allData.adminCommands = data.record.adminCommands || {};
+        }
+
+        // Add refresh command with current timestamp
+        allData.adminCommands.refreshAll = Date.now();
+        
+        // Save back to JSONbin
+        await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Master-Key': JSONBIN_API_KEY
+          },
+          body: JSON.stringify(allData)
+        });
+
+        alert("Refresh command sent to all players!");
+      } catch (error) {
+        console.error("Error sending refresh command:", error);
+        alert("Failed to send refresh command");
+      }
+    }
+
+    // Check for refresh commands (run this periodically)
+    async function checkForRefreshCommand() {
+      try {
+        const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+          headers: {
+            'X-Master-Key': JSONBIN_API_KEY
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const lastRefresh = data.record.adminCommands?.refreshAll || 0;
+          const lastChecked = localStorage.getItem('lastRefreshCheck') || 0;
+          
+          if (lastRefresh > lastChecked && !isAdmin) {
+            localStorage.setItem('lastRefreshCheck', lastRefresh);
+            window.location.reload();
+          }
+        }
+      } catch (error) {
+        console.error("Error checking refresh command:", error);
+      }
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      checkAdminStatus();
+      
+      // Add click handler for refresh button
+      document.getElementById('refreshAllBtn').addEventListener('click', refreshAllPlayers);
+      
+      // Check for refresh commands every 30 seconds
+      setInterval(checkForRefreshCommand, 30000);
+    });
+  </script>
+</body>
+</html>
