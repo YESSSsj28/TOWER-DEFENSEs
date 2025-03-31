@@ -797,6 +797,21 @@
       background: rgba(16, 185, 129, 0.1);
     }
     
+    #refreshBtn {
+      background: var(--warning);
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin-left: auto;
+      border-radius: 6px;
+      padding: 0.75rem 1.25rem;
+      transition: all 0.2s;
+    }
+    
+    #refreshBtn:hover {
+      background: #e67e22;
+    }
+    
     .admin-tab-content {
       display: none;
     }
@@ -1273,6 +1288,7 @@
         <div class="admin-tab active" data-tab="users">User Management</div>
         <div class="admin-tab" data-tab="messages">Broadcast Message</div>
         <div class="admin-tab" data-tab="settings">Settings</div>
+        <button class="admin-tab" id="refreshBtn">Refresh Game</button>
       </div>
       
       <!-- User Management Tab -->
@@ -2491,6 +2507,23 @@
     }
 
     // ======================
+    // REFRESH SYSTEM
+    // ======================
+    function setupAutoRefresh() {
+      // Auto-refresh every 15 minutes (900,000 ms)
+      setTimeout(() => {
+        location.reload();
+      }, 900000);
+      
+      // Manual refresh button in admin panel
+      document.getElementById('refreshBtn').addEventListener('click', () => {
+        // Force immediate refresh for everyone
+        localStorage.setItem('forceRefresh', 'true');
+        location.reload();
+      });
+    }
+
+    // ======================
     // GAME FUNCTIONS
     // ======================
     function gameLoop() {
@@ -2748,6 +2781,12 @@
     // ======================
     document.addEventListener('DOMContentLoaded', () => {
       try {
+        // Check for forced refresh
+        if (localStorage.getItem('forceRefresh') === 'true') {
+          localStorage.removeItem('forceRefresh');
+          showBroadcastMessage("Game refreshed by admin");
+        }
+        
         // Load saved user if exists
         const savedUser = localStorage.getItem('googleUser');
         if (savedUser) {
@@ -2805,6 +2844,9 @@
         
         // Check for broadcast messages
         checkForBroadcastMessages();
+        
+        // Set up auto-refresh
+        setupAutoRefresh();
         
         // Add all button event listeners
         setupEventListeners();
