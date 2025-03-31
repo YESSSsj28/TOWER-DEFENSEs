@@ -2380,10 +2380,6 @@
           </div>
         `;
         
-        if (canAfford) {
-          upgradeEl.addEventListener("click", () => buyUpgrade(upgrade.id));
-        }
-        
         upgradesContainer.appendChild(upgradeEl);
       });
     }
@@ -2397,6 +2393,7 @@
         
         const upgradeEl = document.createElement("div");
         upgradeEl.className = `click-upgrade ${canAfford ? "unlocked" : "locked"}`;
+        upgradeEl.setAttribute('data-id', upgrade.id);
         
         upgradeEl.innerHTML = `
           <div class="click-upgrade-name">${upgrade.name}</div>
@@ -2404,10 +2401,6 @@
           <div class="click-upgrade-cost">${upgrade.cost.toLocaleString()} coins</div>
           ${upgrade.purchased ? '<div class="click-upgrade-owned">Purchased</div>' : ''}
         `;
-        
-        if (canAfford) {
-          upgradeEl.addEventListener("click", () => buyClickUpgrade(upgrade.id));
-        }
         
         clickUpgradesGrid.appendChild(upgradeEl);
       });
@@ -2469,9 +2462,6 @@
       
       // Increase rebirth multiplier
       rebirthMultiplier *= 2;
-      
-      // Show rebirth modal
-      document.getElementById("rebirthModal").style.display = "flex";
       
       // Save immediately
       saveGame();
@@ -2655,29 +2645,10 @@
         }
       });
       
-      // Rebirth continue button
-      document.getElementById('continueBtn').addEventListener('click', () => {
-        document.getElementById("rebirthModal").style.display = "none";
-        renderUpgrades();
-        renderClickUpgrades();
-      });
-      
-      // Leaderboard tab switching
-      document.querySelectorAll('.tab-btn').forEach(button => {
-        button.addEventListener('click', () => {
-          document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove("active"));
-          button.classList.add("active");
-          currentTab = button.dataset.tab;
-          updateLeaderboardDisplay();
-        });
-      });
-      
-      // Admin panel functions
-      document.getElementById('sendMessageBtn').addEventListener('click', sendBroadcastMessage);
-      document.getElementById('saveSettingsBtn').addEventListener('click', saveAdminSettings);
-      
-      // Clicker button
-      document.getElementById('clicker').addEventListener('click', handleClick);
+      // Clicker button - FIXED: Ensure event listener is properly attached
+      const clickerButton = document.getElementById('clicker');
+      clickerButton.addEventListener('click', handleClick);
+      clickerButton.addEventListener('touchstart', handleClick, {passive: true});
       
       // Username edit button
       document.getElementById('usernameContainer').addEventListener('click', () => {
@@ -2714,6 +2685,21 @@
             modal.style.display = 'none';
           }
         });
+      });
+      
+      // FIXED: Ensure upgrade click handlers are properly attached
+      document.addEventListener('click', function(e) {
+        // Handle business upgrades
+        if (e.target.closest('.upgrade.unlocked')) {
+          const upgradeId = parseInt(e.target.closest('.upgrade').getAttribute('data-id'));
+          buyUpgrade(upgradeId);
+        }
+        
+        // Handle click upgrades
+        if (e.target.closest('.click-upgrade.unlocked')) {
+          const upgradeId = parseInt(e.target.closest('.click-upgrade').getAttribute('data-id'));
+          buyClickUpgrade(upgradeId);
+        }
       });
     }
   </script>
