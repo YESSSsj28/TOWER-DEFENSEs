@@ -1154,6 +1154,59 @@
       border: none;
     }
 
+    /* Wide Dark Patch Notes Modal with Transparent Background */
+    .patch-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      animation: fadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+      background: transparent; /* Fully transparent overlay */
+    }
+    
+    .patch-content {
+      background: rgba(22, 25, 28, 0.85); /* Only content area has semi-transparency */
+      border-radius: 18px;
+      width: 90%;
+      max-width: 700px;
+      padding: 2rem;
+      position: relative;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #fff;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      backdrop-filter: blur(16px);
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    /* Confetti styles */
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      background-color: #f00;
+      opacity: 0;
+      z-index: 9999;
+      animation: confetti-fall 5s linear forwards;
+    }
+
+    @keyframes confetti-fall {
+      0% {
+        transform: translateY(-100px) rotate(0deg) translateX(0);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(calc(100vh + 100px)) rotate(720deg) translateX(calc((var(--random-x) * 100px));
+        opacity: 0;
+      }
+    }
+
     /* Responsive adjustments */
     @media (max-width: 600px) {
       .upgrades-container {
@@ -1346,6 +1399,23 @@
     </div>
   </div>
 
+  <!-- Patch Notes Modal -->
+  <div class="patch-modal" id="patchModal">
+    <div class="patch-content">
+      <button class="close-modal" id="closePatch">&times;</button>
+      <h3 class="modal-title">✨ Major Update v2.0 ✨</h3>
+      <p><strong>What's New:</strong></p>
+      <ul style="margin: 1rem 0; padding-left: 1.5rem;">
+        <li>Complete game reset - fresh start for everyone!</li>
+        <li>New golden coin upgrades system</li>
+        <li>Improved leaderboard with rebirth tracking</li>
+        <li>Auto-refresh every 10 minutes</li>
+        <li>Bug fixes and performance improvements</li>
+      </ul>
+      <p><strong>Note:</strong> All player progress has been reset for this major update.</p>
+    </div>
+  </div>
+
   <script>
     // ======================
     // GAME STATE
@@ -1373,6 +1443,8 @@
     let messageCheckInterval;
     let lastBroadcastCheck = 0;
     let hasSeenTutorial = localStorage.getItem('hasSeenTutorial') === 'true';
+    let hasSeenPatchNotes = localStorage.getItem('hasSeenPatchNotes') === 'true';
+    let globalResetDone = localStorage.getItem('globalResetDone') === 'true';
 
     // Game state variables
     let coins = 0;
@@ -2117,6 +2189,12 @@
 
     function loadGame() {
       try {
+        // Perform global reset if not done yet
+        if (!globalResetDone) {
+          performGlobalReset();
+          return;
+        }
+        
         // Check if we have a saved game for this user (or guest)
         const saveKey = `businessEmpireSave_${userId || 'guest'}`;
         const localSave = localStorage.getItem(saveKey);
@@ -2146,6 +2224,32 @@
         console.error("Error loading game:", error);
         resetGameState();
       }
+    }
+    
+    function performGlobalReset() {
+      // Clear all game data
+      localStorage.removeItem('leaderboardCache');
+      
+      // Clear all player saves
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('businessEmpireSave_')) {
+          keysToRemove.push(key);
+        }
+      }
+      
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      
+      // Mark reset as done
+      localStorage.setItem('globalResetDone', 'true');
+      globalResetDone = true;
+      
+      // Reset game state
+      resetGameState();
+      
+      // Show patch notes
+      showPatchNotes();
     }
     
     function resetGameState() {
@@ -2867,10 +2971,10 @@
     // REFRESH SYSTEM
     // ======================
     function setupAutoRefresh() {
-      // Auto-refresh every 15 minutes (900,000 ms)
+      // Auto-refresh every 10 minutes (600,000 ms)
       setTimeout(() => {
         location.reload();
-      }, 900000);
+      }, 600000);
       
       // Manual refresh button in admin panel
       document.getElementById('refreshBtn').addEventListener('click', () => {
@@ -2878,6 +2982,49 @@
         localStorage.setItem('forceRefresh', 'true');
         location.reload();
       });
+    }
+
+    // ======================
+    // PATCH NOTES SYSTEM
+    // ======================
+    function showPatchNotes() {
+      if (!hasSeenPatchNotes) {
+        document.getElementById("patchModal").style.display = "flex";
+        document.body.style.overflow = "hidden";
+        createConfetti();
+        localStorage.setItem('hasSeenPatchNotes', 'true');
+        hasSeenPatchNotes = true;
+      }
+    }
+
+    function createConfetti() {
+      const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+      
+      for (let i = 0; i < 150; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.left = Math.random() * 100 + 'vw';
+        confetti.style.width = Math.random() * 10 + 5 + 'px';
+        confetti.style.height = Math.random() * 10 + 5 + 'px';
+        
+        // Random X movement direction (-1 to 1)
+        const randomX = (Math.random() * 2) - 1;
+        confetti.style.setProperty('--random-x', randomX);
+        
+        // Random rotation
+        const rotation = Math.random() * 720;
+        
+        // Random animation duration (3-8 seconds)
+        const duration = 3 + Math.random() * 5;
+        confetti.style.animation = `confetti-fall ${duration}s linear forwards`;
+        confetti.style.animationDelay = Math.random() * 2 + 's';
+        
+        document.body.appendChild(confetti);
+        
+        // Remove confetti after animation
+        setTimeout(() => confetti.remove(), duration * 1000);
+      }
     }
 
     // ======================
@@ -2991,6 +3138,26 @@
       // Tutorial buttons
       document.getElementById('skipTutorial').addEventListener('click', closeTutorial);
       document.getElementById('nextTutorial').addEventListener('click', closeTutorial);
+      
+      // Patch notes close button
+      document.getElementById('closePatch').addEventListener('click', function() {
+        document.getElementById("patchModal").style.animation = 'fadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) reverse';
+        setTimeout(() => {
+          document.getElementById("patchModal").style.display = "none";
+          document.body.style.overflow = "auto";
+        }, 350);
+      });
+      
+      // Close patch notes when clicking outside
+      document.getElementById('patchModal').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('patchModal')) {
+          document.getElementById("patchModal").style.animation = 'fadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) reverse';
+          setTimeout(() => {
+            document.getElementById("patchModal").style.display = "none";
+            document.body.style.overflow = "auto";
+          }, 350);
+        }
+      });
       
       // Admin panel tab switching
       document.querySelectorAll('.admin-tab').forEach(tab => {
@@ -3111,12 +3278,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-      
-      setTimeout(() => confetti.remove(), 10000);
-    }
-  }
-</script>
