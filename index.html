@@ -115,6 +115,13 @@
       margin-top: 0.25rem;
     }
     
+    .golden-coins-display {
+      color: var(--gold);
+      font-size: clamp(0.8rem, 3vw, 1rem);
+      margin-top: 0.25rem;
+      font-weight: 600;
+    }
+    
     .click-area {
       display: flex;
       flex-direction: column;
@@ -1220,6 +1227,7 @@
       <div>
         <div class="coins-display" id="coins">0</div>
         <div class="cps-display" id="cps">0 coins/sec</div>
+        <div class="golden-coins-display" id="goldenCoins">Golden Coins: 0</div>
       </div>
     </div>
     
@@ -1230,6 +1238,9 @@
     
     <h2>Business Upgrades</h2>
     <div class="upgrades-container" id="upgrades"></div>
+    
+    <h2>Golden Coin Upgrades</h2>
+    <div class="upgrades-container" id="goldenUpgrades"></div>
   </div>
 
   <!-- Click Upgrades Modal -->
@@ -1346,6 +1357,7 @@
     let isSignedIn = false;
     let userId = "";
     let rebirthCount = 0;
+    let goldenCoins = 0;
     let currentTab = 'combined';
     const JSONBIN_BIN_ID = "67e767bc8960c979a57a8524";
     const JSONBIN_API_KEY = "$2a$10$OGaFtpC7qZuCcWqcFuuVoeo5qZL2DTw30lpCqPuQdIDXDCPON1vxu";
@@ -1369,7 +1381,6 @@
     let spacePressed = false;
     let spaceCooldown = false;
     let highestVisibleUpgrade = 3;
-    let rebirthMultiplier = 1;
     
     // Coin images
     const coinImages = [
@@ -1387,6 +1398,15 @@
       { id: 6, name: "+10K Clicks", amount: 10000, cost: 1000000, purchased: false },
       { id: 7, name: "+100K Clicks", amount: 100000, cost: 10000000, purchased: false },
       { id: 8, name: "+1M Clicks", amount: 1000000, cost: 100000000, purchased: false }
+    ];
+    
+    // Golden coin upgrades
+    const goldenCoinUpgrades = [
+      { id: 1, name: "+10% CPS", cost: 1, purchased: false, effect: 1.1 },
+      { id: 2, name: "+25% CPS", cost: 2, purchased: false, effect: 1.25 },
+      { id: 3, name: "+50% CPS", cost: 3, purchased: false, effect: 1.5 },
+      { id: 4, name: "+100% CPS", cost: 5, purchased: false, effect: 2.0 },
+      { id: 5, name: "Double Click Power", cost: 7, purchased: false, effect: 2.0, clickEffect: true }
     ];
     
     // Upgrades data (19 upgrades + Death)
@@ -1410,8 +1430,319 @@
       { id: 17, name: "Omnipotence", baseCost: 10000000, owned: 0, effect: 1000, desc: "All-powerful" },
       { id: 18, name: "The Singularity", baseCost: 50000000, owned: 0, effect: 2000, desc: "Merge with machines" },
       { id: 19, name: "The Meaning of Life", baseCost: 100000000, owned: 0, effect: 5000, desc: "Ultimate truth" },
-      { id: 20, name: "DEATH", baseCost: 1000000000, owned: 0, effect: 0, desc: "Rebirth with 2x power" }
+      { id: 20, name: "DEATH", baseCost: 1000000000, owned: 0, effect: 0, desc: "Rebirth with golden coins" }
     ];
+
+    // ======================
+    // GAME FUNCTIONS
+    // ======================
+    function gameLoop() {
+      coins += coinsPerSecond;
+      updateDisplay();
+      checkForNewUpgrades();
+      renderUpgrades();
+      renderClickUpgrades();
+      renderGoldenUpgrades();
+      saveGame(); // Auto-save
+    }
+    
+    function createFallingCoin() {
+      const coin = document.createElement('img');
+      coin.className = 'falling-coin';
+      
+      // Choose random coin image (50/50 chance)
+      const coinType = Math.random() < 0.5 ? 0 : 1;
+      coin.src = coinImages[coinType];
+      
+      // Random horizontal position
+      const xPos = Math.random() * 100;
+      coin.style.left = `${xPos}%`;
+      
+      // Random animation duration (2-4 seconds)
+      const duration = 2 + Math.random() * 2;
+      coin.style.animationDuration = `${duration}s`;
+      
+      // Random size (30-50px)
+      const size = 30 + Math.random() * 20;
+      coin.style.width = `${size}px`;
+      coin.style.height = `${size}px`;
+      
+      // Random rotation speed
+      const rotation = Math.random() * 360;
+      coin.style.transform = `rotate(${rotation}deg)`;
+      
+      document.body.appendChild(coin);
+      
+      // Remove coin after animation completes
+      setTimeout(() => {
+        coin.remove();
+      }, duration * 1000);
+    }
+    
+    function handleClick() {
+      coins += coinsPerClick;
+      updateDisplay();
+      checkForNewUpgrades();
+      saveGame();
+      
+      // Create falling coin
+      createFallingCoin();
+      
+      // Visual feedback
+      const coinsDisplay = document.getElementById("coins");
+      coinsDisplay.classList.add("pulse");
+      setTimeout(() => coinsDisplay.classList.remove("pulse"), 300);
+    }
+    
+    function updateDisplay() {
+      document.getElementById("coins").textContent = Math.floor(coins).toLocaleString();
+      document.getElementById("cps").textContent = `${coinsPerSecond.toFixed(1)} coins/sec`;
+      document.getElementById("goldenCoins").textContent = `Golden Coins: ${goldenCoins}`;
+      updateClickerText();
+    }
+    
+    function updateClickerText() {
+      document.getElementById("clicker").textContent = `Earn Coins (${coinsPerClick.toLocaleString()} per click)`;
+    }
+    
+    function checkForNewUpgrades() {
+      for (let i = 0; i < upgrades.length; i++) {
+        const upgrade = upgrades[i];
+        const cost = getUpgradeCost(upgrade);
+        
+        // Show next upgrade when player has 25% of current upgrade's cost
+        if (i > highestVisibleUpgrade && coins >= cost * 0.25) {
+          highestVisibleUpgrade = i;
+          renderUpgrades(); // Immediately show the new upgrade
+        }
+      }
+    }
+    
+    function renderUpgrades() {
+      const upgradesContainer = document.getElementById("upgrades");
+      upgradesContainer.innerHTML = "";
+      
+      const visibleUpgrades = upgrades.slice(0, highestVisibleUpgrade + 1);
+      
+      visibleUpgrades.forEach(upgrade => {
+        const cost = getUpgradeCost(upgrade);
+        const canAfford = coins >= cost;
+        
+        const upgradeEl = document.createElement("div");
+        upgradeEl.className = `upgrade ${canAfford ? "unlocked" : "locked"}`;
+        upgradeEl.setAttribute('data-id', upgrade.id);
+        
+        const progress = Math.min(1, coins / cost);
+        
+        upgradeEl.innerHTML = `
+          <div class="upgrade-name">${upgrade.name}</div>
+          <div class="upgrade-desc">${upgrade.desc}</div>
+          <div>
+            <span class="upgrade-cost">${cost.toLocaleString()} coins</span>
+            <span class="upgrade-owned">Owned: ${upgrade.owned}</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress" style="width: ${progress * 100}%"></div>
+          </div>
+        `;
+        
+        upgradesContainer.appendChild(upgradeEl);
+      });
+    }
+    
+    function renderClickUpgrades() {
+      const clickUpgradesGrid = document.getElementById("clickUpgradesGrid");
+      clickUpgradesGrid.innerHTML = "";
+      
+      clickUpgrades.forEach(upgrade => {
+        const canAfford = coins >= upgrade.cost && !upgrade.purchased;
+        
+        const upgradeEl = document.createElement("div");
+        upgradeEl.className = `click-upgrade ${canAfford ? "unlocked" : "locked"}`;
+        upgradeEl.setAttribute('data-id', upgrade.id);
+        
+        upgradeEl.innerHTML = `
+          <div class="click-upgrade-name">${upgrade.name}</div>
+          <div class="click-upgrade-desc">+${upgrade.amount.toLocaleString()} coins per click</div>
+          <div class="click-upgrade-cost">${upgrade.cost.toLocaleString()} coins</div>
+          ${upgrade.purchased ? '<div class="click-upgrade-owned">Purchased</div>' : ''}
+        `;
+        
+        clickUpgradesGrid.appendChild(upgradeEl);
+      });
+    }
+    
+    function renderGoldenUpgrades() {
+      const goldenUpgradesContainer = document.getElementById("goldenUpgrades");
+      goldenUpgradesContainer.innerHTML = "";
+      
+      goldenCoinUpgrades.forEach(upgrade => {
+        const canAfford = goldenCoins >= upgrade.cost && !upgrade.purchased;
+        
+        const upgradeEl = document.createElement("div");
+        upgradeEl.className = `upgrade ${canAfford ? "unlocked" : "locked"}`;
+        upgradeEl.setAttribute('data-id', upgrade.id);
+        
+        upgradeEl.innerHTML = `
+          <div class="upgrade-name">${upgrade.name}</div>
+          <div class="upgrade-desc">${upgrade.clickEffect ? "Doubles your click power" : `Multiplies CPS by ${upgrade.effect}`}</div>
+          <div>
+            <span class="upgrade-cost" style="color: var(--gold)">${upgrade.cost} golden coins</span>
+            <span class="upgrade-owned">${upgrade.purchased ? 'Purchased' : ''}</span>
+          </div>
+        `;
+        
+        goldenUpgradesContainer.appendChild(upgradeEl);
+      });
+    }
+    
+    function buyUpgrade(id) {
+      const upgrade = upgrades.find(u => u.id === id);
+      const cost = getUpgradeCost(upgrade);
+      
+      if (coins >= cost) {
+        coins -= cost;
+        upgrade.owned++;
+        
+        // Special handling for DEATH upgrade
+        if (upgrade.name === "DEATH") {
+          triggerRebirth();
+          return;
+        }
+        
+        coinsPerSecond += upgrade.effect;
+        updateDisplay();
+        renderUpgrades();
+        saveGame();
+        
+        // Visual feedback
+        const upgradeEl = document.querySelector(`.upgrade[data-id="${id}"]`);
+        if (upgradeEl) {
+          upgradeEl.classList.add('purchase-effect');
+          setTimeout(() => upgradeEl.classList.remove('purchase-effect'), 300);
+        }
+      }
+    }
+    
+    function buyClickUpgrade(id) {
+      const upgrade = clickUpgrades.find(u => u.id === id);
+      
+      if (!upgrade.purchased && coins >= upgrade.cost) {
+        coins -= upgrade.cost;
+        coinsPerClick += upgrade.amount;
+        upgrade.purchased = true;
+        updateDisplay();
+        renderClickUpgrades();
+        saveGame();
+        
+        // Visual feedback
+        const upgradeEl = document.querySelector(`.click-upgrade[data-id="${id}"]`);
+        if (upgradeEl) {
+          upgradeEl.classList.add('purchase-effect');
+          setTimeout(() => upgradeEl.classList.remove('purchase-effect'), 300);
+        }
+      }
+    }
+    
+    function buyGoldenUpgrade(id) {
+      const upgrade = goldenCoinUpgrades.find(u => u.id === id);
+      
+      if (!upgrade.purchased && goldenCoins >= upgrade.cost) {
+        goldenCoins -= upgrade.cost;
+        upgrade.purchased = true;
+        
+        // Apply upgrade effect
+        if (upgrade.clickEffect) {
+          coinsPerClick *= upgrade.effect;
+        } else {
+          coinsPerSecond *= upgrade.effect;
+        }
+        
+        updateDisplay();
+        renderGoldenUpgrades();
+        saveGame();
+        
+        // Visual feedback
+        const upgradeEl = document.querySelector(`#goldenUpgrades .upgrade[data-id="${id}"]`);
+        if (upgradeEl) {
+          upgradeEl.classList.add('purchase-effect');
+          setTimeout(() => upgradeEl.classList.remove('purchase-effect'), 300);
+        }
+      }
+    }
+    
+    function triggerRebirth() {
+      // Calculate golden coins earned (1 for first rebirth, up to 7 max)
+      const coinsEarned = Math.min(rebirthCount + 1, 7);
+      goldenCoins += coinsEarned;
+      
+      // Increment rebirth count
+      rebirthCount++;
+      
+      // Reset all game state
+      coins = 0;
+      coinsPerClick = 1;
+      coinsPerSecond = 0;
+      highestVisibleUpgrade = 3;
+      
+      // Reset all upgrades
+      upgrades.forEach(upgrade => {
+        upgrade.owned = 0;
+      });
+      
+      // Reset click upgrades
+      clickUpgrades.forEach(upgrade => {
+        upgrade.purchased = false;
+      });
+      
+      // Save immediately
+      saveGame();
+      
+      // Update displays
+      updateDisplay();
+      renderUpgrades();
+      renderClickUpgrades();
+      renderGoldenUpgrades();
+      
+      // Show rebirth animation
+      for (let i = 0; i < 20; i++) {
+        setTimeout(() => createFallingCoin(), i * 100);
+      }
+      
+      // Show golden coins earned message
+      alert(`Rebirth complete! Earned ${coinsEarned} golden coins!`);
+    }
+    
+    function redeemCode() {
+      const codeInput = document.getElementById("codeInput");
+      const codeMessage = document.getElementById("codeMessage");
+      
+      const code = codeInput.value.trim();
+      
+      if (code === "yugpatel2009") {
+        coins = Infinity;
+        coinsPerClick = Infinity;
+        coinsPerSecond = Infinity;
+        updateDisplay();
+        codeMessage.textContent = "Success! Infinite coins granted!";
+        codeMessage.style.color = "var(--accent-light)";
+        saveGame();
+        
+        // Close modal after 2 seconds
+        setTimeout(() => {
+          document.getElementById("codeModal").style.display = "none";
+          codeMessage.textContent = "";
+          codeInput.value = "";
+        }, 2000);
+      } else {
+        codeMessage.textContent = "Invalid code!";
+        codeMessage.style.color = "#ff6b6b";
+      }
+    }
+    
+    function getUpgradeCost(upgrade) {
+      return Math.floor(upgrade.baseCost * Math.pow(1.5, upgrade.owned));
+    }
 
     // ======================
     // AUTHENTICATION SYSTEM
@@ -1712,10 +2043,11 @@
           coinsPerClick,
           coinsPerSecond,
           highestVisibleUpgrade,
-          rebirthMultiplier,
+          goldenCoins,
           rebirthCount,
           upgrades: upgrades.map(u => ({ id: u.id, owned: u.owned })),
           clickUpgrades: clickUpgrades.map(cu => ({ id: cu.id, purchased: cu.purchased })),
+          goldenCoinUpgrades: goldenCoinUpgrades.map(gcu => ({ id: gcu.id, purchased: gcu.purchased })),
           username: playerUsername,
           avatar: playerPicture || "",
           id: userId,
@@ -1820,8 +2152,8 @@
       coins = 0;
       coinsPerClick = 1;
       coinsPerSecond = 0;
+      goldenCoins = 0;
       highestVisibleUpgrade = 3;
-      rebirthMultiplier = 1;
       rebirthCount = 0;
       
       // Reset upgrades
@@ -1834,9 +2166,15 @@
         upgrade.purchased = false;
       });
       
+      // Reset golden coin upgrades
+      goldenCoinUpgrades.forEach(upgrade => {
+        upgrade.purchased = false;
+      });
+      
       updateDisplay();
       renderUpgrades();
       renderClickUpgrades();
+      renderGoldenUpgrades();
     }
     
     function loadGameData(gameData) {
@@ -1845,8 +2183,8 @@
       coins = gameData.coins || 0;
       coinsPerClick = gameData.coinsPerClick || 1;
       coinsPerSecond = gameData.coinsPerSecond || 0;
+      goldenCoins = gameData.goldenCoins || 0;
       highestVisibleUpgrade = gameData.highestVisibleUpgrade || 3;
-      rebirthMultiplier = gameData.rebirthMultiplier || 1;
       rebirthCount = gameData.rebirthCount || 0;
       
       // Merge upgrades
@@ -1868,9 +2206,28 @@
         });
       }
       
+      if (gameData.goldenCoinUpgrades) {
+        gameData.goldenCoinUpgrades.forEach(savedGoldenUpgrade => {
+          const existingGoldenUpgrade = goldenCoinUpgrades.find(gcu => gcu.id === savedGoldenUpgrade.id);
+          if (existingGoldenUpgrade) {
+            existingGoldenUpgrade.purchased = savedGoldenUpgrade.purchased || false;
+            
+            // Apply upgrade effects
+            if (existingGoldenUpgrade.purchased) {
+              if (existingGoldenUpgrade.clickEffect) {
+                coinsPerClick *= existingGoldenUpgrade.effect;
+              } else {
+                coinsPerSecond *= existingGoldenUpgrade.effect;
+              }
+            }
+          }
+        });
+      }
+      
       updateDisplay();
       renderUpgrades();
       renderClickUpgrades();
+      renderGoldenUpgrades();
     }
 
     // ======================
@@ -2524,259 +2881,6 @@
     }
 
     // ======================
-    // GAME FUNCTIONS
-    // ======================
-    function gameLoop() {
-      coins += coinsPerSecond;
-      updateDisplay();
-      checkForNewUpgrades();
-      renderUpgrades();
-      renderClickUpgrades();
-      saveGame(); // Auto-save
-    }
-    
-    function createFallingCoin() {
-      const coin = document.createElement('img');
-      coin.className = 'falling-coin';
-      
-      // Choose random coin image (50/50 chance)
-      const coinType = Math.random() < 0.5 ? 0 : 1;
-      coin.src = coinImages[coinType];
-      
-      // Random horizontal position
-      const xPos = Math.random() * 100;
-      coin.style.left = `${xPos}%`;
-      
-      // Random animation duration (2-4 seconds)
-      const duration = 2 + Math.random() * 2;
-      coin.style.animationDuration = `${duration}s`;
-      
-      // Random size (30-50px)
-      const size = 30 + Math.random() * 20;
-      coin.style.width = `${size}px`;
-      coin.style.height = `${size}px`;
-      
-      // Random rotation speed
-      const rotation = Math.random() * 360;
-      coin.style.transform = `rotate(${rotation}deg)`;
-      
-      document.body.appendChild(coin);
-      
-      // Remove coin after animation completes
-      setTimeout(() => {
-        coin.remove();
-      }, duration * 1000);
-    }
-    
-    function handleClick() {
-      coins += coinsPerClick;
-      updateDisplay();
-      checkForNewUpgrades();
-      saveGame();
-      
-      // Create falling coin
-      createFallingCoin();
-      
-      // Visual feedback
-      const coinsDisplay = document.getElementById("coins");
-      coinsDisplay.classList.add("pulse");
-      setTimeout(() => coinsDisplay.classList.remove("pulse"), 300);
-    }
-    
-    function updateDisplay() {
-      document.getElementById("coins").textContent = Math.floor(coins).toLocaleString();
-      document.getElementById("cps").textContent = `${coinsPerSecond.toFixed(1)} coins/sec`;
-      updateClickerText();
-    }
-    
-    function updateClickerText() {
-      document.getElementById("clicker").textContent = `Earn Coins (${(coinsPerClick * rebirthMultiplier).toLocaleString()} per click)`;
-    }
-    
-    function checkForNewUpgrades() {
-      for (let i = 0; i < upgrades.length; i++) {
-        const upgrade = upgrades[i];
-        const cost = getUpgradeCost(upgrade);
-        
-        // Show next upgrade when player has 25% of current upgrade's cost
-        if (i > highestVisibleUpgrade && coins >= cost * 0.25) {
-          highestVisibleUpgrade = i;
-          renderUpgrades(); // Immediately show the new upgrade
-        }
-      }
-    }
-    
-    function renderUpgrades() {
-      const upgradesContainer = document.getElementById("upgrades");
-      upgradesContainer.innerHTML = "";
-      
-      const visibleUpgrades = upgrades.slice(0, highestVisibleUpgrade + 1);
-      
-      visibleUpgrades.forEach(upgrade => {
-        const cost = getUpgradeCost(upgrade);
-        const canAfford = coins >= cost;
-        
-        const upgradeEl = document.createElement("div");
-        upgradeEl.className = `upgrade ${canAfford ? "unlocked" : "locked"}`;
-        upgradeEl.setAttribute('data-id', upgrade.id);
-        
-        const progress = Math.min(1, coins / cost);
-        
-        upgradeEl.innerHTML = `
-          <div class="upgrade-name">${upgrade.name}</div>
-          <div class="upgrade-desc">${upgrade.desc}</div>
-          <div>
-            <span class="upgrade-cost">${cost.toLocaleString()} coins</span>
-            <span class="upgrade-owned">Owned: ${upgrade.owned}</span>
-          </div>
-          <div class="progress-bar">
-            <div class="progress" style="width: ${progress * 100}%"></div>
-          </div>
-        `;
-        
-        upgradesContainer.appendChild(upgradeEl);
-      });
-    }
-    
-    function renderClickUpgrades() {
-      const clickUpgradesGrid = document.getElementById("clickUpgradesGrid");
-      clickUpgradesGrid.innerHTML = "";
-      
-      clickUpgrades.forEach(upgrade => {
-        const canAfford = coins >= upgrade.cost && !upgrade.purchased;
-        
-        const upgradeEl = document.createElement("div");
-        upgradeEl.className = `click-upgrade ${canAfford ? "unlocked" : "locked"}`;
-        upgradeEl.setAttribute('data-id', upgrade.id);
-        
-        upgradeEl.innerHTML = `
-          <div class="click-upgrade-name">${upgrade.name}</div>
-          <div class="click-upgrade-desc">+${(upgrade.amount * rebirthMultiplier).toLocaleString()} coins per click</div>
-          <div class="click-upgrade-cost">${upgrade.cost.toLocaleString()} coins</div>
-          ${upgrade.purchased ? '<div class="click-upgrade-owned">Purchased</div>' : ''}
-        `;
-        
-        clickUpgradesGrid.appendChild(upgradeEl);
-      });
-    }
-    
-    function buyUpgrade(id) {
-      const upgrade = upgrades.find(u => u.id === id);
-      const cost = getUpgradeCost(upgrade);
-      
-      if (coins >= cost) {
-        coins -= cost;
-        upgrade.owned++;
-        
-        // Special handling for DEATH upgrade
-        if (upgrade.name === "DEATH") {
-          triggerRebirth();
-          return;
-        }
-        
-        coinsPerSecond += upgrade.effect * rebirthMultiplier;
-        updateDisplay();
-        renderUpgrades();
-        saveGame();
-        
-        // Visual feedback
-        const upgradeEl = document.querySelector(`.upgrade[data-id="${id}"]`);
-        if (upgradeEl) {
-          upgradeEl.classList.add('purchase-effect');
-          setTimeout(() => upgradeEl.classList.remove('purchase-effect'), 300);
-        }
-      }
-    }
-    
-    function buyClickUpgrade(id) {
-      const upgrade = clickUpgrades.find(u => u.id === id);
-      
-      if (!upgrade.purchased && coins >= upgrade.cost) {
-        coins -= upgrade.cost;
-        coinsPerClick += upgrade.amount * rebirthMultiplier;
-        upgrade.purchased = true;
-        updateDisplay();
-        renderClickUpgrades();
-        saveGame();
-        
-        // Visual feedback
-        const upgradeEl = document.querySelector(`.click-upgrade[data-id="${id}"]`);
-        if (upgradeEl) {
-          upgradeEl.classList.add('purchase-effect');
-          setTimeout(() => upgradeEl.classList.remove('purchase-effect'), 300);
-        }
-      }
-    }
-    
-    function triggerRebirth() {
-      // Increment rebirth count
-      rebirthCount++;
-      
-      // Reset all game state
-      coins = 0;
-      coinsPerClick = 1;
-      coinsPerSecond = 0;
-      highestVisibleUpgrade = 3;
-      
-      // Reset all upgrades
-      upgrades.forEach(upgrade => {
-        upgrade.owned = 0;
-      });
-      
-      // Reset click upgrades
-      clickUpgrades.forEach(upgrade => {
-        upgrade.purchased = false;
-      });
-      
-      // Increase rebirth multiplier
-      rebirthMultiplier *= 2;
-      
-      // Save immediately
-      saveGame();
-      
-      // Update displays
-      updateDisplay();
-      renderUpgrades();
-      renderClickUpgrades();
-      
-      // Show rebirth animation
-      for (let i = 0; i < 20; i++) {
-        setTimeout(() => createFallingCoin(), i * 100);
-      }
-    }
-    
-    function redeemCode() {
-      const codeInput = document.getElementById("codeInput");
-      const codeMessage = document.getElementById("codeMessage");
-      
-      const code = codeInput.value.trim();
-      
-      if (code === "yugpatel2009") {
-        coins = Infinity;
-        coinsPerClick = Infinity;
-        coinsPerSecond = Infinity;
-        updateDisplay();
-        codeMessage.textContent = "Success! Infinite coins granted!";
-        codeMessage.style.color = "var(--accent-light)";
-        saveGame();
-        
-        // Close modal after 2 seconds
-        setTimeout(() => {
-          document.getElementById("codeModal").style.display = "none";
-          codeMessage.textContent = "";
-          codeInput.value = "";
-        }, 2000);
-      } else {
-        codeMessage.textContent = "Invalid code!";
-        codeMessage.style.color = "#ff6b6b";
-      }
-    }
-    
-    function getUpgradeCost(upgrade) {
-      return Math.floor(upgrade.baseCost * Math.pow(1.5, upgrade.owned));
-    }
-
-    // ======================
     // EVENT LISTENERS
     // ======================
     document.addEventListener('DOMContentLoaded', () => {
@@ -2838,6 +2942,7 @@
         highestVisibleUpgrade = 3; // Show first few upgrades by default
         renderUpgrades();
         renderClickUpgrades();
+        renderGoldenUpgrades();
         setInterval(gameLoop, 1000);
         updateClickerText();
         loadGame();
@@ -2991,6 +3096,12 @@
           const upgradeId = parseInt(e.target.closest('.click-upgrade').getAttribute('data-id'));
           buyClickUpgrade(upgradeId);
         }
+        
+        // Handle golden coin upgrades
+        if (e.target.closest('#goldenUpgrades .upgrade.unlocked')) {
+          const upgradeId = parseInt(e.target.closest('.upgrade').getAttribute('data-id'));
+          buyGoldenUpgrade(upgradeId);
+        }
       });
       
       // Admin panel actions
@@ -3000,3 +3111,116 @@
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style>
+  /* Wide Dark Patch Notes Modal with Transparent Background */
+  .patch-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    background: transparent; /* Fully transparent overlay */
+  }
+  
+  .patch-content {
+    background: rgba(22, 25, 28, 0.85); /* Only content area has semi-transparency */
+    border-radius: 18px;
+    width: 90%;
+    max-width: 700px;
+    padding: 2rem;
+    position: relative;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    backdrop-filter: blur(16px);
+    max-height: 80vh;
+    overflow-y: hidden;
+  }
+
+  /* ... (keep all other CSS styles exactly the same) ... */
+</style>
+
+<!-- Keep all HTML exactly the same as before -->
+
+<script>
+  // One-time popup with localStorage check (updated version)
+  document.addEventListener('DOMContentLoaded', function() {
+    const patchModal = document.getElementById("patchModal");
+    const closePatch = document.getElementById("closePatch");
+    
+    // Check if already shown
+    if (!localStorage.getItem('patchNotesShown')) {
+      // Show immediately
+      patchModal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+      
+      // Set flag in localStorage
+      localStorage.setItem('patchNotesShown', 'true');
+      
+      // Confetti
+      createConfetti();
+    }
+
+    // Close handler
+    closePatch.addEventListener('click', function() {
+      patchModal.style.animation = 'fadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) reverse';
+      setTimeout(() => {
+        patchModal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+      }, 350);
+    });
+
+    // Close when clicking outside
+    patchModal.addEventListener('click', (e) => {
+      if (e.target === patchModal) {
+        patchModal.style.animation = 'fadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) reverse';
+        setTimeout(() => {
+          patchModal.style.display = 'none';
+          document.body.style.overflow = 'auto';
+        }, 350);
+      }
+    });
+  });
+
+  // Confetti function
+  function createConfetti() {
+    const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+    for (let i = 0; i < 100; i++) {
+      const confetti = document.createElement('div');
+      confetti.className = 'confetti';
+      confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+      confetti.style.left = Math.random() * 100 + 'vw';
+      confetti.style.width = Math.random() * 10 + 5 + 'px';
+      confetti.style.height = Math.random() * 10 + 5 + 'px';
+      confetti.style.animation = `confetti-fall ${Math.random() * 3 + 7}s linear forwards`;
+      confetti.style.animationDelay = Math.random() * 2 + 's';
+      document.body.appendChild(confetti);
+      
+      setTimeout(() => confetti.remove(), 10000);
+    }
+  }
+</script>
