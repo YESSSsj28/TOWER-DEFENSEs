@@ -1207,6 +1207,34 @@
       }
     }
 
+    /* Chat specific styles */
+    .chat-messages {
+      max-height: 300px;
+      min-height: 200px;
+      background: var(--bg-darker);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem;
+      overflow-y: auto;
+    }
+
+    .chat-message {
+      margin-bottom: 0.5rem;
+      padding: 0.5rem;
+      background: rgba(124, 58, 237, 0.1);
+      border-radius: 8px;
+    }
+
+    .chat-message.system {
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .chat-input-container {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
     /* Responsive adjustments */
     @media (max-width: 600px) {
       .upgrades-container {
@@ -1267,6 +1295,7 @@
       <button class="top-btn" id="upgradeClicksBtn">Upgrade Clicks</button>
       <button class="top-btn" id="codeBtn">Enter Code</button>
       <button class="top-btn" id="leaderboardBtn">Leaderboard</button>
+      <button class="top-btn" id="chatBtn">Chat</button>
       <button class="top-btn" id="signOutBtn">Sign Out</button>
       <button class="top-btn" id="adminBtn">Admin Panel</button>
     </div>
@@ -1339,6 +1368,30 @@
         <div class="loading-spinner"></div>
       </div>
       <div class="leaderboard-countdown" id="leaderboardCountdown"></div>
+    </div>
+  </div>
+
+  <!-- Chat Modal -->
+  <div class="modal" id="chatModal">
+    <div class="modal-content" style="max-height: 70vh; display: flex; flex-direction: column;">
+      <button class="close-modal" id="closeChatModal">&times;</button>
+      <h3 class="modal-title">Peer-to-Peer Chat</h3>
+      
+      <div style="margin-bottom: 1rem;">
+        <div id="connectionStatus" style="color: var(--text-secondary); font-size: 0.9rem;">Status: Disconnected</div>
+        <button id="startChatBtn" class="submit-btn" style="margin-top: 0.5rem;">Start New Chat</button>
+        <div style="margin-top: 0.5rem;">
+          <input type="text" id="peerIdInput" placeholder="Enter peer ID" style="width: 100%; padding: 0.75rem; background: var(--bg-darker); border: 1px solid var(--border); border-radius: 8px; color: var(--text);">
+          <button id="connectBtn" class="submit-btn" style="margin-top: 0.5rem;">Connect to Peer</button>
+        </div>
+      </div>
+      
+      <div class="chat-messages" id="chatMessages" style="flex-grow: 1; overflow-y: auto; margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem; background: var(--bg-darker);"></div>
+      
+      <div style="display: flex; gap: 0.5rem;">
+        <input type="text" id="chatInput" placeholder="Type your message..." style="flex-grow: 1; padding: 0.75rem; background: var(--bg-darker); border: 1px solid var(--border); border-radius: 8px; color: var(--text);">
+        <button id="sendChatBtn" class="submit-btn" style="width: 100px;">Send</button>
+      </div>
     </div>
   </div>
 
@@ -1504,6 +1557,234 @@
       { id: 19, name: "The Meaning of Life", baseCost: 100000000, owned: 0, effect: 5000, desc: "Ultimate truth" },
       { id: 20, name: "DEATH", baseCost: 1000000000, owned: 0, effect: 0, desc: "Rebirth with golden coins" }
     ];
+
+    // ======================
+    // WEBRTC CHAT SYSTEM
+    // ======================
+    let peerConnection;
+    let dataChannel;
+    let myPeerId = generatePeerId();
+    let isInitiator = false;
+
+    // Generate a random peer ID
+    function generatePeerId() {
+      return Math.random().toString(36).substring(2, 10);
+    }
+
+    // Initialize WebRTC
+    function initWebRTC() {
+      const configuration = {
+        iceServers: [
+          { urls: "stun:stun.l.google.com:19302" }, // Free Google STUN server
+          { urls: "stun:stun1.l.google.com:19302" },
+          { urls: "stun:stun2.l.google.com:19302" }
+        ]
+      };
+
+      peerConnection = new RTCPeerConnection(configuration);
+
+      // Handle ICE candidates
+      peerConnection.onicecandidate = event => {
+        if (event.candidate) {
+          // Send the candidate to the other peer via URL hash
+          const candidateStr = JSON.stringify(event.candidate);
+          window.location.hash = `candidate=${encodeURIComponent(candidateStr)}`;
+        }
+      };
+
+      // Handle incoming data channel
+      peerConnection.ondatachannel = event => {
+        dataChannel = event.channel;
+        setupDataChannel();
+      };
+
+      // Handle connection state changes
+      peerConnection.onconnectionstatechange = () => {
+        updateConnectionStatus(peerConnection.connectionState);
+      };
+    }
+
+    // Set up data channel
+    function setupDataChannel() {
+      dataChannel.onopen = () => {
+        updateConnectionStatus("connected");
+        addChatMessage("System", "Chat connection established!");
+      };
+
+      dataChannel.onclose = () => {
+        updateConnectionStatus("disconnected");
+        addChatMessage("System", "Chat connection closed");
+      };
+
+      dataChannel.onmessage = event => {
+        try {
+          const message = JSON.parse(event.data);
+          addChatMessage(message.sender, message.text);
+        } catch (e) {
+          console.error("Error parsing message:", e);
+        }
+      };
+    }
+
+    // Create a data channel (as initiator)
+    function createDataChannel() {
+      dataChannel = peerConnection.createDataChannel("chat");
+      setupDataChannel();
+    }
+
+    // Start a new chat session
+    async function startNewChat() {
+      isInitiator = true;
+      initWebRTC();
+      createDataChannel();
+      
+      try {
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+        
+        // Share the offer via URL hash
+        const offerStr = JSON.stringify(peerConnection.localDescription);
+        window.location.hash = `offer=${encodeURIComponent(offerStr)}`;
+        
+        updateConnectionStatus("creating_offer");
+      } catch (error) {
+        console.error("Error creating offer:", error);
+        updateConnectionStatus("failed");
+      }
+    }
+
+    // Connect to a peer
+    async function connectToPeer(peerId) {
+      isInitiator = false;
+      initWebRTC();
+      
+      // In a real app, you'd get the offer from the peer somehow
+      // For this demo, we're just using the URL hash
+      updateConnectionStatus("connecting");
+    }
+
+    // Handle incoming offer
+    async function handleOffer(offer) {
+      try {
+        await peerConnection.setRemoteDescription(offer);
+        
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        
+        // Share the answer via URL hash
+        const answerStr = JSON.stringify(peerConnection.localDescription);
+        window.location.hash = `answer=${encodeURIComponent(answerStr)}`;
+        
+        updateConnectionStatus("creating_answer");
+      } catch (error) {
+        console.error("Error handling offer:", error);
+        updateConnectionStatus("failed");
+      }
+    }
+
+    // Handle incoming answer
+    async function handleAnswer(answer) {
+      try {
+        await peerConnection.setRemoteDescription(answer);
+        updateConnectionStatus("connected");
+      } catch (error) {
+        console.error("Error handling answer:", error);
+        updateConnectionStatus("failed");
+      }
+    }
+
+    // Handle incoming ICE candidate
+    async function handleCandidate(candidate) {
+      try {
+        await peerConnection.addIceCandidate(candidate);
+      } catch (error) {
+        console.error("Error adding ICE candidate:", error);
+      }
+    }
+
+    // Update connection status display
+    function updateConnectionStatus(status) {
+      const statusElement = document.getElementById("connectionStatus");
+      const statusText = {
+        "disconnected": "Status: Disconnected",
+        "connecting": "Status: Connecting...",
+        "connected": "Status: Connected",
+        "creating_offer": "Status: Creating offer...",
+        "creating_answer": "Status: Creating answer...",
+        "failed": "Status: Connection failed"
+      };
+      
+      statusElement.textContent = statusText[status] || `Status: ${status}`;
+      
+      // Update color based on status
+      if (status === "connected") {
+        statusElement.style.color = "var(--accent-light)";
+      } else if (status === "failed") {
+        statusElement.style.color = "var(--danger)";
+      } else {
+        statusElement.style.color = "var(--warning)";
+      }
+    }
+
+    // Add a message to the chat display
+    function addChatMessage(sender, text) {
+      const messagesElement = document.getElementById("chatMessages");
+      const messageElement = document.createElement("div");
+      messageElement.style.marginBottom = "0.5rem";
+      messageElement.style.padding = "0.5rem";
+      messageElement.style.backgroundColor = sender === "System" ? "rgba(0,0,0,0.2)" : "rgba(124, 58, 237, 0.1)";
+      messageElement.style.borderRadius = "8px";
+      
+      messageElement.innerHTML = `
+        <strong style="color: ${sender === "System" ? "var(--text-secondary)" : "var(--primary-light)"}">
+          ${sender}:
+        </strong> ${text}
+      `;
+      
+      messagesElement.appendChild(messageElement);
+      messagesElement.scrollTop = messagesElement.scrollHeight;
+    }
+
+    // Send a chat message
+    function sendChatMessage() {
+      const inputElement = document.getElementById("chatInput");
+      const message = inputElement.value.trim();
+      
+      if (message && dataChannel && dataChannel.readyState === "open") {
+        try {
+          const messageObj = {
+            sender: playerUsername || "Guest",
+            text: message
+          };
+          
+          dataChannel.send(JSON.stringify(messageObj));
+          addChatMessage("You", message);
+          inputElement.value = "";
+        } catch (error) {
+          console.error("Error sending message:", error);
+          addChatMessage("System", "Failed to send message");
+        }
+      } else if (!dataChannel || dataChannel.readyState !== "open") {
+        addChatMessage("System", "Not connected to peer");
+      }
+    }
+
+    // Parse URL hash for WebRTC signaling
+    function parseHash() {
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      
+      if (params.has("offer")) {
+        const offer = JSON.parse(decodeURIComponent(params.get("offer")));
+        handleOffer(offer);
+      } else if (params.has("answer")) {
+        const answer = JSON.parse(decodeURIComponent(params.get("answer")));
+        handleAnswer(answer);
+      } else if (params.has("candidate")) {
+        const candidate = JSON.parse(decodeURIComponent(params.get("candidate")));
+        handleCandidate(candidate);
+      }
+    }
 
     // ======================
     // GAME FUNCTIONS
@@ -1755,6 +2036,7 @@
       coins = 0;
       coinsPerClick = 1;
       coinsPerSecond = 0;
+      goldenCoins = 0;
       highestVisibleUpgrade = 3;
       
       // Reset all upgrades
@@ -1767,10 +2049,11 @@
         upgrade.purchased = false;
       });
       
-      // Save immediately
-      saveGame();
+      // Reset golden coin upgrades
+      goldenCoinUpgrades.forEach(upgrade => {
+        upgrade.purchased = false;
+      });
       
-      // Update displays
       updateDisplay();
       renderUpgrades();
       renderClickUpgrades();
@@ -2260,7 +2543,7 @@
       highestVisibleUpgrade = 3;
       rebirthCount = 0;
       
-      // Reset upgrades
+      // Reset all upgrades
       upgrades.forEach(upgrade => {
         upgrade.owned = 0;
       });
@@ -2414,7 +2697,6 @@
       if (cached) {
         const parsed = JSON.parse(cached);
         leaderboardData = parsed.data || [];
-        lastLeaderboardUpdate = parsed.timestamp || 0;
       } else {
         leaderboardData = [];
       }
@@ -3102,6 +3384,10 @@
         
         // Add all button event listeners
         setupEventListeners();
+        
+        // Initialize chat
+        addChatMessage("System", `Your Peer ID: ${myPeerId}`);
+        document.getElementById('peerIdInput').placeholder = `Enter peer ID (yours is ${myPeerId})`;
       } catch (error) {
         console.error("Error initializing game:", error);
       }
@@ -3122,17 +3408,15 @@
         updateLeaderboard();
       });
       
+      document.getElementById('chatBtn').addEventListener('click', () => {
+        document.getElementById("chatModal").style.display = "flex";
+      });
+      
       document.getElementById('signOutBtn').addEventListener('click', signOut);
       
       document.getElementById('adminBtn').addEventListener('click', () => {
         document.getElementById("adminPanel").style.display = "flex";
         loadUserList();
-      });
-      
-      document.getElementById('saveUsernameBtn').addEventListener('click', saveUsername);
-      
-      document.getElementById('closeAdminPanel').addEventListener('click', () => {
-        document.getElementById("adminPanel").style.display = "none";
       });
       
       // Tutorial buttons
@@ -3198,6 +3482,10 @@
       
       document.getElementById('closeLeaderboard').addEventListener('click', () => {
         document.getElementById("leaderboardModal").style.display = "none";
+      });
+      
+      document.getElementById('closeChatModal').addEventListener('click', () => {
+        document.getElementById("chatModal").style.display = "none";
       });
       
       // Code redemption
@@ -3274,6 +3562,24 @@
       // Admin panel actions
       document.getElementById('sendMessageBtn').addEventListener('click', sendBroadcastMessage);
       document.getElementById('saveSettingsBtn').addEventListener('click', saveAdminSettings);
+      
+      // Chat system listeners
+      document.getElementById('startChatBtn').addEventListener('click', startNewChat);
+      document.getElementById('connectBtn').addEventListener('click', () => {
+        const peerId = document.getElementById('peerIdInput').value.trim();
+        if (peerId) {
+          connectToPeer(peerId);
+        }
+      });
+      document.getElementById('sendChatBtn').addEventListener('click', sendChatMessage);
+      document.getElementById('chatInput').addEventListener('keypress', (e) => {
+        if (e.key === "Enter") {
+          sendChatMessage();
+        }
+      });
+      
+      // Handle URL hash changes for signaling
+      window.addEventListener('hashchange', parseHash);
     }
   </script>
 </body>
