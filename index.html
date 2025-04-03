@@ -1456,6 +1456,85 @@
       box-shadow: 0 0 20px var(--neon-pink);
     }
 
+    /* Achievements */
+    .achievements-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .achievement {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 1rem;
+      border: 1px solid var(--card-border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .achievement.unlocked {
+      border-left: 4px solid var(--gold);
+    }
+
+    .achievement.locked {
+      border-left: 4px solid var(--disabled);
+      opacity: 0.7;
+    }
+
+    .achievement-name {
+      font-weight: 600;
+      color: var(--neon-green);
+      margin-bottom: 0.5rem;
+    }
+
+    .achievement-desc {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+    }
+
+    .achievement-reward {
+      font-size: 0.8rem;
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    .achievement-progress {
+      height: 4px;
+      background: var(--disabled);
+      border-radius: 2px;
+      margin-top: 0.5rem;
+      overflow: hidden;
+    }
+
+    .achievement-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--neon-pink), var(--neon-purple));
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    /* AFK Earnings */
+    .afk-earnings {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--card-border);
+    }
+
+    .afk-title {
+      color: var(--neon-green);
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .afk-amount {
+      color: var(--gold);
+      font-weight: bold;
+    }
+
     /* Responsive adjustments */
     @media (max-width: 600px) {
       .upgrades-container {
@@ -1485,6 +1564,10 @@
 
       .chat-toggle-btn {
         bottom: 80px;
+      }
+
+      .achievements-container {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -1553,6 +1636,15 @@
     
     <h2>Golden Coin Upgrades</h2>
     <div class="upgrades-container" id="goldenUpgrades"></div>
+
+    <h2>Achievements</h2>
+    <div class="achievements-container" id="achievements"></div>
+
+    <!-- AFK Earnings Display -->
+    <div class="afk-earnings" id="afkEarnings" style="display: none;">
+      <div class="afk-title">AFK Earnings</div>
+      <div>While you were away, you earned <span class="afk-amount" id="afkAmount">0</span> coins!</div>
+    </div>
   </div>
 
   <!-- Global Chat -->
@@ -1749,6 +1841,9 @@
     let hasSeenTutorial = localStorage.getItem('hasSeenTutorial') === 'true';
     let chatCooldown = false;
     let chatVisible = false;
+    let lastActiveTime = Date.now();
+    let leaderboardData = [];
+    let lastLeaderboardUpdate = 0;
 
     // Game state variables
     let coins = 0;
@@ -1783,15 +1878,48 @@
       { id: 8, name: "+1M Clicks", amount: 1000000, cost: 100000000, purchased: false }
     ];
     
-    // Golden coin upgrades
+    // Golden coin upgrades (expanded to 19)
     const goldenCoinUpgrades = [
       { id: 1, name: "+10% CPS", cost: 1, purchased: false, effect: 1.1 },
       { id: 2, name: "+25% CPS", cost: 2, purchased: false, effect: 1.25 },
       { id: 3, name: "+50% CPS", cost: 3, purchased: false, effect: 1.5 },
       { id: 4, name: "+100% CPS", cost: 5, purchased: false, effect: 2.0 },
-      { id: 5, name: "Double Click Power", cost: 7, purchased: false, effect: 2.0, clickEffect: true }
+      { id: 5, name: "Double Click Power", cost: 7, purchased: false, effect: 2.0, clickEffect: true },
+      { id: 6, name: "+150% CPS", cost: 10, purchased: false, effect: 2.5 },
+      { id: 7, name: "Triple Click Power", cost: 15, purchased: false, effect: 3.0, clickEffect: true },
+      { id: 8, name: "+200% CPS", cost: 20, purchased: false, effect: 3.0 },
+      { id: 9, name: "5x Click Power", cost: 30, purchased: false, effect: 5.0, clickEffect: true },
+      { id: 10, name: "+300% CPS", cost: 40, purchased: false, effect: 4.0 },
+      { id: 11, name: "10x Click Power", cost: 50, purchased: false, effect: 10.0, clickEffect: true },
+      { id: 12, name: "+500% CPS", cost: 60, purchased: false, effect: 6.0 },
+      { id: 13, name: "20x Click Power", cost: 75, purchased: false, effect: 20.0, clickEffect: true },
+      { id: 14, name: "+750% CPS", cost: 90, purchased: false, effect: 8.5 },
+      { id: 15, name: "50x Click Power", cost: 110, purchased: false, effect: 50.0, clickEffect: true },
+      { id: 16, name: "+1000% CPS", cost: 130, purchased: false, effect: 11.0 },
+      { id: 17, name: "100x Click Power", cost: 150, purchased: false, effect: 100.0, clickEffect: true },
+      { id: 18, name: "+1500% CPS", cost: 175, purchased: false, effect: 16.0 },
+      { id: 19, name: "200x Click Power", cost: 200, purchased: false, effect: 200.0, clickEffect: true }
     ];
-    
+
+    // Achievements data
+    const achievements = [
+      { id: 1, name: "First Click", desc: "Click for the first time", reward: 1, unlocked: false, progress: 0, target: 1, stat: 'clicks' },
+      { id: 2, name: "Novice Tycoon", desc: "Reach 1,000 coins", reward: 1, unlocked: false, progress: 0, target: 1000, stat: 'coins' },
+      { id: 3, name: "Business Mogul", desc: "Reach 1,000,000 coins", reward: 1, unlocked: false, progress: 0, target: 1000000, stat: 'coins' },
+      { id: 4, name: "First Upgrade", desc: "Purchase your first business", reward: 1, unlocked: false, progress: 0, target: 1, stat: 'upgradesOwned' },
+      { id: 5, name: "Diversified Portfolio", desc: "Own 5 different businesses", reward: 1, unlocked: false, progress: 0, target: 5, stat: 'uniqueUpgrades' },
+      { id: 6, name: "Industrialist", desc: "Own 10 of any business", reward: 1, unlocked: false, progress: 0, target: 10, stat: 'maxUpgradeCount' },
+      { id: 7, name: "Golden Touch", desc: "Earn your first golden coin", reward: 1, unlocked: false, progress: 0, target: 1, stat: 'goldenCoins' },
+      { id: 8, name: "Golden Empire", desc: "Earn 10 golden coins", reward: 1, unlocked: false, progress: 0, target: 10, stat: 'goldenCoins' },
+      { id: 9, name: "Click Master", desc: "Reach 100 coins per click", reward: 1, unlocked: false, progress: 0, target: 100, stat: 'coinsPerClick' },
+      { id: 10, name: "Idle Profits", desc: "Reach 100 coins per second", reward: 1, unlocked: false, progress: 0, target: 100, stat: 'coinsPerSecond' },
+      { id: 11, name: "Rebirth", desc: "Rebirth for the first time", reward: 1, unlocked: false, progress: 0, target: 1, stat: 'rebirthCount' },
+      { id: 12, name: "Veteran Investor", desc: "Click 1,000 times", reward: 1, unlocked: false, progress: 0, target: 1000, stat: 'clicks' },
+      { id: 13, name: "The Grind", desc: "Click 10,000 times", reward: 1, unlocked: false, progress: 0, target: 10000, stat: 'clicks' },
+      { id: 14, name: "AFK Millionaire", desc: "Earn 1,000,000 coins while offline", reward: 1, unlocked: false, progress: 0, target: 1000000, stat: 'afkEarnings' },
+      { id: 15, name: "Completionist", desc: "Unlock all achievements", reward: 1, unlocked: false, progress: 0, target: 1, stat: 'achievementsUnlocked' }
+    ];
+
     // Upgrades data (19 upgrades + Death)
     const upgrades = [
       { id: 1, name: "TikTok Shop", baseCost: 10, owned: 0, effect: 0.5, desc: "Basic viral commerce" },
@@ -1918,6 +2046,7 @@
       renderUpgrades();
       renderClickUpgrades();
       renderGoldenUpgrades();
+      checkAchievements();
       saveGame(); // Auto-save
     }
     
@@ -1959,6 +2088,13 @@
       updateDisplay();
       checkForNewUpgrades();
       saveGame();
+      
+      // Track clicks for achievements
+      const clickAchievement = achievements.find(a => a.id === 1);
+      if (clickAchievement && !clickAchievement.unlocked) {
+        clickAchievement.progress++;
+        checkAchievement(clickAchievement);
+      }
       
       // Create falling coin
       createFallingCoin();
@@ -2060,7 +2196,7 @@
         
         upgradeEl.innerHTML = `
           <div class="upgrade-name">${upgrade.name}</div>
-          <div class="upgrade-desc">${upgrade.clickEffect ? "Doubles your click power" : `Multiplies CPS by ${upgrade.effect}`}</div>
+          <div class="upgrade-desc">${upgrade.clickEffect ? `Multiplies click power by ${upgrade.effect}` : `Multiplies CPS by ${upgrade.effect}`}</div>
           <div>
             <span class="upgrade-cost" style="color: var(--gold)">${upgrade.cost} golden coins</span>
             <span class="upgrade-owned">${upgrade.purchased ? 'Purchased' : ''}</span>
@@ -2068,6 +2204,31 @@
         `;
         
         goldenUpgradesContainer.appendChild(upgradeEl);
+      });
+    }
+    
+    function renderAchievements() {
+      const achievementsContainer = document.getElementById("achievements");
+      achievementsContainer.innerHTML = "";
+      
+      achievements.forEach(achievement => {
+        const achievementEl = document.createElement("div");
+        achievementEl.className = `achievement ${achievement.unlocked ? "unlocked" : "locked"}`;
+        
+        const progress = achievement.unlocked ? 100 : (achievement.progress / achievement.target * 100);
+        
+        achievementEl.innerHTML = `
+          <div class="achievement-name">${achievement.name}</div>
+          <div class="achievement-desc">${achievement.desc}</div>
+          <div class="achievement-reward">Reward: ${achievement.reward} golden coins</div>
+          ${!achievement.unlocked ? `
+            <div class="achievement-progress">
+              <div class="achievement-progress-bar" style="width: ${progress}%"></div>
+            </div>
+          ` : ''}
+        `;
+        
+        achievementsContainer.appendChild(achievementEl);
       });
     }
     
@@ -2089,6 +2250,9 @@
         updateDisplay();
         renderUpgrades();
         saveGame();
+        
+        // Check achievements
+        checkAchievements();
         
         // Visual feedback
         const upgradeEl = document.querySelector(`.upgrade[data-id="${id}"]`);
@@ -2188,6 +2352,9 @@
       
       // Show golden coins earned message
       alert(`Rebirth complete! Earned ${coinsEarned} golden coins!`);
+      
+      // Check rebirth achievement
+      checkAchievements();
     }
     
     function redeemCode() {
@@ -2219,6 +2386,110 @@
     
     function getUpgradeCost(upgrade) {
       return Math.floor(upgrade.baseCost * Math.pow(1.5, upgrade.owned));
+    }
+
+    // ======================
+    // ACHIEVEMENTS SYSTEM
+    // ======================
+    function checkAchievements() {
+      // Get current stats
+      const stats = {
+        coins: coins,
+        coinsPerClick: coinsPerClick,
+        coinsPerSecond: coinsPerSecond,
+        goldenCoins: goldenCoins,
+        rebirthCount: rebirthCount,
+        upgradesOwned: upgrades.reduce((sum, u) => sum + u.owned, 0),
+        uniqueUpgrades: upgrades.filter(u => u.owned > 0).length,
+        maxUpgradeCount: Math.max(...upgrades.map(u => u.owned)),
+        clicks: achievements.find(a => a.id === 1).progress,
+        afkEarnings: achievements.find(a => a.id === 14).progress,
+        achievementsUnlocked: achievements.filter(a => a.unlocked).length
+      };
+      
+      // Check each achievement
+      achievements.forEach(achievement => {
+        if (!achievement.unlocked) {
+          // Update progress based on stat
+          if (achievement.stat === 'clicks' || achievement.stat === 'afkEarnings') {
+            // These are handled separately
+          } else {
+            achievement.progress = stats[achievement.stat];
+          }
+          
+          // Check if achievement is completed
+          if (achievement.progress >= achievement.target) {
+            unlockAchievement(achievement);
+          }
+        }
+      });
+      
+      renderAchievements();
+    }
+    
+    function checkAchievement(achievement) {
+      if (!achievement.unlocked && achievement.progress >= achievement.target) {
+        unlockAchievement(achievement);
+      }
+    }
+    
+    function unlockAchievement(achievement) {
+      achievement.unlocked = true;
+      goldenCoins += achievement.reward;
+      
+      // Show notification
+      const notification = document.createElement('div');
+      notification.className = 'broadcast-message';
+      notification.textContent = `Achievement Unlocked: ${achievement.name}! +${achievement.reward} golden coins!`;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+      
+      updateDisplay();
+      renderAchievements();
+      saveGame();
+    }
+
+    // ======================
+    // AFK EARNINGS SYSTEM
+    // ======================
+    function checkAFKEarnings() {
+      const lastActive = localStorage.getItem('lastActiveTime');
+      if (!lastActive) return;
+      
+      const now = Date.now();
+      const timeAway = now - parseInt(lastActive);
+      
+      // Only calculate if away for more than 1 minute
+      if (timeAway > 60000) {
+        const awaySeconds = Math.floor(timeAway / 1000);
+        const earnedCoins = Math.floor(awaySeconds * coinsPerSecond);
+        
+        if (earnedCoins > 0) {
+          coins += earnedCoins;
+          
+          // Update AFK earnings achievement
+          const afkAchievement = achievements.find(a => a.id === 14);
+          if (afkAchievement) {
+            afkAchievement.progress += earnedCoins;
+            checkAchievement(afkAchievement);
+          }
+          
+          // Show AFK earnings
+          document.getElementById('afkEarnings').style.display = 'block';
+          document.getElementById('afkAmount').textContent = earnedCoins.toLocaleString();
+          
+          // Hide after 5 seconds
+          setTimeout(() => {
+            document.getElementById('afkEarnings').style.display = 'none';
+          }, 5000);
+          
+          updateDisplay();
+          saveGame();
+        }
+      }
     }
 
     // ======================
@@ -2289,6 +2560,17 @@
           
           // Initialize chat
           initChat();
+          
+          // Check for AFK earnings
+          checkAFKEarnings();
+          
+          // Give 3 golden coins to new players
+          const saveKey = `businessEmpireSave_${userId}`;
+          if (!localStorage.getItem(saveKey)) {
+            goldenCoins += 3;
+            updateDisplay();
+            saveGame();
+          }
         });
       } catch (error) {
         console.error("Error handling Google sign-in:", error);
@@ -2506,6 +2788,9 @@
 
     function saveGame() {
       try {
+        // Save last active time
+        localStorage.setItem('lastActiveTime', Date.now().toString());
+        
         const gameData = {
           coins,
           coinsPerClick,
@@ -2516,6 +2801,11 @@
           upgrades: upgrades.map(u => ({ id: u.id, owned: u.owned })),
           clickUpgrades: clickUpgrades.map(cu => ({ id: cu.id, purchased: cu.purchased })),
           goldenCoinUpgrades: goldenCoinUpgrades.map(gcu => ({ id: gcu.id, purchased: gcu.purchased })),
+          achievements: achievements.map(a => ({
+            id: a.id,
+            unlocked: a.unlocked,
+            progress: a.progress
+          })),
           username: playerUsername,
           avatar: playerPicture || "",
           id: userId,
@@ -2549,6 +2839,9 @@
           leaderboardAutoUpdate = autoUpdate === 'true';
           document.getElementById('leaderboardToggle').checked = leaderboardAutoUpdate;
         }
+        
+        // Render achievements
+        renderAchievements();
       } catch (error) {
         console.error("Error loading game:", error);
         resetGameState();
@@ -2578,10 +2871,17 @@
         upgrade.purchased = false;
       });
       
+      // Reset achievements
+      achievements.forEach(achievement => {
+        achievement.unlocked = false;
+        achievement.progress = 0;
+      });
+      
       updateDisplay();
       renderUpgrades();
       renderClickUpgrades();
       renderGoldenUpgrades();
+      renderAchievements();
     }
     
     function loadGameData(gameData) {
@@ -2631,10 +2931,22 @@
         });
       }
       
+      // Load achievements
+      if (gameData.achievements) {
+        gameData.achievements.forEach(savedAchievement => {
+          const existingAchievement = achievements.find(a => a.id === savedAchievement.id);
+          if (existingAchievement) {
+            existingAchievement.unlocked = savedAchievement.unlocked || false;
+            existingAchievement.progress = savedAchievement.progress || 0;
+          }
+        });
+      }
+      
       updateDisplay();
       renderUpgrades();
       renderClickUpgrades();
       renderGoldenUpgrades();
+      renderAchievements();
     }
 
     // ======================
@@ -3237,6 +3549,17 @@
             
             // Initialize chat
             initChat();
+            
+            // Check for AFK earnings
+            checkAFKEarnings();
+            
+            // Give 3 golden coins to new players
+            const saveKey = `businessEmpireSave_${userId}`;
+            if (!localStorage.getItem(saveKey)) {
+              goldenCoins += 3;
+              updateDisplay();
+              saveGame();
+            }
           });
         }
         
@@ -3245,6 +3568,7 @@
         renderUpgrades();
         renderClickUpgrades();
         renderGoldenUpgrades();
+        renderAchievements();
         setInterval(gameLoop, 1000);
         updateClickerText();
         loadGame();
@@ -3479,3 +3803,243 @@
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+<style>
+  /* Modern Dark Patch Notes Modal with Transparent BG */
+  .patch-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  
+  .patch-content {
+    background: rgba(22, 25, 28, 0.95);
+    border-radius: 18px;
+    width: 90%;
+    max-width: 500px;
+    padding: 2.5rem;
+    position: relative;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    color: #fff;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    backdrop-filter: blur(16px);
+  }
+  
+  .patch-content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+  }
+  
+  .close-patch {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    font-size: 1.3rem;
+    border: none;
+    backdrop-filter: blur(4px);
+  }
+  
+  .close-patch:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: rotate(90deg);
+    color: white;
+  }
+  
+  .patch-title {
+    font-size: 1.9rem;
+    margin-bottom: 1.5rem;
+    color: white;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    line-height: 1.3;
+  }
+  
+  .patch-text {
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 1.1rem;
+    font-weight: 400;
+  }
+  
+  .patch-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    padding: 0.4rem 1.2rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 1.8rem;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3);
+  }
+  
+  .patch-features {
+    margin: 1.8rem 0;
+  }
+  
+  .patch-feature {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.05rem;
+  }
+  
+  .patch-feature::before {
+    content: '▹';
+    color: var(--accent);
+    font-size: 1.1rem;
+    margin-right: 0.8rem;
+    line-height: 1;
+  }
+  
+  .feedback-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+    border-bottom: 1px solid rgba(0, 206, 201, 0.3);
+    transition: all 0.25s ease;
+    padding-bottom: 2px;
+    display: inline-block;
+  }
+  
+  .feedback-link:hover {
+    color: white;
+    border-bottom-color: var(--accent);
+  }
+  
+  .warning-text {
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.1);
+    padding: 0.8rem;
+    border-radius: 6px;
+    margin: 1.2rem 0;
+    border-left: 3px solid #ff6b6b;
+    font-weight: 500;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+
+<!-- Add to your HTML (before </body>) -->
+<div class="patch-modal" id="patchModal">
+  <div class="patch-content">
+    <button class="close-patch" id="closePatch">&times;</button>
+    <div class="patch-badge">NEW UPDATE</div>
+    <h3 class="patch-title">Latest Improvements</h3>
+    
+    <p class="patch-text">
+      We've made several important updates to enhance your gaming experience:
+    </p>
+    
+    <div class="patch-features">
+      <div class="patch-feature">
+        <span>Fixed leaderboard functionality</span>
+      </div>
+      <div class="patch-feature">
+        <span>Automatically give 3 golden coins to everyone</span>
+      </div>
+      <div class="patch-feature">
+        <span>Fixed chat system</span>
+      </div>
+      <div class="patch-feature">
+        <span>Made buttons easier to click</span>
+      </div>
+      <div class="patch-feature">
+        <span>Added achievements system</span>
+      </div>
+      <div class="patch-feature">
+        <span>Added AFK earnings for golden coins</span>
+      </div>
+      <div class="patch-feature">
+        <span>Expanded golden coin upgrades to 19 total</span>
+      </div>
+      <div class="patch-feature">
+        <span>Fixed game saving system</span>
+      </div>
+    </div>
+    
+    <p class="patch-text">
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLScPOqrRMIviZR163cYp2wIqkGQigwTR8jU-Qb7Hrl3tMUinGA/viewform?usp=dialog" 
+         class="feedback-link" 
+         target="_blank"
+         rel="noopener noreferrer">
+        Click here to submit feedback →
+      </a>
+    </p>
+  </div>
+</div>
+
+<!-- Add to your JavaScript -->
+<script>
+  // Enhanced Patch Notes Modal
+  const patchModal = document.getElementById("patchModal");
+  const closePatch = document.getElementById("closePatch");
+  
+  // Show modal with delay
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      patchModal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }, 1200);
+  });
+  
+  // Close handlers
+  closePatch.addEventListener('click', () => {
+    patchModal.style.animation = 'fadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) reverse';
+    setTimeout(() => {
+      patchModal.style.display = 'none';
+      document.body.style.overflow = 'auto';
+    }, 350);
+  });
+  
+  // Close when clicking outside
+  patchModal.addEventListener('click', (e) => {
+    if (e.target === patchModal) {
+      patchModal.style.animation = 'fadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) reverse';
+      setTimeout(() => {
+        patchModal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+      }, 350);
+    }
+  });
+</script>
