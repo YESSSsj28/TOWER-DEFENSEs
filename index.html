@@ -2310,51 +2310,53 @@
       }
     }
     
-    function triggerRebirth() {
-      // Calculate golden coins earned (1 for first rebirth, up to 7 max)
-      const coinsEarned = Math.min(rebirthCount + 1, 7);
-      goldenCoins += coinsEarned;
-      
-      // Increment rebirth count
-      rebirthCount++;
-      
-      // Reset all game state
-      coins = 0;
-      coinsPerClick = 1;
-      coinsPerSecond = 0;
-      goldenCoins = 0;
-      highestVisibleUpgrade = 3;
-      
-      // Reset all upgrades
-      upgrades.forEach(upgrade => {
-        upgrade.owned = 0;
-      });
-      
-      // Reset click upgrades
-      clickUpgrades.forEach(upgrade => {
-        upgrade.purchased = false;
-      });
-      
-      // Reset golden coin upgrades
-      goldenCoinUpgrades.forEach(upgrade => {
-        upgrade.purchased = false;
-      });
-      
-      updateDisplay();
-      renderUpgrades();
-      renderClickUpgrades();
-      renderGoldenUpgrades();
-      
-      // Show rebirth animation
-      for (let i = 0; i < 20; i++) {
-        setTimeout(() => createFallingCoin(), i * 100);
-      }
-      
-      // Show golden coins earned message
-      alert(`Rebirth complete! Earned ${coinsEarned} golden coins!`);
-      
-      // Check rebirth achievement
-      checkAchievements();
+  function triggerRebirth() {
+        // Calculate golden coins earned (1 for first rebirth, up to 7 max)
+        const coinsEarned = Math.min(rebirthCount + 1, 7);
+        goldenCoins += coinsEarned; // Add earned coins to existing golden coins
+
+        // Increment rebirth count
+        rebirthCount++;
+
+        // --- Lines removed/commented out ---
+        // Reset all game state
+        // coins = 0;                     // Keep current coins
+        // coinsPerClick = 1;             // Keep current click power
+        // coinsPerSecond = 0;            // Keep current passive income
+        // highestVisibleUpgrade = 3;    // Optional: You might want to keep this reset or remove it too
+
+        // Reset all upgrades
+        // upgrades.forEach(upgrade => {  // Keep owned business upgrades
+        //     upgrade.owned = 0;
+        // });
+
+        // Reset click upgrades
+        // clickUpgrades.forEach(upgrade => { // Keep purchased click upgrades
+        //     upgrade.purchased = false;
+        // });
+
+        // Reset golden coin upgrades
+        // goldenCoinUpgrades.forEach(upgrade => { // Keep purchased golden upgrades
+        //     upgrade.purchased = false;
+        // });
+        // --- End of removed/commented out lines ---
+
+        updateDisplay(); // Update display with new golden coins etc.
+        renderUpgrades(); // Re-render upgrades (cost might change if you kept the scaling)
+        renderClickUpgrades();
+        renderGoldenUpgrades();
+
+        // Show rebirth animation
+        for (let i = 0; i < 20; i++) {
+            setTimeout(() => createFallingCoin(), i * 100);
+        }
+
+        // Show golden coins earned message
+        alert(`Rebirth complete! Earned ${coinsEarned} golden coins! Rebirth Count: ${rebirthCount}`); // Updated alert
+
+        // Check rebirth achievement
+        checkAchievements();
+        saveGame(); // Save the game state immediately after rebirth changes
     }
     
     function redeemCode() {
