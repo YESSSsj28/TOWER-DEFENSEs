@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Business Empire Clicker - Final Transmission</title>
+    <title>Business Empire Clicker - Update & Announcement</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -13,14 +13,15 @@
             --neon-blue: #05d9e8;
             --neon-purple: #d300c5;
             --neon-green: #00ff9d;
-            --matrix-green: #00ff41;
+            --matrix-green: #00ff41; /* Keeping this for potential accents */
             --dark-bg: #0d0221;
             --darker-bg: #070113;
-            --card-bg: rgba(16, 0, 43, 0.85); /* Slightly less transparent */
-            --card-border: rgba(255, 42, 109, 0.3);
-            --text: #d1f7ff;
-            --text-secondary: #a0a8b3; /* Lighter secondary text */
+            --card-bg: rgba(16, 0, 43, 0.9); /* More opaque */
+            --card-border: rgba(5, 217, 232, 0.3); /* Use blue for border */
+            --text: #e0e8ff; /* Slightly softer text color */
+            --text-secondary: #b0bac9;
             --gold: #ffd700;
+            --heading-color: var(--neon-green); /* Green for main headings */
         }
 
         * {
@@ -29,25 +30,31 @@
             padding: 0;
         }
 
+        html {
+             scroll-behavior: smooth;
+        }
+
         body {
-            font-family: 'Inter', sans-serif; /* Use Inter as primary for readability */
+            /* Using Roboto Mono primarily for the tech feel, ensure readability */
+            font-family: 'Roboto Mono', monospace;
             background: var(--dark-bg);
             color: var(--text);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center; /* Center the content vertically */
-            padding: 2rem;
-            line-height: 1.6;
+            justify-content: center;
+            padding: 1.5rem; /* Slightly less padding */
+            line-height: 1.7; /* Increase line height for mono font */
+            font-size: 16px; /* Base font size */
             overflow-x: hidden;
             background-image:
-                radial-gradient(circle at 10% 20%, rgba(255, 42, 109, 0.1) 0%, transparent 25%),
-                radial-gradient(circle at 90% 80%, rgba(5, 217, 232, 0.1) 0%, transparent 25%),
-                linear-gradient(to bottom, var(--dark-bg), var(--darker-bg) 70%);
+                radial-gradient(circle at 10% 20%, rgba(255, 42, 109, 0.08) 0%, transparent 25%),
+                radial-gradient(circle at 90% 80%, rgba(5, 217, 232, 0.08) 0%, transparent 25%),
+                linear-gradient(to bottom, var(--dark-bg), var(--darker-bg) 80%);
         }
 
-        /* Animated starfield background (Optional but nice) */
+        /* Starfield - kept for visual theme */
         body::before {
             content: '';
             position: fixed;
@@ -60,114 +67,96 @@
                 radial-gradient(1px 1px at 90% 80%, white 0.5px, transparent 1px),
                 radial-gradient(1px 1px at 30% 50%, white 0.5px, transparent 1px),
                 radial-gradient(1px 1px at 70% 10%, white 0.5px, transparent 1px);
-            background-size: 250px 250px; /* Slightly larger stars */
+            background-size: 300px 300px;
             z-index: -1;
-            animation: starsMove 120s linear infinite alternate; /* Slower, alternating */
+            animation: starsMove 150s linear infinite alternate;
         }
 
         @keyframes starsMove {
-            from { transform: translateY(0) translateX(0); }
-            to { transform: translateY(-100px) translateX(-50px); }
+            from { transform: translateY(0) translateX(0); opacity: 0.5; }
+            to { transform: translateY(-150px) translateX(-75px); opacity: 0.8; }
         }
 
-        /* Main Announcement Content Styling */
+        /* Main Announcement Container */
         .announcement-container {
             background: var(--card-bg);
-            border-radius: 16px;
+            border-radius: 12px; /* Slightly less rounded */
             width: 100%;
-            max-width: 750px; /* Wider for better readability */
-            padding: 2.5rem 3rem; /* More padding */
+            max-width: 700px; /* Good width for reading */
+            padding: 2rem 2.5rem;
             position: relative;
-            box-shadow: 0 0 25px rgba(5, 217, 232, 0.2), 0 0 50px rgba(255, 42, 109, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
             border: 1px solid var(--card-border);
-            color: var(--text);
-            font-family: 'Roboto Mono', monospace; /* Use mono for the announcement */
-            backdrop-filter: blur(8px);
-            border-top: 3px solid var(--neon-blue); /* Accent border */
+            backdrop-filter: blur(10px);
+            border-top: 4px solid var(--neon-purple); /* Changed accent */
         }
 
-        .announcement-title {
-            font-size: clamp(1.8rem, 5vw, 2.4rem); /* Larger title */
-            margin-bottom: 1rem;
+        .main-title { /* H2 */
+            font-size: clamp(1.6rem, 4vw, 2.0rem); /* Adjusted size */
+            margin-bottom: 0.5rem;
             text-align: center;
-            background: linear-gradient(90deg, var(--neon-pink), var(--neon-blue));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 10px rgba(5, 217, 232, 0.4);
-            letter-spacing: 1px;
+            color: var(--text); /* White title */
             font-weight: 700;
-            line-height: 1.3;
+            letter-spacing: 0.5px;
         }
 
-        .announcement-subtitle { /* For the date/priority line */
+        .date-stamp { /* Paragraph for date */
             text-align: center;
             margin-bottom: 2rem;
-            color: var(--neon-blue);
+            color: var(--neon-blue); /* Blue date */
             font-size: 0.9rem;
-            letter-spacing: 1.5px; /* Wider spacing */
-            text-transform: uppercase;
-            opacity: 0.8;
+            font-weight: 700;
         }
 
-        .section-title { /* For H3 */
-            font-size: 1.3rem;
-            color: var(--neon-green);
-            margin: 2rem 0 1rem 0;
-            border-bottom: 1px solid var(--neon-purple);
-            padding-bottom: 0.6rem;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            text-shadow: 0 0 4px rgba(0, 255, 157, 0.3);
-        }
-
-        .announcement-list {
-            list-style-type: none; /* Remove default bullets */
-            padding-left: 0.5rem; /* Slight indent */
-            margin-bottom: 1.5rem;
-        }
-
-        .announcement-list li {
-            position: relative;
-            padding-left: 1.8rem; /* Space for pseudo-element */
+        .section-heading { /* H3 */
+            font-size: 1.25rem;
+            color: var(--heading-color); /* Use variable */
+            margin-top: 1.8rem;
             margin-bottom: 0.8rem;
-            line-height: 1.7;
-            font-size: 0.95rem;
-            color: var(--text); /* Main text color */
+            padding-bottom: 0.4rem;
+            border-bottom: 1px dashed var(--card-border); /* Dashed separator */
+            font-weight: 600;
         }
 
-        .announcement-list li::before {
-            content: ">"; /* Cyberpunk style bullet */
-            position: absolute;
-            left: 0;
-            top: 1px; /* Adjust vertical alignment */
-            color: var(--matrix-green);
+        /* Style paragraphs for readability */
+        p {
+            margin-bottom: 1rem;
+            color: var(--text-secondary); /* Use secondary color for paragraphs */
+            font-size: 0.95rem; /* Slightly smaller than base */
+        }
+
+        /* Make links stand out */
+        a {
+            color: var(--neon-pink);
+            text-decoration: none;
+            font-weight: 600;
+            border-bottom: 1px dotted var(--neon-pink);
+            transition: color 0.2s ease, border-bottom-color 0.2s ease;
+        }
+
+        a:hover {
+            color: var(--text);
+            border-bottom-color: var(--text);
+        }
+
+        /* Emphasis for key info */
+        strong {
+            color: var(--gold); /* Gold for important bits */
             font-weight: 700;
-            font-size: 1rem;
         }
 
-        .list-note { /* For [BRACKETED] text */
-            color: var(--neon-green);
-            font-weight: 700;
-            margin-right: 0.5em;
-        }
-
-        .highlight { /* For key dates/info */
-            color: var(--gold);
-            font-weight: 700;
-        }
-
-        .closing-remark {
+        /* Final sign-off */
+        .sign-off {
              margin-top: 2.5rem;
              text-align: center;
-             color: var(--neon-green);
-             font-size: 0.85rem;
-             letter-spacing: 1px;
-             opacity: 0.9;
+             color: var(--text-secondary);
+             font-size: 0.9rem;
+             font-style: italic;
         }
 
-        /* Remove any interactivity styles if accidentally copied */
-        a, button {
-            cursor: default; /* No pointer cursor */
+        /* Ensure no game styles remain */
+        button, input, .upgrade, .stats, .click-btn /* etc... */ {
+            display: none !important; /* Hide any accidental remnants */
         }
 
     </style>
@@ -175,41 +164,52 @@
 <body>
 
     <div class="announcement-container">
-        <h2 class="announcement-title">// SYSTEM BROADCAST //</h2>
-        <p class="announcement-subtitle">
-          PRIORITY: CORE DIRECTIVE SHIFT :: NEW NETWORK NODES ACTIVATING :: DATE: <span class="highlight">April 11, 2025</span>
+        <h2 class="main-title">An Update on Business Empire Clicker & What's Next!</h2>
+        <p class="date-stamp">April 11, 2025</p>
+
+        <h3 class="section-heading">About Business Empire Clicker</h3>
+        <p>
+            Hello everyone! First off, making Business Empire Clicker was incredibly fun, and I really appreciate everyone who played it.
+        </p>
+        <p>
+            However, I haven't updated the game much recently. That's because my focus has shifted to working on exciting new projects. To dedicate my time properly, I've decided to stop development on Business Empire Clicker.
+        </p>
+        <p>
+            This means the game is now offline and this message replaces it. Thank you for understanding!
         </p>
 
-        <h3 class="section-title">STATUS REPORT: BUSINESS EMPIRE CLICKER</h3>
-        <ul class="announcement-list">
-          <li><span class="list-note">[DEVELOPMENT HALTED]</span> Active enhancement protocols for Business Empire Clicker are now concluded. Development resources have been re-allocated.</li>
-          <li><span class="list-note">[SERVER STATUS: ARCHIVED]</span> Your established empires are archived but the simulation is no longer active for interaction.</li>
-          <li><span class="list-note">[REASON: EVOLUTION]</span> Primary focus has shifted entirely to next-generation projects demanding full operational capacity.</li>
-        </ul>
+        <h3 class="section-heading">Exciting News: Our Next Game!</h3>
+        <p>
+            I'm currently deep into developing a brand new <strong>Battle Royale game!</strong> It's shaping up to be a really cool project.
+        </p>
+        <p>
+            Everything I learned making my previous games (like Mihalio Clicker and this one) is helping make this Battle Royale game even better.
+        </p>
+        <p>
+            Keep an eye out – I'm aiming to launch a public Beta test <strong>next week</strong> (around April 14th-18th)! More details on how to join will follow soon.
+        </p>
 
-        <h3 class="section-title">ALERT: PROJECT BATTLEGROUNDS (Working Title)</h3>
-        <ul class="announcement-list">
-          <li><span class="list-note">[INITIATING: BATTLE ROYALE]</span> Development cycles are deep into crafting a high-intensity Battle Royale experience.</li>
-          <li><span class="list-note">[BETA PHASE IMMINENT]</span> Prepare for deployment. Initial public beta access is targeted for <span class="highlight">Next Week</span>. Stand by for access protocols.</li>
-          <li><span class="list-note">[LEARNING MATRIX]</span> Combat modeling, economic simulation, and engagement algorithms derived from 'Mihalio Clicker' and 'Business Empire Clicker' were instrumental in this project's genesis.</li>
-        </ul>
+        <h3 class="section-heading">Also Launching: Arcade Hub Unblocked Games!</h3>
+        <p>
+            That's not all! I'm also launching a new website called <strong>Arcade Hub Unblocked Games</strong>.
+        </p>
+        <p>
+            This site will feature a bunch of fun games you can play anywhere, even on school or work networks where websites are sometimes blocked.
+        </p>
+        <p>
+            I'm working hard to get it live, hopefully as soon as <strong>today, April 11th!</strong> I'll announce when it's ready.
+        </p>
 
-        <h3 class="section-title">NEW NODE ONLINE: UNBLOCKED DATA HAVEN</h3>
-        <ul class="announcement-list">
-          <li><span class="list-note">[ANNOUNCEMENT]</span> Simultaneously, we are launching a new public access node: An Unblocked Games Website.</li>
-          <li><span class="list-note">[PURPOSE]</span> Providing an open gateway to a curated selection of digital recreations, accessible across restricted networks.</li>
-          <li><span class="list-note">[ACTIVATION ETA]</span> Network propagation targeted for <span class="highlight">Today (April 11th)</span>, pending final diagnostic sweeps. Keep your scanners open.</li>
-        </ul>
+        <h3 class="section-heading">A Final Thank You!</h3>
+        <p>
+            Seriously, thank you all so much for playing Business Empire Clicker. Your support meant a lot!
+        </p>
+        <p>
+            I hope you'll check out the new Battle Royale game when the beta drops and visit the Arcade Hub website!
+        </p>
 
-        <h3 class="section-title">FORWARD TRANSMISSION & ACKNOWLEDGEMENT</h3>
-        <ul class="announcement-list">
-          <li><span class="list-note">[NEXT STEPS]</span> Monitor public comms for Battle Royale beta details and the live coordinates for the Unblocked Data Haven.</li>
-          <li><span class="list-note">[GRATITUDE LOGGED]</span> To every Operator of Business Empire Clicker: Your participation was vital. The data is archived, the experience valued. Thank you sincerely for playing.</li>
-          <li><span class="list-note">[FUTURE ENCOUNTERS]</span> We anticipate seeing you in the heat of the Battle Royale arena or exploring the new Unblocked Hub soon.</li>
-        </ul>
-
-        <p class="closing-remark">
-          // BROADCAST COMPLETE :: STANDING BY //
+        <p class="sign-off">
+            See you around!
         </p>
     </div>
 
