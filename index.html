@@ -2,216 +2,578 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Business Empire Clicker - Update & Announcement</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <title>Fizz - Rethink Refreshment</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
     <style>
-        /* Cyberpunk Theme Variables (from your original game) */
+        /* --- CSS Reset & Base Styles --- */
         :root {
-            --neon-pink: #ff2a6d;
-            --neon-blue: #05d9e8;
-            --neon-purple: #d300c5;
-            --neon-green: #00ff9d;
-            --matrix-green: #00ff41; /* Keeping this for potential accents */
-            --dark-bg: #0d0221;
-            --darker-bg: #070113;
-            --card-bg: rgba(16, 0, 43, 0.9); /* More opaque */
-            --card-border: rgba(5, 217, 232, 0.3); /* Use blue for border */
-            --text: #e0e8ff; /* Slightly softer text color */
-            --text-secondary: #b0bac9;
-            --gold: #ffd700;
-            --heading-color: var(--neon-green); /* Green for main headings */
+            --primary-color: #00a0a0; /* Teal/Aqua shade */
+            --secondary-color: #f0f8ff; /* Alice Blue */
+            --text-color: #333;
+            --light-text: #f8f8f8;
+            --heading-font: 'Poppins', sans-serif;
+            --body-font: 'Poppins', sans-serif;
+            --modal-bg: #fff;
+            --dark-overlay: rgba(0,0,0,0.6);
         }
 
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
-        }
-
-        html {
-             scroll-behavior: smooth;
+            box-sizing: border-box;
         }
 
         body {
-            /* Using Roboto Mono primarily for the tech feel, ensure readability */
-            font-family: 'Roboto Mono', monospace;
-            background: var(--dark-bg);
-            color: var(--text);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 1.5rem; /* Slightly less padding */
-            line-height: 1.7; /* Increase line height for mono font */
-            font-size: 16px; /* Base font size */
+            font-family: var(--body-font);
+            color: var(--text-color);
+            line-height: 1.6;
+            background-color: #fff; /* Fallback background */
+            position: relative;
             overflow-x: hidden;
-            background-image:
-                radial-gradient(circle at 10% 20%, rgba(255, 42, 109, 0.08) 0%, transparent 25%),
-                radial-gradient(circle at 90% 80%, rgba(5, 217, 232, 0.08) 0%, transparent 25%),
-                linear-gradient(to bottom, var(--dark-bg), var(--darker-bg) 80%);
         }
 
-        /* Starfield - kept for visual theme */
-        body::before {
+        /* --- Enhanced Background Animation (Floating Bubbles/Particles) --- */
+        body::before, body::after {
             content: '';
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background:
-                radial-gradient(1px 1px at 10% 20%, white 0.5px, transparent 1px),
-                radial-gradient(1px 1px at 90% 80%, white 0.5px, transparent 1px),
-                radial-gradient(1px 1px at 30% 50%, white 0.5px, transparent 1px),
-                radial-gradient(1px 1px at 70% 10%, white 0.5px, transparent 1px);
-            background-size: 300px 300px;
+            pointer-events: none;
             z-index: -1;
-            animation: starsMove 150s linear infinite alternate;
+            background: radial-gradient(circle, rgba(0, 160, 160, 0.15) 1px, rgba(0, 160, 160, 0.1) 2px, transparent 3px);
+            background-size: 40px 40px;
+            animation: floatUp 20s linear infinite;
         }
 
-        @keyframes starsMove {
-            from { transform: translateY(0) translateX(0); opacity: 0.5; }
-            to { transform: translateY(-150px) translateX(-75px); opacity: 0.8; }
+        body::after {
+            background-size: 60px 60px;
+            animation: floatUp 15s linear infinite reverse;
+            opacity: 0.6;
         }
 
-        /* Main Announcement Container */
-        .announcement-container {
-            background: var(--card-bg);
-            border-radius: 12px; /* Slightly less rounded */
-            width: 100%;
-            max-width: 700px; /* Good width for reading */
-            padding: 2rem 2.5rem;
-            position: relative;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-            border: 1px solid var(--card-border);
-            backdrop-filter: blur(10px);
-            border-top: 4px solid var(--neon-purple); /* Changed accent */
+        @keyframes floatUp {
+            0% {
+                transform: translate(0, 0);
+                opacity: 0.5;
+            }
+            50% {
+                transform: translate(-10px, -50vh);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translate(5px, -100vh);
+                opacity: 0;
+            }
         }
 
-        .main-title { /* H2 */
-            font-size: clamp(1.6rem, 4vw, 2.0rem); /* Adjusted size */
-            margin-bottom: 0.5rem;
-            text-align: center;
-            color: var(--text); /* White title */
-            font-weight: 700;
-            letter-spacing: 0.5px;
-        }
-
-        .date-stamp { /* Paragraph for date */
-            text-align: center;
-            margin-bottom: 2rem;
-            color: var(--neon-blue); /* Blue date */
-            font-size: 0.9rem;
-            font-weight: 700;
-        }
-
-        .section-heading { /* H3 */
-            font-size: 1.25rem;
-            color: var(--heading-color); /* Use variable */
-            margin-top: 1.8rem;
-            margin-bottom: 0.8rem;
-            padding-bottom: 0.4rem;
-            border-bottom: 1px dashed var(--card-border); /* Dashed separator */
+        h1, h2, h3 {
+            font-family: var(--heading-font);
             font-weight: 600;
+            margin-bottom: 1rem;
+            line-height: 1.3;
         }
 
-        /* Style paragraphs for readability */
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--light-text);
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
+        }
+
+        h2 {
+            font-size: 2.2rem;
+            color: var(--primary-color);
+        }
+        h3 { /* Style for flavor names in modal */
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
         p {
             margin-bottom: 1rem;
-            color: var(--text-secondary); /* Use secondary color for paragraphs */
-            font-size: 0.95rem; /* Slightly smaller than base */
+            font-weight: 300;
         }
 
-        /* Make links stand out */
-        a {
-            color: var(--neon-pink);
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 8px;
+        }
+
+        /* --- Enhanced Scroll Reveal Animation --- */
+        section {
+            padding: 4rem 2rem;
+            opacity: 0;
+            transform: translateY(50px);
+            transition: opacity 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        /* --- Header/Hero Section --- */
+        .hero {
+            min-height: 70vh;
+            /* <<< REMEMBER TO REPLACE IMAGE URL BELOW >>> */
+            background: linear-gradient(150deg, rgba(0, 60, 60, 0.7), rgba(0, 0, 0, 0.5)), url('YOUR_IMAGE_HERO_BACKGROUND_HERE.jpg') no-repeat center center/cover;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: var(--light-text);
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero h1 { margin-bottom: 0.5rem; }
+        .hero .intro { font-size: 1.2rem; max-width: 700px; font-weight: 300; margin-top: 1rem; color: var(--light-text); }
+
+        /* --- Content Sections --- */
+        .content-section {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 3rem;
+            margin-bottom: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        #difference { background-color: var(--secondary-color); }
+        #active-life { background-color: #fff; }
+
+        .content-section .text-content,
+        .content-section .image-content { flex: 1; min-width: 300px; }
+
+        #active-life .content-section { flex-direction: row-reverse; }
+
+         /* <<< REMEMBER TO REPLACE IMAGE URLs BELOW >>> */
+        .image-content img {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1); /* Add subtle shadow to images */
+        }
+
+
+        /* --- Footer --- */
+        footer {
+            background-color: var(--primary-color);
+            color: var(--light-text);
+            text-align: center;
+            padding: 3rem 1rem 2rem 1rem; /* Adjusted padding */
+            margin-top: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+        footer p { font-size: 1.1rem; margin-bottom: 1.5rem; font-weight: 400; }
+        .footer-links a {
+            color: var(--light-text);
             text-decoration: none;
-            font-weight: 600;
-            border-bottom: 1px dotted var(--neon-pink);
-            transition: color 0.2s ease, border-bottom-color 0.2s ease;
+            margin: 0 0.5rem;
+            padding: 0.8rem 1.5rem;
+            border: 1px solid var(--light-text);
+            border-radius: 25px;
+            transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease-out;
+            font-weight: 400;
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+        .footer-links a:hover {
+            background-color: var(--light-text);
+            color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+        .footer-contact { /* Style for the new contact info */
+            font-size: 0.9rem;
+            margin-top: 2rem;
+            opacity: 0.8;
+            font-weight: 300;
+        }
+        .copyright {
+             margin-top: 1.5rem;
+             margin-bottom: 0; /* Remove bottom margin */
+             font-size: 0.8rem;
+             opacity: 0.7;
         }
 
-        a:hover {
-            color: var(--text);
-            border-bottom-color: var(--text);
+        /* --- Base Modal Styles (Applies to both modals) --- */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: var(--dark-overlay);
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s ease-out;
         }
 
-        /* Emphasis for key info */
-        strong {
-            color: var(--gold); /* Gold for important bits */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: var(--modal-bg);
+            margin: 10% auto;
+            padding: 30px;
+            border: 1px solid #eee;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 10px;
+            position: relative;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            animation: slideIn 0.4s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .close-button {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            transition: color 0.3s ease;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: #333;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal h2 {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: var(--primary-color);
+        }
+
+        /* --- Flavor Modal Specific Styles --- */
+        #flavorModal .flavor-item {
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid #eee;
+        }
+        #flavorModal .flavor-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        #flavorModal .flavor-item p {
+            font-size: 0.95rem;
+            font-weight: 300;
+        }
+
+        /* --- NEW: Sale Modal Specific Styles --- */
+        #saleModal .modal-content {
+             max-width: 500px; /* Slightly smaller max-width maybe */
+             text-align: center; /* Center align text in sale modal */
+        }
+        #saleModal h2 {
+            font-size: 2.5rem; /* Make sale title bigger */
             font-weight: 700;
+            color: var(--primary-color); /* Or a different highlight color? */
         }
-
-        /* Final sign-off */
-        .sign-off {
-             margin-top: 2.5rem;
-             text-align: center;
-             color: var(--text-secondary);
+        #saleModal p {
+             font-size: 1.1rem;
+             line-height: 1.7;
+             margin-bottom: 1.5rem; /* More space between paragraphs */
+        }
+        #saleModal .sale-contact {
              font-size: 0.9rem;
              font-style: italic;
+             margin-top: 2rem;
+             opacity: 0.9;
         }
 
-        /* Ensure no game styles remain */
-        button, input, .upgrade, .stats, .click-btn /* etc... */ {
-            display: none !important; /* Hide any accidental remnants */
+
+        /* --- Responsiveness --- */
+        @media (max-width: 992px) {
+            h1 { font-size: 2.5rem; }
+            h2 { font-size: 1.8rem; }
+            .hero .intro { font-size: 1.1rem; }
+        }
+
+        @media (max-width: 768px) {
+            section { padding: 3rem 1rem; }
+
+            .content-section,
+            #active-life .content-section { flex-direction: column; gap: 2rem; text-align: center; }
+            #active-life .content-section { flex-direction: column; }
+            .content-section .text-content, .content-section .image-content { min-width: unset; }
+
+            .hero { min-height: 60vh; }
+            h1 { font-size: 2.2rem; }
+            h2 { font-size: 1.6rem; }
+            .hero .intro { font-size: 1rem; }
+
+            footer { padding: 2.5rem 1rem 1.5rem 1rem; }
+            .footer-links a { margin: 0.5rem 0.2rem; }
+
+            .modal-content { width: 90%; margin: 15% auto; padding: 25px; } /* Adjust vertical margin */
+            h3 { font-size: 1.3rem;}
+
+            #saleModal h2 { font-size: 2rem; }
+            #saleModal p { font-size: 1rem; }
+
+             /* Optional: disable background animation on mobile if performance is a concern */
+            /*
+            body::before, body::after {
+                 display: none;
+            }
+            */
+        }
+
+        @media (max-width: 480px) {
+            h1 { font-size: 1.8rem; }
+            h2 { font-size: 1.4rem; }
+            section { padding: 2rem 1rem; }
+            .modal-content { margin: 20% auto; padding: 20px;}
+            h3 { font-size: 1.2rem; }
+            #saleModal h2 { font-size: 1.8rem; }
         }
 
     </style>
 </head>
 <body>
 
-    <div class="announcement-container">
-        <h2 class="main-title">An Update on Business Empire Clicker & What's Next!</h2>
-        <p class="date-stamp">April 11, 2025</p>
+    <header class="hero">
+        <div class="container">
+            <h1>Rethink Refreshment.</h1>
+            <p class="intro">
+                Welcome to Fizz – where vibrant flavor meets mindful ingredients. We started with a simple idea: soda could be better. Better tasting, better for you, and better suited for your dynamic life. Forget the artificial overload and the sugar crashes. We meticulously craft every can to deliver the crisp, satisfying fizz and bold taste you love, but reimagined for today's world. It's the refreshment you crave, without compromise.
+            </p>
+        </div>
+    </header>
 
-        <h3 class="section-heading">About Business Empire Clicker</h3>
-        <p>
-            Hello everyone! First off, making Business Empire Clicker was incredibly fun, and I really appreciate everyone who played it.
-        </p>
-        <p>
-            However, I haven't updated the game much recently. That's because my focus has shifted to working on exciting new projects. To dedicate my time properly, I've decided to stop development on Business Empire Clicker.
-        </p>
-        <p>
-            This means the game is now offline and this message replaces it. Thank you for understanding!
-        </p>
+    <main>
+        <section id="difference">
+            <div class="container content-section">
+                <div class="text-content">
+                    <h2>The Difference You Can Taste & Feel</h2>
+                    <p>Why choose Fizz? We believe in transparency and better choices. That’s why many of our exciting flavors feature significantly less sugar than traditional sodas, and we proudly offer incredible zero-sugar options that don't skimp on taste.</p>
+                    <p>Looking for enjoyment without the buzz? Our range includes options with little to no caffeine, giving you the freedom to refresh any time of day – morning, noon, or night – without worrying about jitters or disrupting your flow. It’s guilt-free goodness in every sip.</p>
+                </div>
+                <div class="image-content">
+                    <img src="YOUR_IMAGE_LIFESTYLE_HERE.jpg" alt="People enjoying Fizz soda in a relaxed setting">
+                </div>
+            </div>
+        </section>
 
-        <h3 class="section-heading">Exciting News: Our Next Game!</h3>
-        <p>
-            I'm currently deep into developing a brand new <strong>Battle Royale game!</strong> It's shaping up to be a really cool project.
-        </p>
-        <p>
-            Everything I learned making my previous games (like Mihalio Clicker and this one) is helping make this Battle Royale game even better.
-        </p>
-        <p>
-            Keep an eye out – I'm aiming to launch a public Beta test <strong>next week</strong> (around April 14th-18th)! More details on how to join will follow soon.
-        </p>
+        <section id="active-life">
+            <div class="container content-section">
+                <div class="text-content">
+                    <h2>Fuel Your Active Life</h2>
+                    <p>Your active lifestyle demands smart fuel and hydration. Fizz is the perfect partner for your adventures, workouts, and recovery moments. Unlike heavy, sugary drinks that can weigh you down, our sodas offer light, crisp refreshment that revitalizes without the unwanted additives.</p>
+                    <p>It's an ideal way to cool down and replenish fluids post-activity, providing delicious hydration that supports your performance and well-being. Elevate your hydration game and taste the vibrant difference with Fizz.</p>
+                </div>
+                <div class="image-content">
+                     <img src="YOUR_IMAGE_ACTIVE_LIFE_HERE.jpg" alt="Person cooling down with Fizz soda after exercise">
+                </div>
+            </div>
+        </section>
+    </main>
 
-        <h3 class="section-heading">Also Launching: Arcade Hub Unblocked Games!</h3>
-        <p>
-            That's not all! I'm also launching a new website called <strong>Arcade Hub Unblocked Games</strong>.
-        </p>
-        <p>
-            This site will feature a bunch of fun games you can play anywhere, even on school or work networks where websites are sometimes blocked.
-        </p>
-        <p>
-            I'm working hard to get it live, hopefully as soon as <strong>today, April 11th!</strong> I'll announce when it's ready.
-        </p>
+    <footer>
+        <div class="container">
+            <p>Ready to discover your new favorite?</p>
+            <div class="footer-links">
+                <a href="#" id="exploreFlavorsBtn">Explore Our Flavors</a>
+                <a href="#find">Find Fizz Near You</a>
+            </div>
+            <p class="footer-contact">
+                Questions? Contact us at: <a href="mailto:YOUR_EMAIL@EXAMPLE.COM" style="color: var(--light-text);">YOUR_EMAIL@EXAMPLE.COM</a>
+                 </p>
+            <p class="copyright">&copy; 2025 Fizz Beverages. All rights reserved.</p>
+        </div>
+    </footer>
 
-        <h3 class="section-heading">A Final Thank You!</h3>
-        <p>
-            Seriously, thank you all so much for playing Business Empire Clicker. Your support meant a lot!
-        </p>
-        <p>
-            I hope you'll check out the new Battle Royale game when the beta drops and visit the Arcade Hub website!
-        </p>
+    <div id="flavorModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button flavor-close">&times;</span>
+            <h2>Explore Our Flavors</h2>
 
-        <p class="sign-off">
-            See you around!
-        </p>
+            <div class="flavor-item">
+                <h3>Cherry Fizz</h3>
+                <p>Experience the burst of bold, juicy cherry flavor in every sip. Cherry Fizz is crafted with real cherry essence for an authentic taste that's both sweet and refreshingly tart. Its unique trait? A stunning, vibrant red hue derived purely from natural fruit extracts, making it as beautiful to look at as it is delicious to drink.</p>
+            </div>
+
+            <div class="flavor-item">
+                <h3>Blueberry Fizz</h3>
+                <p>Dive into the delightful taste of sun-ripened blueberries. Blueberry Fizz offers a smooth, subtly sweet flavor profile that's incredibly refreshing. Its unique standout quality is the infusion of natural blueberry antioxidants, adding a touch of wellness to your favorite fizzy treat.</p>
+            </div>
+            </div>
     </div>
 
-    </body>
+    <div id="saleModal" class="modal">
+         <div class="modal-content">
+              <span class="close-button sale-close">&times;</span>
+              <h2>Fizz Sale!</h2>
+              <p>
+                   Get ready for an unbelievable event: Fizz soda is just 50 cents a can! That's right, stock up on your favorite refreshing flavors for an incredibly low price.
+              </p>
+              <p>
+                   This amazing sale lasts for one month only, starting now. Don't wait, because an opportunity like this will truly never happen again!
+              </p>
+              <p class="sale-contact">
+                   Need to get in touch? Contact us at: <a href="mailto:YOUR_EMAIL@EXAMPLE.COM" style="color: var(--primary-color);">YOUR_EMAIL@EXAMPLE.COM</a>
+                   </p>
+         </div>
+    </div>
+
+
+    <script>
+        // --- Scroll Reveal Animation ---
+        const sections = document.querySelectorAll('section');
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.15 // Section becomes visible when 15% is in view
+        };
+
+        const observerCallback = (entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    // Optional: unobserve after first animation
+                    // observer.unobserve(entry.target);
+                } else {
+                    // Optional: remove class to re-animate on scroll up
+                    // entry.target.classList.remove('visible');
+                }
+            });
+        };
+        const observer = new IntersectionObserver(observerCallback, observerOptions);
+        sections.forEach(section => {
+            observer.observe(section);
+        });
+
+        // --- Shared Modal Logic ---
+        function setupModal(modalId, openTriggers, closeTriggers) {
+            const modal = document.getElementById(modalId);
+            if (!modal) {
+                console.error("Modal element not found:", modalId);
+                return;
+            }
+
+            const openModal = (e) => {
+                 if (e) e.preventDefault(); // Prevent default anchor behavior if triggered by a link
+                modal.style.display = 'block';
+                document.body.style.overflow = 'hidden'; // Prevent background scroll
+            }
+
+            const closeModal = () => {
+                modal.style.display = 'none';
+                document.body.style.overflow = ''; // Restore background scroll
+            }
+
+            // Event Listeners for Opening
+            if (openTriggers && openTriggers.length > 0) {
+                openTriggers.forEach(trigger => {
+                    const element = document.querySelector(trigger);
+                    if (element) {
+                        element.addEventListener('click', openModal);
+                    } else {
+                        console.warn("Open trigger not found:", trigger);
+                    }
+                });
+            }
+
+            // Event Listeners for Closing
+             if (closeTriggers && closeTriggers.length > 0) {
+                 closeTriggers.forEach(trigger => {
+                     const element = modal.querySelector(trigger); // Look *inside* the specific modal
+                     if (element) {
+                         element.addEventListener('click', closeModal);
+                     } else {
+                         console.warn("Close trigger not found:", trigger, "within modal:", modalId);
+                     }
+                 });
+             }
+
+            // Close modal if user clicks outside the modal content
+            window.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    closeModal();
+                }
+            });
+
+             // Close modal with the Escape key
+             window.addEventListener('keydown', (event) => {
+                 if (event.key === 'Escape' && modal.style.display === 'block') {
+                     closeModal();
+                 }
+             });
+
+             // Return functions if needed externally (like for the auto-popup)
+             return { openModal, closeModal };
+        }
+
+        // --- Setup Flavor Modal ---
+        setupModal('flavorModal', ['#exploreFlavorsBtn'], ['.flavor-close']); // Triggered by button, closed by its specific button
+
+        // --- Setup Sale Modal & Auto Open ---
+        const saleModalControls = setupModal('saleModal', [], ['.sale-close']); // No button trigger, closed by its specific button
+
+        // Auto-open the Sale Modal after a delay
+        if (saleModalControls && saleModalControls.openModal) {
+            setTimeout(() => {
+                saleModalControls.openModal();
+            }, 2000); // Open after 2000 milliseconds (2 seconds)
+        }
+
+
+        // --- Optional: Smooth scroll for footer links ---
+        // Uncomment this section if you add content sections with corresponding IDs (like id="find")
+        /*
+        document.querySelectorAll('footer a[href^="#"]').forEach(anchor => {
+             if (anchor.id !== 'exploreFlavorsBtn') { // Exclude the modal button
+                 anchor.addEventListener('click', function (e) {
+                     e.preventDefault();
+                     const targetId = this.getAttribute('href');
+                     try {
+                         const targetElement = document.querySelector(targetId);
+                         if(targetElement) {
+                             targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                         } else {
+                             console.warn("Smooth scroll target not found:", targetId);
+                             // Maybe scroll to top or do nothing?
+                             // window.scrollTo({ top: 0, behavior: 'smooth' });
+                         }
+                     } catch(error) {
+                         console.error("Error finding element for smooth scroll:", targetId, error);
+                     }
+                 });
+             }
+        });
+        */
+
+    </script>
+
+</body>
 </html>
