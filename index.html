@@ -514,6 +514,92 @@
       color: var(--bg-dark);
     }
 
+    /* Leaderboard styles */
+    .leaderboard {
+      background: rgba(10, 14, 23, 0.8);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      border: 1px solid rgba(0, 240, 255, 0.2);
+    }
+
+    .leaderboard-header {
+      display: grid;
+      grid-template-columns: 1fr 3fr 2fr 2fr;
+      font-weight: bold;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--primary);
+    }
+
+    .leaderboard-entries {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .leaderboard-entry {
+      display: grid;
+      grid-template-columns: 1fr 3fr 2fr 2fr;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid rgba(0, 240, 255, 0.1);
+    }
+
+    .leaderboard-refresh {
+      text-align: center;
+      margin-top: 1rem;
+      color: var(--text-dim);
+    }
+
+    /* AFK Popup */
+    .afk-popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(10, 14, 23, 0.95);
+      border-radius: 16px;
+      padding: 2rem;
+      width: 90%;
+      max-width: 500px;
+      z-index: 3000;
+      border: 2px solid var(--accent);
+      box-shadow: 0 0 30px rgba(0, 255, 157, 0.5);
+      text-align: center;
+      display: none;
+    }
+
+    .afk-popup h2 {
+      color: var(--accent);
+      margin-bottom: 1rem;
+      font-size: 1.8rem;
+    }
+
+    .afk-amount {
+      font-size: 2rem;
+      color: var(--gold);
+      margin: 1rem 0;
+      font-weight: bold;
+    }
+
+    .afk-time {
+      color: var(--text-dim);
+      margin-bottom: 1.5rem;
+    }
+
+    /* Maintenance banner */
+    .maintenance-banner {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: var(--error);
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      z-index: 4000;
+      display: none;
+    }
+
     /* Animations */
     @keyframes pulse {
       0% { transform: scale(1); }
@@ -559,6 +645,11 @@
       .admin-content {
         padding: 1rem;
       }
+      
+      .leaderboard-header,
+      .leaderboard-entry {
+        grid-template-columns: 1fr 2fr 1fr 1fr;
+      }
     }
 
     @media (max-width: 480px) {
@@ -570,6 +661,12 @@
       
       .click-btn {
         padding: 1.2rem;
+      }
+      
+      .leaderboard-header,
+      .leaderboard-entry {
+        grid-template-columns: 1fr 1.5fr 1fr 1fr;
+        font-size: 0.8rem;
       }
     }
   </style>
@@ -623,6 +720,22 @@
     
     <h2>Golden Investments</h2>
     <div class="golden-upgrades" id="goldenUpgrades"></div>
+    
+    <h2>Global Leaderboard</h2>
+    <div class="leaderboard" id="leaderboard">
+      <div class="leaderboard-header">
+        <span>Rank</span>
+        <span>Player</span>
+        <span>Coins</span>
+        <span>Golden</span>
+      </div>
+      <div class="leaderboard-entries" id="leaderboardEntries">
+        <div style="text-align: center; padding: 1rem;">Loading leaderboard...</div>
+      </div>
+      <div class="leaderboard-refresh">
+        Next update in: <span id="refreshTimer">10:00</span>
+      </div>
+    </div>
 
     <!-- Admin Panel Modal -->
     <div class="admin-panel" id="adminPanel">
@@ -634,8 +747,19 @@
         </div>
         <div style="text-align: center; margin-top: 1rem;">
           <button class="action-btn" id="refreshUsers">Refresh List</button>
+          <button class="action-btn" id="toggleMaintenance" style="background: var(--warning);">Enable Maintenance</button>
         </div>
       </div>
+    </div>
+
+    <!-- AFK Earnings Popup -->
+    <div class="afk-popup" id="afkPopup">
+      <h2>⚡ WELCOME BACK! ⚡</h2>
+      <p>You earned:</p>
+      <div class="afk-amount" id="afkAmount">0</div>
+      <p>While you were away for:</p>
+      <div class="afk-time" id="afkTime">0 minutes 0 seconds</div>
+      <button class="click-btn" id="closeAfkPopup" style="max-width: 200px;">Continue</button>
     </div>
 
     <!-- Sign In Required Modal -->
@@ -654,6 +778,12 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Maintenance Banner -->
+    <div class="maintenance-banner" id="maintenanceBanner">
+      <h2>🚧 Maintenance Ongoing 🚧</h2>
+      <p id="maintenanceMessage">The game is currently undergoing maintenance. Please check back later.</p>
     </div>
   </div>
 
@@ -717,7 +847,24 @@
         isAdmin: false
       },
       lastClickTime: 0,
-      spaceCooldown: false
+      spaceCooldown: false,
+      lastActiveTimestamp: Date.now()
+    };
+
+    // ======================
+    // JSONBIN INTEGRATION
+    // ======================
+    const JSONBIN_ID = '68221c308561e97a50126b52';
+    const X_MASTER_KEY = '$2a$10$sJr7V0Jt993U7BEW4PQauO7BIApPMWnvGtuSSFinCVdgCJoG543fG';
+    let globalGameData = {
+      bans: [],
+      leaderboard: [],
+      gameStatus: {
+        maintenance: false,
+        maintenanceMessage: "",
+        lastGlobalRefresh: new Date().toISOString()
+      },
+      playerData: {}
     };
 
     // ======================
@@ -742,6 +889,7 @@
       
       gameState.coins += gameState.coinsPerClick;
       gameState.lastClickTime = now;
+      gameState.lastActiveTimestamp = now;
       
       // Create visual feedback
       createFallingCoin();
@@ -902,6 +1050,224 @@
     }
 
     // ======================
+    // JSONBIN FUNCTIONS
+    // ======================
+    async function fetchGlobalData() {
+      try {
+        const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`, {
+          headers: { 'X-Master-Key': X_MASTER_KEY }
+        });
+        const data = await response.json();
+        globalGameData = data.record || globalGameData;
+        
+        // Check maintenance mode
+        if (globalGameData.gameStatus?.maintenance) {
+          showMaintenanceMessage(globalGameData.gameStatus);
+          return false;
+        }
+        
+        return true;
+      } catch (error) {
+        console.error('Failed to fetch global data:', error);
+        return false;
+      }
+    }
+
+    async function pushPlayerData() {
+      if (!gameState.user.id || globalGameData.gameStatus?.maintenance) return;
+
+      const playerData = {
+        coins: gameState.coins,
+        goldenCoins: gameState.goldenCoins,
+        rebirths: gameState.rebirthCount,
+        upgrades: gameState.upgrades,
+        lastLogin: new Date().toISOString()
+      };
+
+      try {
+        // Update leaderboard if player has enough coins
+        const leaderboardEntry = {
+          userId: gameState.user.id,
+          username: gameState.user.name,
+          coins: gameState.coins,
+          goldenCoins: gameState.goldenCoins,
+          rebirths: gameState.rebirthCount,
+          lastUpdated: new Date().toISOString()
+        };
+
+        // Check if player already exists in leaderboard
+        const existingIndex = globalGameData.leaderboard.findIndex(entry => entry.userId === gameState.user.id);
+        if (existingIndex >= 0) {
+          globalGameData.leaderboard[existingIndex] = leaderboardEntry;
+        } else {
+          globalGameData.leaderboard.push(leaderboardEntry);
+        }
+
+        // Sort leaderboard by coins
+        globalGameData.leaderboard.sort((a, b) => b.coins - a.coins);
+
+        // Update player data
+        globalGameData.playerData[gameState.user.id] = playerData;
+
+        await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Master-Key': X_MASTER_KEY
+          },
+          body: JSON.stringify(globalGameData)
+        });
+      } catch (error) {
+        console.error('Failed to save player data:', error);
+      }
+    }
+
+    // ======================
+    // LEADERBOARD SYSTEM
+    // ======================
+    function startLeaderboardTimer() {
+      const nextUpdate = Math.ceil(Date.now() / 600000) * 600000; // Next 10-minute mark
+      const updateTimer = () => {
+        const remaining = Math.max(nextUpdate - Date.now(), 0);
+        const minutes = Math.floor(remaining / 60000);
+        const seconds = Math.floor((remaining % 60000) / 1000);
+        document.getElementById('refreshTimer').textContent = 
+          `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        
+        if (remaining <= 0) {
+          updateLeaderboard();
+          startLeaderboardTimer(); // Reset timer for next 10 minutes
+        }
+      };
+      
+      updateTimer();
+      setInterval(updateTimer, 1000);
+    }
+
+    async function updateLeaderboard() {
+      try {
+        await fetchGlobalData();
+        const entries = globalGameData.leaderboard
+          .sort((a, b) => b.coins - a.coins)
+          .slice(0, 100);
+
+        const container = document.getElementById('leaderboardEntries');
+        container.innerHTML = '';
+
+        if (entries.length === 0) {
+          container.innerHTML = '<div style="text-align: center; padding: 1rem;">No players yet!</div>';
+          return;
+        }
+
+        entries.forEach((entry, index) => {
+          const entryEl = document.createElement('div');
+          entryEl.className = 'leaderboard-entry';
+          entryEl.innerHTML = `
+            <span>#${index + 1}</span>
+            <span>${entry.username}</span>
+            <span>${entry.coins.toLocaleString()}</span>
+            <span>${entry.goldenCoins}</span>
+          `;
+          container.appendChild(entryEl);
+        });
+
+        // Update last refresh time
+        globalGameData.gameStatus.lastGlobalRefresh = new Date().toISOString();
+        await pushPlayerData();
+      } catch (error) {
+        console.error('Failed to update leaderboard:', error);
+      }
+    }
+
+    // ======================
+    // AFK EARNINGS SYSTEM
+    // ======================
+    function setupAfkTracking() {
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          gameState.lastActiveTimestamp = Date.now();
+        } else {
+          calculateAfkEarnings();
+        }
+      });
+
+      window.addEventListener('blur', () => {
+        gameState.lastActiveTimestamp = Date.now();
+      });
+
+      window.addEventListener('focus', () => {
+        calculateAfkEarnings();
+      });
+    }
+
+    function calculateAfkEarnings() {
+      const afkSeconds = Math.min((Date.now() - gameState.lastActiveTimestamp) / 1000, 3600);
+      if (afkSeconds < 5) return; // Ignore very short AFK periods
+      
+      const earnings = Math.floor(gameState.coinsPerSecond * 0.25 * afkSeconds);
+      
+      if (earnings > 0) {
+        gameState.coins += earnings;
+        showAfkPopup(earnings, afkSeconds);
+        saveGame();
+        updateDisplay();
+      }
+    }
+
+    function showAfkPopup(earnings, seconds) {
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = Math.floor(seconds % 60);
+      
+      document.getElementById('afkAmount').textContent = earnings.toLocaleString();
+      document.getElementById('afkTime').textContent = `${minutes} minutes ${remainingSeconds} seconds`;
+      document.getElementById('afkPopup').style.display = 'block';
+    }
+
+    // ======================
+    // MAINTENANCE MODE
+    // ======================
+    function showMaintenanceMessage(status) {
+      const banner = document.getElementById('maintenanceBanner');
+      const message = document.getElementById('maintenanceMessage');
+      
+      if (status.maintenance) {
+        banner.style.display = 'block';
+        message.textContent = status.message || "The game is currently undergoing maintenance. Please check back later.";
+      } else {
+        banner.style.display = 'none';
+      }
+    }
+
+    async function toggleMaintenanceMode() {
+      const btn = document.getElementById('toggleMaintenance');
+      globalGameData.gameStatus.maintenance = !globalGameData.gameStatus.maintenance;
+      
+      if (globalGameData.gameStatus.maintenance) {
+        globalGameData.gameStatus.maintenanceMessage = prompt("Enter maintenance message:", "The game is currently undergoing maintenance. Please check back later.");
+        btn.textContent = "Disable Maintenance";
+        btn.style.background = "var(--success)";
+      } else {
+        btn.textContent = "Enable Maintenance";
+        btn.style.background = "var(--warning)";
+      }
+      
+      try {
+        await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Master-Key': X_MASTER_KEY
+          },
+          body: JSON.stringify(globalGameData)
+        });
+        
+        showMaintenanceMessage(globalGameData.gameStatus);
+      } catch (error) {
+        console.error('Failed to update maintenance mode:', error);
+      }
+    }
+
+    // ======================
     // AUTHENTICATION
     // ======================
     function handleGoogleSignIn(response) {
@@ -928,11 +1294,8 @@
         // Close sign-in modal
         document.getElementById('signinModal').style.display = 'none';
         
-        // Load game data
-        loadGame();
-        
-        // Start game loop
-        setInterval(gameLoop, 1000);
+        // Initialize game systems
+        initializeGame();
       } catch (error) {
         console.error("Error handling sign-in:", error);
       }
@@ -991,33 +1354,69 @@
     // ======================
     // SAVE/LOAD SYSTEM
     // ======================
-    function saveGame() {
+    async function saveGame() {
       if (!gameState.user.id) return;
       
-      localStorage.setItem(`corporateConquest_${gameState.user.id}`, JSON.stringify({
-        coins: gameState.coins,
-        coinsPerClick: gameState.coinsPerClick,
-        coinsPerSecond: gameState.coinsPerSecond,
-        goldenCoins: gameState.goldenCoins,
-        rebirthCount: gameState.rebirthCount,
-        highestVisibleUpgrade: gameState.highestVisibleUpgrade,
-        upgrades: gameState.upgrades,
-        goldenUpgrades: gameState.goldenUpgrades
-      }));
+      // Local save
+      localStorage.setItem(`corporateConquest_${gameState.user.id}`, JSON.stringify(gameState));
+      
+      // Cloud save every 2 minutes
+      const now = Date.now();
+      if (!this.lastCloudSave || now - this.lastCloudSave > 120000) {
+        await pushPlayerData();
+        this.lastCloudSave = now;
+      }
     }
 
-    function loadGame() {
+    async function loadGame() {
       if (!gameState.user.id) return;
       
-      const savedData = localStorage.getItem(`corporateConquest_${gameState.user.id}`);
-      if (savedData) {
-        const data = JSON.parse(savedData);
-        
-        gameState.coins = data.coins || 0;
-        gameState.coinsPerClick = data.coinsPerClick || 1;
-        gameState.coinsPerSecond = data.coinsPerSecond || 0;
-        gameState.goldenCoins = data.goldenCoins || 0;
-        gameState.rebirthCount = data.rebirthCount || 0;
+      // Try cloud load first
+      if (await fetchGlobalData()) {
+        const cloudData = globalGameData.playerData[gameState.user.id];
+        if (cloudData) {
+          // Merge cloud data with local state
+          gameState.coins = cloudData.coins || gameState.coins;
+          gameState.goldenCoins = cloudData.goldenCoins || gameState.goldenCoins;
+          gameState.rebirthCount = cloudData.rebirths || gameState.rebirthCount;
+          
+          // Merge upgrades
+          if (cloudData.upgrades) {
+            cloudData.upgrades.forEach(savedUpgrade => {
+              const existing = gameState.upgrades.find(u => u.id === savedUpgrade.id);
+              if (existing) {
+                existing.owned = savedUpgrade.owned || 0;
+              }
+            });
+          }
+          
+          // Recalculate CPS
+          gameState.coinsPerSecond = gameState.upgrades.reduce((total, upgrade) => {
+            return total + (upgrade.effect * upgrade.owned);
+          }, 0);
+          
+          // Apply golden upgrades
+          gameState.goldenUpgrades.forEach(upgrade => {
+            if (upgrade.purchased) {
+              if (upgrade.clickEffect) {
+                gameState.coinsPerClick *= upgrade.effect;
+              } else {
+                gameState.coinsPerSecond *= upgrade.effect;
+              }
+            }
+          });
+        }
+      }
+      
+      // Fallback to local storage
+      const localData = localStorage.getItem(`corporateConquest_${gameState.user.id}`);
+      if (localData) {
+        const data = JSON.parse(localData);
+        gameState.coins = data.coins || gameState.coins;
+        gameState.coinsPerClick = data.coinsPerClick || gameState.coinsPerClick;
+        gameState.coinsPerSecond = data.coinsPerSecond || gameState.coinsPerSecond;
+        gameState.goldenCoins = data.goldenCoins || gameState.goldenCoins;
+        gameState.rebirthCount = data.rebirthCount || gameState.rebirthCount;
         gameState.highestVisibleUpgrade = data.highestVisibleUpgrade || 3;
         
         // Merge upgrades
@@ -1036,27 +1435,39 @@
             const existing = gameState.goldenUpgrades.find(u => u.id === savedUpgrade.id);
             if (existing) {
               existing.purchased = savedUpgrade.purchased || false;
-              
-              // Apply effects
-              if (existing.purchased) {
-                if (existing.clickEffect) {
-                  gameState.coinsPerClick *= existing.effect;
-                } else {
-                  gameState.coinsPerSecond *= existing.effect;
-                }
-              }
             }
           });
         }
-        
-        updateDisplay();
-        renderUpgrades();
-        renderGoldenUpgrades();
       } else {
         // New player bonus
         gameState.goldenCoins += 3;
-        saveGame();
       }
+      
+      updateDisplay();
+      renderUpgrades();
+      renderGoldenUpgrades();
+    }
+
+    // ======================
+    // INITIALIZATION
+    // ======================
+    async function initializeGame() {
+      // Load game data
+      await loadGame();
+      
+      // Start game systems
+      setupAfkTracking();
+      startLeaderboardTimer();
+      updateLeaderboard();
+      
+      // Start game loop
+      setInterval(gameLoop, 1000);
+      
+      // Auto-refresh every 10 minutes
+      setInterval(async () => {
+        await fetchGlobalData();
+        updateLeaderboard();
+      }, 600000);
     }
 
     // ======================
@@ -1076,6 +1487,11 @@
       document.getElementById('closeAdmin').addEventListener('click', () => {
         document.getElementById('adminPanel').style.display = 'none';
       });
+      document.getElementById('closeAfkPopup').addEventListener('click', () => {
+        document.getElementById('afkPopup').style.display = 'none';
+      });
+      document.getElementById('refreshUsers').addEventListener('click', loadUserList);
+      document.getElementById('toggleMaintenance').addEventListener('click', toggleMaintenanceMode);
       
       // Space bar handling
       document.addEventListener('keydown', (e) => {
