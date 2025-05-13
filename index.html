@@ -46,6 +46,19 @@
         linear-gradient(to bottom, var(--bg-dark), var(--bg-darker));
     }
 
+    /* Top 1 player background */
+    body.top1-bg {
+      background-image: 
+        radial-gradient(circle at center, rgba(255, 215, 0, 0.1) 0%, transparent 70%),
+        linear-gradient(45deg, 
+          rgba(0, 0, 0, 0.9) 0%, 
+          rgba(10, 14, 23, 0.9) 50%, 
+          rgba(0, 0, 0, 0.9) 100%),
+        url('https://i.imgur.com/JQJQJQJ.png');
+      background-size: cover;
+      background-attachment: fixed;
+    }
+
     /* Animated background elements */
     body::before {
       content: '';
@@ -544,6 +557,15 @@
       border-bottom: 1px solid rgba(0, 240, 255, 0.1);
     }
 
+    .leaderboard-entry.top1 {
+      background: rgba(255, 215, 0, 0.1);
+      border-left: 4px solid var(--gold);
+    }
+
+    .leaderboard-entry.top1 .player-name::before {
+      content: '👑 ';
+    }
+
     .leaderboard-refresh {
       text-align: center;
       margin-top: 1rem;
@@ -592,12 +614,99 @@
       top: 0;
       left: 0;
       width: 100%;
-      background: var(--error);
+      height: 100%;
+      background: rgba(0, 0, 0, 0.95);
       color: white;
       padding: 1rem;
       text-align: center;
       z-index: 4000;
       display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .maintenance-banner h2 {
+      color: var(--error);
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .maintenance-message {
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+      max-width: 600px;
+    }
+
+    /* Top 1 Celebration */
+    .top1-celebration {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 5000;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .top1-celebration h2 {
+      color: var(--gold);
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      text-shadow: 0 0 20px var(--gold);
+    }
+
+    .top1-celebration p {
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+      max-width: 600px;
+    }
+
+    .gift-box {
+      width: 200px;
+      height: 200px;
+      background: linear-gradient(145deg, var(--gold), #ffc600);
+      border-radius: 10px;
+      margin: 2rem 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .gift-box::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        to bottom right,
+        transparent 45%,
+        rgba(255, 255, 255, 0.3) 50%,
+        transparent 55%
+      );
+      transform: rotate(45deg);
+      animation: shine 3s infinite;
+    }
+
+    @keyframes shine {
+      0% { transform: rotate(45deg) translate(-30%, -30%); }
+      100% { transform: rotate(45deg) translate(30%, 30%); }
+    }
+
+    .gift-box img {
+      width: 100px;
+      height: 100px;
     }
 
     /* Animations */
@@ -782,8 +891,22 @@
 
     <!-- Maintenance Banner -->
     <div class="maintenance-banner" id="maintenanceBanner">
-      <h2>🚧 Maintenance Ongoing 🚧</h2>
-      <p id="maintenanceMessage">The game is currently undergoing maintenance. Please check back later.</p>
+      <h2>🚧 MAINTENANCE MODE 🚧</h2>
+      <div class="maintenance-message" id="maintenanceMessage">The game is currently undergoing maintenance. Please check back later.</div>
+      <button class="click-btn" id="adminPanelBtn" style="display: none; max-width: 200px;">Admin Panel</button>
+    </div>
+
+    <!-- Top 1 Celebration -->
+    <div class="top1-celebration" id="top1Celebration">
+      <h2>🎉 CONGRATULATIONS! 🎉</h2>
+      <p>You've reached the #1 spot on the leaderboard!</p>
+      <p>As a reward, you've unlocked exclusive perks!</p>
+      
+      <div class="gift-box" id="giftBox">
+        <img src="https://cdn-icons-png.flaticon.com/512/2583/2583344.png" alt="Gift Box">
+      </div>
+      
+      <button class="click-btn" id="closeTop1Celebration" style="max-width: 200px;">Continue</button>
     </div>
   </div>
 
@@ -848,7 +971,8 @@
       },
       lastClickTime: 0,
       spaceCooldown: false,
-      lastActiveTimestamp: Date.now()
+      lastActiveTimestamp: Date.now(),
+      isTop1: false
     };
 
     // ======================
@@ -866,6 +990,10 @@
       },
       playerData: {}
     };
+
+    // Cache for reducing API calls
+    let lastFetchTime = 0;
+    const FETCH_COOLDOWN = 300000; // 5 minutes
 
     // ======================
     // GAME FUNCTIONS
@@ -1053,12 +1181,18 @@
     // JSONBIN FUNCTIONS
     // ======================
     async function fetchGlobalData() {
+      const now = Date.now();
+      if (now - lastFetchTime < FETCH_COOLDOWN && lastFetchTime !== 0) {
+        return true;
+      }
+
       try {
         const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`, {
           headers: { 'X-Master-Key': X_MASTER_KEY }
         });
         const data = await response.json();
         globalGameData = data.record || globalGameData;
+        lastFetchTime = now;
         
         // Check maintenance mode
         if (globalGameData.gameStatus?.maintenance) {
@@ -1106,6 +1240,9 @@
         // Sort leaderboard by coins
         globalGameData.leaderboard.sort((a, b) => b.coins - a.coins);
 
+        // Check if player is now top 1
+        checkTop1Status();
+
         // Update player data
         globalGameData.playerData[gameState.user.id] = playerData;
 
@@ -1119,6 +1256,19 @@
         });
       } catch (error) {
         console.error('Failed to save player data:', error);
+      }
+    }
+
+    function checkTop1Status() {
+      if (globalGameData.leaderboard.length > 0) {
+        const topPlayer = globalGameData.leaderboard[0];
+        const wasTop1 = gameState.isTop1;
+        gameState.isTop1 = topPlayer.userId === gameState.user.id;
+        
+        if (gameState.isTop1 && !wasTop1) {
+          // Player just became top 1
+          showTop1Celebration();
+        }
       }
     }
 
@@ -1161,10 +1311,10 @@
 
         entries.forEach((entry, index) => {
           const entryEl = document.createElement('div');
-          entryEl.className = 'leaderboard-entry';
+          entryEl.className = `leaderboard-entry ${index === 0 ? 'top1' : ''}`;
           entryEl.innerHTML = `
             <span>#${index + 1}</span>
-            <span>${entry.username}</span>
+            <span class="player-name">${entry.username}</span>
             <span>${entry.coins.toLocaleString()}</span>
             <span>${entry.goldenCoins}</span>
           `;
@@ -1177,6 +1327,18 @@
       } catch (error) {
         console.error('Failed to update leaderboard:', error);
       }
+    }
+
+    // ======================
+    // TOP 1 CELEBRATION
+    // ======================
+    function showTop1Celebration() {
+      document.getElementById('top1Celebration').style.display = 'flex';
+    }
+
+    function unlockTop1Perks() {
+      document.body.classList.add('top1-bg');
+      // Add any other top 1 perks here
     }
 
     // ======================
@@ -1229,10 +1391,18 @@
     function showMaintenanceMessage(status) {
       const banner = document.getElementById('maintenanceBanner');
       const message = document.getElementById('maintenanceMessage');
+      const adminBtn = document.getElementById('adminPanelBtn');
       
       if (status.maintenance) {
-        banner.style.display = 'block';
+        banner.style.display = 'flex';
         message.textContent = status.message || "The game is currently undergoing maintenance. Please check back later.";
+        
+        // Show admin panel button if admin
+        if (gameState.user.isAdmin) {
+          adminBtn.style.display = 'block';
+        } else {
+          adminBtn.style.display = 'none';
+        }
       } else {
         banner.style.display = 'none';
       }
@@ -1282,6 +1452,9 @@
           isAdmin: userData.email === "yhpatel@lcstudents.com"
         };
         
+        // Save user data
+        localStorage.setItem('googleUser', JSON.stringify(gameState.user));
+        
         // Hide sign-in button, show sign-out
         document.querySelector('.g_id_signin').style.display = 'none';
         document.getElementById('signOutBtn').style.display = 'block';
@@ -1294,8 +1467,13 @@
         // Close sign-in modal
         document.getElementById('signinModal').style.display = 'none';
         
-        // Initialize game systems
-        initializeGame();
+        // Check maintenance mode
+        fetchGlobalData().then(success => {
+          if (success || !globalGameData.gameStatus?.maintenance) {
+            // Initialize game systems
+            initializeGame();
+          }
+        });
       } catch (error) {
         console.error("Error handling sign-in:", error);
       }
@@ -1304,6 +1482,7 @@
     function signOut() {
       google.accounts.id.disableAutoSelect();
       gameState.user = { id: "", name: "Guest", email: "", picture: "", isAdmin: false };
+      localStorage.removeItem('googleUser');
       
       document.querySelector('.g_id_signin').style.display = 'block';
       document.getElementById('signOutBtn').style.display = 'none';
@@ -1331,24 +1510,65 @@
       const userList = document.getElementById('userList');
       userList.innerHTML = '<div style="text-align: center; padding: 2rem;">Loading users...</div>';
       
-      // In a real app, this would fetch from a database
-      // For demo, we'll just show current user
+      // Show all players from leaderboard
       setTimeout(() => {
-        userList.innerHTML = `
-          <div class="user-item">
+        userList.innerHTML = '';
+        
+        if (globalGameData.leaderboard.length === 0) {
+          userList.innerHTML = '<div style="text-align: center; padding: 2rem;">No players found</div>';
+          return;
+        }
+        
+        globalGameData.leaderboard.forEach(player => {
+          const userItem = document.createElement('div');
+          userItem.className = 'user-item';
+          
+          userItem.innerHTML = `
             <div class="user-info">
-              <img src="${gameState.user.picture}" class="user-avatar" alt="${gameState.user.name}">
               <div>
-                <div>${gameState.user.name}</div>
-                <div style="font-size: 0.8rem; color: var(--text-dim);">${gameState.user.email}</div>
+                <div>${player.username}</div>
+                <div style="font-size: 0.8rem; color: var(--text-dim);">${player.userId}</div>
               </div>
             </div>
             <div class="user-actions">
-              <button class="action-btn ban-btn">Ban</button>
+              <button class="action-btn ban-btn" data-userid="${player.userId}">Ban</button>
             </div>
-          </div>
-        `;
-      }, 1000);
+          `;
+          
+          userList.appendChild(userItem);
+        });
+        
+        // Add ban button listeners
+        document.querySelectorAll('.ban-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const userId = btn.getAttribute('data-userid');
+            banUser(userId);
+          });
+        });
+      }, 500);
+    }
+
+    function banUser(userId) {
+      if (!globalGameData.bans.includes(userId)) {
+        globalGameData.bans.push(userId);
+        pushGlobalData();
+        loadUserList();
+      }
+    }
+
+    async function pushGlobalData() {
+      try {
+        await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Master-Key': X_MASTER_KEY
+          },
+          body: JSON.stringify(globalGameData)
+        });
+      } catch (error) {
+        console.error('Failed to update global data:', error);
+      }
     }
 
     // ======================
@@ -1476,7 +1696,22 @@
     document.addEventListener('DOMContentLoaded', () => {
       // Check if signed in
       const savedUser = localStorage.getItem('googleUser');
-      if (!savedUser) {
+      if (savedUser) {
+        gameState.user = JSON.parse(savedUser);
+        document.querySelector('.g_id_signin').style.display = 'none';
+        document.getElementById('signOutBtn').style.display = 'block';
+        
+        if (gameState.user.isAdmin) {
+          document.getElementById('adminBtn').style.display = 'block';
+        }
+        
+        // Check maintenance mode first
+        fetchGlobalData().then(success => {
+          if (success || !globalGameData.gameStatus?.maintenance) {
+            initializeGame();
+          }
+        });
+      } else {
         document.getElementById('signinModal').style.display = 'flex';
       }
       
@@ -1492,6 +1727,21 @@
       });
       document.getElementById('refreshUsers').addEventListener('click', loadUserList);
       document.getElementById('toggleMaintenance').addEventListener('click', toggleMaintenanceMode);
+      document.getElementById('adminPanelBtn').addEventListener('click', showAdminPanel);
+      document.getElementById('closeTop1Celebration').addEventListener('click', () => {
+        document.getElementById('top1Celebration').style.display = 'none';
+      });
+      document.getElementById('giftBox').addEventListener('click', () => {
+        unlockTop1Perks();
+        document.getElementById('giftBox').innerHTML = `
+          <div style="text-align: center;">
+            <div style="font-size: 1.5rem; color: var(--gold); margin-bottom: 1rem;">🎁 UNLOCKED! 🎁</div>
+            <div>Exclusive Top 1 Background</div>
+            <div>Golden Name on Leaderboard</div>
+            <div>Special Crown Emoji</div>
+          </div>
+        `;
+      });
       
       // Space bar handling
       document.addEventListener('keydown', (e) => {
