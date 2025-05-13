@@ -46,7 +46,6 @@
         linear-gradient(to bottom, var(--bg-dark), var(--bg-darker));
     }
 
-    /* Top 1 player background */
     body.top1-bg {
       background-image: 
         radial-gradient(circle at center, rgba(255, 215, 0, 0.1) 0%, transparent 70%),
@@ -59,7 +58,6 @@
       background-attachment: fixed;
     }
 
-    /* Animated background elements */
     body::before {
       content: '';
       position: fixed;
@@ -80,7 +78,6 @@
       to { transform: translateY(-200px); }
     }
 
-    /* Container styles */
     .container {
       width: 100%;
       max-width: 900px;
@@ -88,7 +85,6 @@
       padding-bottom: 2rem;
     }
 
-    /* Header styles */
     header {
       text-align: center;
       margin-bottom: 1.5rem;
@@ -131,7 +127,6 @@
       padding-bottom: 0.5rem;
     }
 
-    /* Stats display */
     .stats-panel {
       background: rgba(10, 14, 23, 0.8);
       border-radius: 16px;
@@ -172,7 +167,6 @@
       justify-content: space-between;
     }
 
-    /* Click area */
     .click-area {
       display: flex;
       flex-direction: column;
@@ -244,7 +238,6 @@
       opacity: 0.8;
     }
 
-    /* Upgrades grid */
     .upgrades-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -315,7 +308,6 @@
       border-radius: 12px;
     }
 
-    /* Golden upgrades section */
     .golden-upgrades {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -363,7 +355,6 @@
       font-weight: 600;
     }
 
-    /* Top navigation */
     .top-nav {
       position: absolute;
       top: 0.5rem;
@@ -396,7 +387,6 @@
       border-color: var(--primary);
     }
 
-    /* Modals */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -442,7 +432,6 @@
       transform: rotate(90deg);
     }
 
-    /* Admin panel styles */
     .admin-panel {
       display: none;
       position: fixed;
@@ -451,7 +440,7 @@
       width: 100%;
       height: 100%;
       background: rgba(0, 0, 0, 0.95);
-      z-index: 2000;
+      z-index: 5000;
       justify-content: center;
       align-items: center;
     }
@@ -527,7 +516,6 @@
       color: var(--bg-dark);
     }
 
-    /* Leaderboard styles */
     .leaderboard {
       background: rgba(10, 14, 23, 0.8);
       border-radius: 16px;
@@ -572,7 +560,6 @@
       color: var(--text-dim);
     }
 
-    /* AFK Popup */
     .afk-popup {
       position: fixed;
       top: 50%;
@@ -608,7 +595,6 @@
       margin-bottom: 1.5rem;
     }
 
-    /* Maintenance banner */
     .maintenance-banner {
       position: fixed;
       top: 0;
@@ -638,7 +624,11 @@
       max-width: 600px;
     }
 
-    /* Top 1 Celebration */
+    .maintenance-banner .click-btn {
+      position: relative;
+      z-index: 4001;
+    }
+
     .top1-celebration {
       position: fixed;
       top: 0;
@@ -709,7 +699,6 @@
       height: 100px;
     }
 
-    /* Animations */
     @keyframes pulse {
       0% { transform: scale(1); }
       50% { transform: scale(1.05); }
@@ -741,7 +730,6 @@
       filter: drop-shadow(0 0 5px var(--gold));
     }
 
-    /* Responsive adjustments */
     @media (max-width: 768px) {
       .upgrades-grid, .golden-upgrades {
         grid-template-columns: 1fr;
@@ -857,6 +845,7 @@
         <div style="text-align: center; margin-top: 1rem;">
           <button class="action-btn" id="refreshUsers">Refresh List</button>
           <button class="action-btn" id="toggleMaintenance" style="background: var(--warning);">Enable Maintenance</button>
+          <button class="action-btn" id="testTop1" style="background: var(--gold); color: black;">Test Top 1 (10s)</button>
         </div>
       </div>
     </div>
@@ -1342,6 +1331,37 @@
     }
 
     // ======================
+    // TEST TOP 1 FUNCTIONALITY
+    // ======================
+    function testTop1() {
+      // Temporarily make the current player #1
+      const currentPlayerIndex = globalGameData.leaderboard.findIndex(entry => entry.userId === gameState.user.id);
+      
+      if (currentPlayerIndex >= 0) {
+        // Save original coins value
+        const originalCoins = globalGameData.leaderboard[currentPlayerIndex].coins;
+        
+        // Make this player #1 by setting a huge coin value
+        globalGameData.leaderboard[currentPlayerIndex].coins = 999999999;
+        globalGameData.leaderboard.sort((a, b) => b.coins - a.coins);
+        
+        // Update the display
+        updateLeaderboard();
+        showTop1Celebration();
+        
+        // After 10 seconds, revert back
+        setTimeout(() => {
+          globalGameData.leaderboard[currentPlayerIndex].coins = originalCoins;
+          globalGameData.leaderboard.sort((a, b) => b.coins - a.coins);
+          updateLeaderboard();
+          document.body.classList.remove('top1-bg');
+        }, 10000);
+      } else {
+        alert("You need to be on the leaderboard first!");
+      }
+    }
+
+    // ======================
     // AFK EARNINGS SYSTEM
     // ======================
     function setupAfkTracking() {
@@ -1742,6 +1762,7 @@
           </div>
         `;
       });
+      document.getElementById('testTop1').addEventListener('click', testTop1);
       
       // Space bar handling
       document.addEventListener('keydown', (e) => {
