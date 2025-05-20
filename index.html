@@ -1,59 +1,245 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Fixed Real-Time Chat</title>
+    <title>Secure Modern Chat</title>
     <style>
-        /* Keep the same CSS styles from previous version */
-        body { font-family: Arial; max-width: 600px; margin: 0 auto; padding: 20px; }
-        #chat { height: 400px; border: 1px solid #ddd; padding: 10px; overflow-y: scroll; }
-        #message { width: 70%; padding: 10px; }
-        button { padding: 10px 15px; }
+        :root {
+            --primary: #2e7d32;
+            --background: #f5f5f5;
+            --error: #d32f2f;
+        }
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: var(--background);
+        }
+        .chat-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: var(--primary);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #users-online {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        #messages {
+            height: 500px;
+            padding: 20px;
+            overflow-y: auto;
+            background: #fafafa;
+        }
+        .message {
+            margin: 15px 0;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            animation: slideIn 0.3s ease;
+            max-width: 80%;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .message.you {
+            margin-left: auto;
+            background: #e8f5e9;
+        }
+        .message-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .username {
+            font-weight: 500;
+            margin-right: 10px;
+            color: var(--primary);
+        }
+        .timestamp {
+            font-size: 0.8em;
+            color: #757575;
+        }
+        .input-area {
+            display: flex;
+            gap: 10px;
+            padding: 20px;
+            border-top: 1px solid #eee;
+        }
+        #messageInput {
+            flex: 1;
+            padding: 14px;
+            border: 1px solid #bdbdbd;
+            border-radius: 25px;
+            font-size: 16px;
+        }
+        #sendButton {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #sendButton:hover {
+            background: #1b5e20;
+        }
+        .error-message {
+            color: var(--error);
+            text-align: center;
+            padding: 10px;
+        }
     </style>
 </head>
 <body>
-    <h1>Fixed Chat</h1>
-    <div id="chat"></div>
-    <input type="text" id="message" placeholder="Type your message">
-    <button onclick="sendMessage()">Send</button>
+    <div class="chat-container">
+        <div class="header">
+            <div>Secure Chat</div>
+            <div id="users-online">1 user online</div>
+        </div>
+        <div id="messages"></div>
+        <div class="input-area">
+            <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off">
+            <button id="sendButton" onclick="sendMessage()">Send</button>
+        </div>
+        <div id="errorMessage" class="error-message"></div>
+    </div>
 
-    <script src="https://js.pusher.com/7.0/pusher.min.js"></script>
+    <script src="https://cdn.scaledrone.com/scaledrone.min.js"></script>
     <script>
-        // Pusher Setup (YOUR CREDENTIALS)
-        const pusher = new Pusher('93f04e4635b812b156f1', {
-            cluster: 'us2',
-            encrypted: true
+        // Configuration
+        const CHANNEL_ID = 'U5d5WVOL0Tl03XNe';
+        const ROOM_NAME = 'secure-chat-v2';
+        const BANNED_WORDS = ['badword1', 'badword2', 'example']; // Add your banned words here
+
+        // State management
+        let currentUser = null;
+        const activeUsers = new Set();
+
+        // Scaledrone connection
+        const drone = new ScaleDrone(CHANNEL_ID, {
+            autoReconnect: true,
+            data: getInitialUserData()
         });
 
-        // Channel name MUST match exactly
-        const channel = pusher.subscribe('friends-chat-room');
+        function getInitialUserData() {
+            let username = localStorage.getItem('chat-username') || '';
+            while (!username || activeUsers.has(username)) {
+                username = prompt("Choose a unique username:") || 
+                          `User${Math.floor(Math.random()*1000)}`;
+            }
+            localStorage.setItem('chat-username', username);
+            return { username };
+        }
 
-        // Event names MUST match exactly
-        channel.bind('client-new-message', function(data) {
-            console.log('Received:', data); // Debug log
-            const chat = document.getElementById('chat');
-            chat.innerHTML += `<p><strong>${data.name}:</strong> ${data.message}</p>`;
-            chat.scrollTop = chat.scrollHeight;
-        });
+        // Profanity filter
+        function sanitizeMessage(text) {
+            const regex = new RegExp(BANNED_WORDS.join('|'), 'gi');
+            return text.replace(regex, match => '*'.repeat(match.length));
+        }
 
-        // Send message
-        function sendMessage() {
-            const message = document.getElementById('message').value;
-            if (!message) return;
+        // UI Functions
+        function addMessage(message, isYou = false) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isYou ? 'you' : ''}`;
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <div class="username">${message.user.username}</div>
+                    <div class="timestamp">${new Date().toLocaleTimeString()}</div>
+                </div>
+                <div>${message.text}</div>
+            `;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function updateUserCount() {
+            document.getElementById('users-online').textContent = 
+                `${activeUsers.size} user${activeUsers.size !== 1 ? 's' : ''} online`;
+        }
+
+        // Chat functionality
+        drone.on('open', error => {
+            if (error) return showError('Connection error');
             
-            const name = prompt("Your name:") || "Anonymous";
-            console.log('Sending:', {name, message}); // Debug log
+            currentUser = drone.clientData.username;
+            activeUsers.add(currentUser);
+            updateUserCount();
 
-            // Critical: Event name must start with "client-"
-            channel.trigger('client-new-message', {
-                name: name,
+            const room = drone.subscribe(ROOM_NAME, {
+                historyCount: 100,
+                presence: {
+                    state: { username: currentUser }
+                }
+            });
+
+            room.on('data', message => {
+                if (message.user.clientId === drone.clientId) return;
+                addMessage(message);
+            });
+
+            room.on('members', members => {
+                activeUsers.clear();
+                members.forEach(member => {
+                    if (member.id !== drone.clientId) {
+                        activeUsers.add(member.presence.state.username);
+                    }
+                });
+                updateUserCount();
+            });
+        });
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const rawText = input.value.trim();
+            
+            if (!rawText) return;
+            if (activeUsers.size === 0) return showError('No connected users');
+
+            const cleanText = sanitizeMessage(rawText);
+            const message = {
+                text: cleanText,
+                user: {
+                    username: currentUser,
+                    clientId: drone.clientId
+                }
+            };
+
+            // Local display first
+            addMessage(message, true);
+            
+            // Send to others
+            drone.publish({
+                room: ROOM_NAME,
                 message: message
             });
 
-            document.getElementById('message').value = '';
+            input.value = '';
         }
 
-        // Open console to see debug logs (Ctrl+Shift+J)
-        console.log('Pusher connection status:', pusher.connection.state);
+        function showError(text) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = text;
+            setTimeout(() => errorDiv.textContent = '', 3000);
+        }
+
+        // Event listeners
+        document.getElementById('messageInput').addEventListener('keypress', e => {
+            if (e.key === 'Enter') sendMessage();
+        });
     </script>
 </body>
 </html>
