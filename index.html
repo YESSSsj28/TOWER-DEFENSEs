@@ -1,88 +1,487 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>🔥 Chayt</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neon Chat</title>
   <style>
-    /* [Previous CSS styles remain exactly the same] */
     :root {
-      --primary-bg: #1a1a1a;
-      --secondary-bg: #252525;
-      --message-bg: #2d2d2d;
-      --user-message-bg: #3a5bc7;
-      --text-color: #e1e1e1;
-      --secondary-text: #a0a0a0;
-      --accent-color: #3a5bc7;
-      --border-color: #3d3d3d;
+      --primary: #6c5ce7;
+      --primary-dark: #5649c0;
+      --background: #1a1a2e;
+      --surface: #16213e;
+      --surface-light: #2a3a5e;
+      --text: #e2e2e2;
+      --text-secondary: #b8b8b8;
+      --success: #00b894;
+      --error: #d63031;
+      --online: #00b894;
+      --offline: #636e72;
     }
 
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     }
 
     body {
-      background-color: var(--primary-bg);
-      color: var(--text-color);
+      background-color: var(--background);
+      color: var(--text);
       height: 100vh;
       display: flex;
     }
 
-    /* [Rest of your CSS remains unchanged] */
+    /* Auth Container */
+    .auth-container {
+      width: 100%;
+      max-width: 400px;
+      margin: auto;
+      padding: 2rem;
+      background: var(--surface);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      transform: translateY(-5%);
+    }
+
+    .auth-title {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      background: linear-gradient(90deg, var(--primary), #a29bfe);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-align: center;
+    }
+
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .input-group label {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    .input-group input {
+      padding: 0.8rem 1rem;
+      background: var(--surface-light);
+      border: 2px solid transparent;
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.2);
+    }
+
+    .auth-button {
+      padding: 0.8rem;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .auth-button:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+    }
+
+    .auth-toggle {
+      text-align: center;
+      margin-top: 1rem;
+      color: var(--text-secondary);
+    }
+
+    .auth-toggle a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .error-message {
+      color: var(--error);
+      font-size: 0.9rem;
+      text-align: center;
+      margin-top: 1rem;
+    }
+
+    /* Chat Container */
+    .chat-container {
+      display: none;
+      width: 100%;
+      height: 100vh;
+      max-width: 1200px;
+      margin: 0 auto;
+      background: var(--surface);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 300px;
+      background: var(--surface);
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .sidebar-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--primary), #a29bfe);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .channels {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem 0;
+    }
+
+    .channel {
+      padding: 0.8rem 1.5rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+    }
+
+    .channel:hover {
+      background: var(--surface-light);
+    }
+
+    .channel.active {
+      background: var(--surface-light);
+      border-left: 4px solid var(--primary);
+    }
+
+    .channel-name {
+      flex: 1;
+      font-weight: 500;
+    }
+
+    .channel-unread {
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+
+    .user-profile {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      color: white;
+    }
+
+    .user-info {
+      flex: 1;
+    }
+
+    .user-name {
+      font-weight: 600;
+    }
+
+    .user-status {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .status-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--online);
+    }
+
+    /* Main Chat */
+    .main-chat {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .chat-header {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+    }
+
+    .chat-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .chat-members {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-left: 0.5rem;
+    }
+
+    .messages {
+      flex: 1;
+      padding: 1.5rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .message {
+      max-width: 70%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .message.received {
+      align-self: flex-start;
+    }
+
+    .message.sent {
+      align-self: flex-end;
+    }
+
+    .message-info {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.3rem;
+    }
+
+    .message-sender {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .message-time {
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      margin-left: 0.5rem;
+    }
+
+    .message-content {
+      padding: 0.8rem 1rem;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      line-height: 1.4;
+    }
+
+    .message.received .message-content {
+      background: var(--surface-light);
+      border-top-left-radius: 4px;
+    }
+
+    .message.sent .message-content {
+      background: var(--primary);
+      color: white;
+      border-top-right-radius: 4px;
+    }
+
+    .input-area {
+      padding: 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .message-input {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      background: var(--surface-light);
+      border: none;
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 1rem;
+      resize: none;
+    }
+
+    .message-input:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px var(--primary);
+    }
+
+    /* System message */
+    .system-message {
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin: 1rem 0;
+    }
+
+    /* Loading spinner */
+    .spinner {
+      width: 40px;
+      height: 40px;
+      margin: 2rem auto;
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-left-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
-  <!-- [Previous HTML structure remains the same] -->
-  <!-- Sidebar -->
-  <div class="sidebar">
-    <div class="sidebar-header">Channels</div>
-    <div class="channels" id="channelsList">
-      <!-- Channels will be added here dynamically -->
-    </div>
-  </div>
-
-  <!-- Main Chat Area -->
-  <div class="chat-container">
-    <div class="chat-header">
-      <div class="chat-title" id="currentChannelName">Select a channel</div>
-      <div class="chat-members" id="channelMembersCount"></div>
-    </div>
-    
-    <div class="messages" id="messagesContainer">
-      <!-- Messages will be added here dynamically -->
-    </div>
-    
-    <div class="input-area">
-      <input type="text" class="message-input" id="messageInput" placeholder="Message #channel" disabled>
-    </div>
-    
-    <div class="user-profile" id="userProfile">
-      <!-- User profile will be added here after login -->
-    </div>
-  </div>
-
-  <!-- Auth Screen (shown by default) -->
+  <!-- Auth Container -->
   <div class="auth-container" id="authContainer">
-    <div class="auth-box">
-      <div class="auth-title">Welcome to Chayt</div>
-      <div id="g_id_onload"
-           data-client_id="626223048098-078etpvps2clhd02vs3g5h22sa60537g.apps.googleusercontent.com"
-           data-callback="handleGoogleSignIn"
-           data-context="signin"
-           data-ux_mode="popup"
-           data-auto_prompt="false">
+    <div class="auth-title">Neon Chat</div>
+    <div class="error-message" id="errorMessage"></div>
+    
+    <!-- Login Form -->
+    <form class="auth-form" id="loginForm">
+      <div class="input-group">
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" required>
       </div>
-      <div class="g_id_signin"
-           data-type="standard"
-           data-size="large"
-           data-theme="filled_blue"
-           data-text="sign_in_with"
-           data-shape="rectangular"
-           data-logo_alignment="left">
+      <div class="input-group">
+        <label for="loginPassword">Password</label>
+        <input type="password" id="loginPassword" required>
       </div>
-      <div id="authError" style="color: #ff6b6b; margin-top: 16px; font-size: 14px;"></div>
+      <button type="submit" class="auth-button">Sign In</button>
+      <div class="auth-toggle">
+        Don't have an account? <a id="showRegister">Register</a>
+      </div>
+    </form>
+    
+    <!-- Register Form -->
+    <form class="auth-form" id="registerForm" style="display: none;">
+      <div class="input-group">
+        <label for="registerName">Username</label>
+        <input type="text" id="registerName" required>
+      </div>
+      <div class="input-group">
+        <label for="registerEmail">Email</label>
+        <input type="email" id="registerEmail" required>
+      </div>
+      <div class="input-group">
+        <label for="registerPassword">Password</label>
+        <input type="password" id="registerPassword" required>
+      </div>
+      <button type="submit" class="auth-button">Create Account</button>
+      <div class="auth-toggle">
+        Already have an account? <a id="showLogin">Sign In</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Chat Container -->
+  <div class="chat-container" id="chatContainer">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">Channels</div>
+      </div>
+      
+      <div class="channels" id="channelsList">
+        <div class="channel active" data-channel="general">
+          <div class="channel-name">General</div>
+          <div class="channel-unread">3</div>
+        </div>
+        <div class="channel" data-channel="random">
+          <div class="channel-name">Random</div>
+          <div class="channel-unread">0</div>
+        </div>
+        <div class="channel" data-channel="support">
+          <div class="channel-name">Support</div>
+          <div class="channel-unread">1</div>
+        </div>
+      </div>
+      
+      <div class="user-profile" id="userProfile">
+        <div class="user-avatar" id="userAvatar">U</div>
+        <div class="user-info">
+          <div class="user-name" id="userName">User</div>
+          <div class="user-status">
+            <div class="status-indicator"></div>
+            <span>Online</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Main Chat -->
+    <div class="main-chat">
+      <div class="chat-header">
+        <div class="chat-title" id="currentChannelName">General</div>
+        <div class="chat-members" id="channelMembersCount">5 members</div>
+      </div>
+      
+      <div class="messages" id="messagesContainer">
+        <div class="system-message">Welcome to the General channel!</div>
+        
+        <div class="message received">
+          <div class="message-info">
+            <div class="message-sender">Alex</div>
+            <div class="message-time">10:30 AM</div>
+          </div>
+          <div class="message-content">Hey everyone! How's it going?</div>
+        </div>
+        
+        <div class="message sent">
+          <div class="message-info">
+            <div class="message-sender">You</div>
+            <div class="message-time">10:32 AM</div>
+          </div>
+          <div class="message-content">Pretty good! Just setting up this new chat app.</div>
+        </div>
+      </div>
+      
+      <div class="input-area">
+        <input type="text" class="message-input" id="messageInput" placeholder="Type your message...">
+      </div>
     </div>
   </div>
 
@@ -90,9 +489,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  
-  <!-- Google Identity Services -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <script>
     // Firebase config
@@ -113,197 +509,196 @@
 
     // DOM elements
     const authContainer = document.getElementById("authContainer");
-    const authError = document.getElementById("authError");
+    const chatContainer = document.getElementById("chatContainer");
+    const errorMessage = document.getElementById("errorMessage");
+    const loginForm = document.getElementById("loginForm");
+    const registerForm = document.getElementById("registerForm");
+    const showRegister = document.getElementById("showRegister");
+    const showLogin = document.getElementById("showLogin");
+    const loginEmail = document.getElementById("loginEmail");
+    const loginPassword = document.getElementById("loginPassword");
+    const registerName = document.getElementById("registerName");
+    const registerEmail = document.getElementById("registerEmail");
+    const registerPassword = document.getElementById("registerPassword");
+    const userProfile = document.getElementById("userProfile");
+    const userAvatar = document.getElementById("userAvatar");
+    const userName = document.getElementById("userName");
     const channelsList = document.getElementById("channelsList");
     const messagesContainer = document.getElementById("messagesContainer");
     const messageInput = document.getElementById("messageInput");
     const currentChannelName = document.getElementById("currentChannelName");
     const channelMembersCount = document.getElementById("channelMembersCount");
-    const userProfile = document.getElementById("userProfile");
 
     // App state
     let currentUser = null;
-    let currentChannel = null;
-    let channels = {
-      "general": {
-        name: "general",
-        displayName: "General",
-        members: {}
-      },
-      "random": {
-        name: "random",
-        displayName: "Random",
-        members: {}
-      },
-      "tennis-club": {
-        name: "tennis-club",
-        displayName: "Tennis Club",
-        members: {}
-      }
-    };
+    let currentChannel = "general";
+    let users = {};
 
     // Initialize the app
     function initApp() {
+      // Switch between login and register forms
+      showRegister.addEventListener("click", (e) => {
+        e.preventDefault();
+        loginForm.style.display = "none";
+        registerForm.style.display = "flex";
+        errorMessage.textContent = "";
+      });
+
+      showLogin.addEventListener("click", (e) => {
+        e.preventDefault();
+        registerForm.style.display = "none";
+        loginForm.style.display = "flex";
+        errorMessage.textContent = "";
+      });
+
+      // Login form submission
+      loginForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const email = loginEmail.value;
+        const password = loginPassword.value;
+        
+        auth.signInWithEmailAndPassword(email, password)
+          .then((userCredential) => {
+            // Signed in
+            currentUser = userCredential.user;
+            loadUserProfile();
+          })
+          .catch((error) => {
+            showError(error.message);
+          });
+      });
+
+      // Register form submission
+      registerForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const name = registerName.value;
+        const email = registerEmail.value;
+        const password = registerPassword.value;
+        
+        auth.createUserWithEmailAndPassword(email, password)
+          .then((userCredential) => {
+            // Signed up
+            currentUser = userCredential.user;
+            
+            // Save additional user info
+            return db.ref(`users/${currentUser.uid}`).set({
+              name: name,
+              email: email,
+              createdAt: firebase.database.ServerValue.TIMESTAMP
+            });
+          })
+          .then(() => {
+            loadUserProfile();
+          })
+          .catch((error) => {
+            showError(error.message);
+          });
+      });
+
+      // Message input
+      messageInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter" && messageInput.value.trim() !== "") {
+          sendMessage(messageInput.value);
+          messageInput.value = "";
+        }
+      });
+
+      // Channel selection
+      document.querySelectorAll(".channel").forEach(channel => {
+        channel.addEventListener("click", () => {
+          selectChannel(channel.dataset.channel);
+        });
+      });
+
+      // Check auth state
       auth.onAuthStateChanged((user) => {
         if (user) {
           // User is signed in
           currentUser = user;
-          console.log("User signed in:", user);
-          authContainer.style.display = "none";
-          setupUserProfile();
-          loadChannels();
-          setupPresence();
+          loadUserProfile();
         } else {
           // User is signed out
           currentUser = null;
           authContainer.style.display = "flex";
+          chatContainer.style.display = "none";
         }
-      }, (error) => {
-        console.error("Auth state error:", error);
-        showAuthError("Authentication error. Please refresh the page.");
       });
     }
 
-    // Handle Google Sign-In
-    function handleGoogleSignIn(response) {
-      authError.textContent = "";
-      console.log("Google sign-in response:", response);
-      
-      if (!response.credential) {
-        showAuthError("Sign in failed. No credential returned.");
-        return;
-      }
-
-      const credential = firebase.auth.GoogleAuthProvider.credential(response.credential);
-      
-      auth.signInWithCredential(credential)
-        .then((result) => {
-          console.log("Firebase sign-in success:", result.user);
-        })
-        .catch((error) => {
-          console.error("Firebase sign-in error:", error);
-          showAuthError("Sign in failed. Please try again.");
+    // Load user profile
+    function loadUserProfile() {
+      // Get user data
+      db.ref(`users/${currentUser.uid}`).once("value")
+        .then((snapshot) => {
+          const userData = snapshot.val();
           
-          // Additional error details
-          if (error.code === 'auth/account-exists-with-different-credential') {
-            showAuthError("An account already exists with this email.");
-          } else if (error.code === 'auth/popup-closed-by-user') {
-            showAuthError("Sign in popup was closed too soon.");
-          }
+          // Update UI
+          userName.textContent = userData.name || "User";
+          userAvatar.textContent = (userData.name || "U").charAt(0).toUpperCase();
+          userAvatar.style.backgroundColor = getRandomColor();
+          
+          // Show chat interface
+          authContainer.style.display = "none";
+          chatContainer.style.display = "flex";
+          
+          // Load channels and messages
+          loadChannels();
+          loadMessages();
+          
+          // Set up presence
+          setupPresence();
         });
     }
 
-    function showAuthError(message) {
-      authError.textContent = message;
-      console.error("Auth Error:", message);
-    }
-
-    // Set up user profile in sidebar
-    function setupUserProfile() {
-      if (!currentUser) return;
-      
-      userProfile.innerHTML = `
-        <div class="user-avatar" style="background-color: ${getRandomColor()}">
-          ${currentUser.displayName ? currentUser.displayName.charAt(0).toUpperCase() : 'U'}
-        </div>
-        <div class="user-name">${currentUser.displayName || 'User'}</div>
-      `;
-    }
-
-    function getRandomColor() {
-      const colors = ['#3a5bc7', '#e91e63', '#9c27b0', '#673ab7', '#2196f3', '#009688'];
-      return colors[Math.floor(Math.random() * colors.length)];
-    }
-
-    // [Rest of your JavaScript functions remain the same]
     // Set up user presence
     function setupPresence() {
       const userStatusRef = db.ref(`status/${currentUser.uid}`);
-      const connectedRef = db.ref('.info/connected');
+      const connectedRef = db.ref(".info/connected");
       
-      connectedRef.on('value', (snap) => {
+      connectedRef.on("value", (snap) => {
         if (snap.val()) {
           // User is connected
           userStatusRef.onDisconnect().set({
             online: false,
             lastChanged: firebase.database.ServerValue.TIMESTAMP
           });
+          
           userStatusRef.set({
             online: true,
             lastChanged: firebase.database.ServerValue.TIMESTAMP,
-            name: currentUser.displayName,
-            photoURL: currentUser.photoURL
+            name: userName.textContent
           });
         }
       });
     }
 
-    // Load channels and set up listeners
+    // Load channels
     function loadChannels() {
-      // Clear existing channels
-      channelsList.innerHTML = '';
-      
-      // Add each channel to the sidebar
-      for (const channelId in channels) {
-        const channel = channels[channelId];
-        const channelElement = document.createElement('div');
-        channelElement.className = 'channel';
-        channelElement.dataset.channel = channelId;
-        channelElement.innerHTML = `
-          <div class="channel-name">${channel.displayName}</div>
-          <div class="channel-unread">3</div>
-        `;
-        
-        channelElement.addEventListener('click', () => {
-          selectChannel(channelId);
-        });
-        
-        channelsList.appendChild(channelElement);
-      }
-      
-      // Select the first channel by default
-      if (Object.keys(channels).length > 0) {
-        selectChannel(Object.keys(channels)[0]);
-      }
+      // In a real app, you would load these from Firebase
+      // For now we're using the static HTML channels
     }
 
-    // Select a channel and load its messages
-    function selectChannel(channelId) {
-      currentChannel = channelId;
+    // Load messages
+    function loadMessages() {
+      // Clear existing messages (except the first system message)
+      messagesContainer.innerHTML = '<div class="system-message">Welcome to the ' + currentChannelName.textContent + ' channel!</div>';
       
-      // Update UI
-      document.querySelectorAll('.channel').forEach(el => {
-        el.classList.remove('active');
-      });
-      document.querySelector(`.channel[data-channel="${channelId}"]`).classList.add('active');
-      
-      currentChannelName.textContent = channels[channelId].displayName;
-      channelMembersCount.textContent = `${Object.keys(channels[channelId].members).length} members`;
-      messageInput.placeholder = `Message #${channels[channelId].name}`;
-      messageInput.disabled = false;
-      
-      // Clear messages
-      messagesContainer.innerHTML = '';
-      
-      // Load messages for this channel
-      db.ref(`messages/${channelId}`).on('child_added', (snapshot) => {
+      // Load messages from Firebase
+      db.ref(`messages/${currentChannel}`).on("child_added", (snapshot) => {
         const message = snapshot.val();
         displayMessage(message);
       });
-      
-      // Add system message
-      addSystemMessage(`${currentUser.displayName} joined the channel`);
     }
 
-    // Display a message in the chat
+    // Display a message
     function displayMessage(message) {
-      const messageElement = document.createElement('div');
-      messageElement.className = `message ${message.senderId === currentUser.uid ? 'sent' : 'received'}`;
+      const messageDiv = document.createElement("div");
+      messageDiv.className = `message ${message.senderId === currentUser.uid ? "sent" : "received"}`;
       
-      const senderName = message.senderName || 'Unknown';
-      const messageTime = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const senderName = message.senderId === currentUser.uid ? "You" : (users[message.senderId]?.name || "Unknown");
+      const messageTime = new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
       
-      messageElement.innerHTML = `
+      messageDiv.innerHTML = `
         <div class="message-info">
           <div class="message-sender">${senderName}</div>
           <div class="message-time">${messageTime}</div>
@@ -311,39 +706,50 @@
         <div class="message-content">${message.text}</div>
       `;
       
-      messagesContainer.appendChild(messageElement);
+      messagesContainer.appendChild(messageDiv);
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
-    // Add a system message (e.g., user joined)
-    function addSystemMessage(text) {
-      const systemMessage = document.createElement('div');
-      systemMessage.className = 'system-message';
-      systemMessage.textContent = text;
-      messagesContainer.appendChild(systemMessage);
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    // Select a channel
+    function selectChannel(channelId) {
+      currentChannel = channelId;
+      
+      // Update UI
+      document.querySelectorAll(".channel").forEach(el => {
+        el.classList.remove("active");
+      });
+      document.querySelector(`.channel[data-channel="${channelId}"]`).classList.add("active");
+      
+      currentChannelName.textContent = channelId.charAt(0).toUpperCase() + channelId.slice(1);
+      
+      // Load messages for this channel
+      loadMessages();
     }
 
     // Send a message
-    function sendMessage() {
-      const text = messageInput.value.trim();
-      if (text && currentChannel) {
-        db.ref(`messages/${currentChannel}`).push({
-          text: text,
-          senderId: currentUser.uid,
-          senderName: currentUser.displayName,
-          timestamp: firebase.database.ServerValue.TIMESTAMP
-        });
-        messageInput.value = '';
-      }
+    function sendMessage(text) {
+      if (!text.trim()) return;
+      
+      db.ref(`messages/${currentChannel}`).push({
+        text: text,
+        senderId: currentUser.uid,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+      });
     }
 
-    // Event listeners
-    messageInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        sendMessage();
-      }
-    });
+    // Show error message
+    function showError(message) {
+      errorMessage.textContent = message;
+      setTimeout(() => {
+        errorMessage.textContent = "";
+      }, 5000);
+    }
+
+    // Get random color for avatar
+    function getRandomColor() {
+      const colors = ["#6c5ce7", "#00b894", "#0984e3", "#e84393", "#fd79a8", "#fdcb6e"];
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
 
     // Initialize the app
     initApp();
