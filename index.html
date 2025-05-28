@@ -1,245 +1,126 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Secure Modern Chat</title>
-    <style>
-        :root {
-            --primary: #2e7d32;
-            --background: #f5f5f5;
-            --error: #d32f2f;
-        }
-        body {
-            font-family: 'Roboto', sans-serif;
-            margin: 0;
-            padding: 20px;
-            background: var(--background);
-        }
-        .chat-container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        .header {
-            background: var(--primary);
-            color: white;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        #users-online {
-            font-size: 0.9em;
-            opacity: 0.8;
-        }
-        #messages {
-            height: 500px;
-            padding: 20px;
-            overflow-y: auto;
-            background: #fafafa;
-        }
-        .message {
-            margin: 15px 0;
-            padding: 12px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            animation: slideIn 0.3s ease;
-            max-width: 80%;
-        }
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(20px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-        .message.you {
-            margin-left: auto;
-            background: #e8f5e9;
-        }
-        .message-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-        .username {
-            font-weight: 500;
-            margin-right: 10px;
-            color: var(--primary);
-        }
-        .timestamp {
-            font-size: 0.8em;
-            color: #757575;
-        }
-        .input-area {
-            display: flex;
-            gap: 10px;
-            padding: 20px;
-            border-top: 1px solid #eee;
-        }
-        #messageInput {
-            flex: 1;
-            padding: 14px;
-            border: 1px solid #bdbdbd;
-            border-radius: 25px;
-            font-size: 16px;
-        }
-        #sendButton {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 14px 30px;
-            border-radius: 25px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        #sendButton:hover {
-            background: #1b5e20;
-        }
-        .error-message {
-            color: var(--error);
-            text-align: center;
-            padding: 10px;
-        }
-    </style>
+  <title>🔥 Chayt Chat</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f4f4f4;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .chat-container {
+      width: 100%;
+      max-width: 420px;
+      height: 600px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #messages {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .message {
+      background: #e3f2fd;
+      margin: 8px 0;
+      padding: 10px 12px;
+      border-radius: 12px;
+      max-width: 80%;
+      word-wrap: break-word;
+    }
+
+    .input-area {
+      display: flex;
+      border-top: 1px solid #ccc;
+    }
+
+    input {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      outline: none;
+      font-size: 16px;
+    }
+
+    button {
+      padding: 12px;
+      background: #2196f3;
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-    <div class="chat-container">
-        <div class="header">
-            <div>Secure Chat</div>
-            <div id="users-online">1 user online</div>
-        </div>
-        <div id="messages"></div>
-        <div class="input-area">
-            <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off">
-            <button id="sendButton" onclick="sendMessage()">Send</button>
-        </div>
-        <div id="errorMessage" class="error-message"></div>
+  <div class="chat-container">
+    <div id="messages"></div>
+    <div class="input-area">
+      <input id="msgInput" type="text" placeholder="Say something..." />
+      <button onclick="send()">Send</button>
     </div>
+  </div>
 
-    <script src="https://cdn.scaledrone.com/scaledrone.min.js"></script>
-    <script>
-        // Configuration
-        const CHANNEL_ID = 'U5d5WVOL0Tl03XNe';
-        const ROOM_NAME = 'secure-chat-v2';
-        const BANNED_WORDS = ['badword1', 'badword2', 'example']; // Add your banned words here
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
-        // State management
-        let currentUser = null;
-        const activeUsers = new Set();
+  <script>
+    // ✅ Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyD9uzP781-TlDSC9fILQX8M-Xa7Ely_rZc",
+      authDomain: "chayt-41951.firebaseapp.com",
+      projectId: "chayt-41951",
+      storageBucket: "chayt-41951.firebasestorage.app",
+      messagingSenderId: "841659925542",
+      appId: "1:841659925542:web:ba7751ee2a97b5fcf452e7",
+      measurementId: "G-NMWMFY7BG5"
+    };
 
-        // Scaledrone connection
-        const drone = new ScaleDrone(CHANNEL_ID, {
-            autoReconnect: true,
-            data: getInitialUserData()
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const msgInput = document.getElementById("msgInput");
+    const messagesDiv = document.getElementById("messages");
+
+    function send() {
+      const text = msgInput.value.trim();
+      if (text !== "") {
+        db.ref("messages").push({
+          text: text,
+          time: Date.now()
         });
+        msgInput.value = "";
+      }
+    }
 
-        function getInitialUserData() {
-            let username = localStorage.getItem('chat-username') || '';
-            while (!username || activeUsers.has(username)) {
-                username = prompt("Choose a unique username:") || 
-                          `User${Math.floor(Math.random()*1000)}`;
-            }
-            localStorage.setItem('chat-username', username);
-            return { username };
-        }
+    // Listen for new messages
+    db.ref("messages").on("child_added", function(snapshot) {
+      const msg = snapshot.val();
+      const msgDiv = document.createElement("div");
+      msgDiv.className = "message";
+      msgDiv.textContent = msg.text;
+      messagesDiv.appendChild(msgDiv);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    });
 
-        // Profanity filter
-        function sanitizeMessage(text) {
-            const regex = new RegExp(BANNED_WORDS.join('|'), 'gi');
-            return text.replace(regex, match => '*'.repeat(match.length));
-        }
-
-        // UI Functions
-        function addMessage(message, isYou = false) {
-            const messagesDiv = document.getElementById('messages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${isYou ? 'you' : ''}`;
-            messageDiv.innerHTML = `
-                <div class="message-header">
-                    <div class="username">${message.user.username}</div>
-                    <div class="timestamp">${new Date().toLocaleTimeString()}</div>
-                </div>
-                <div>${message.text}</div>
-            `;
-            messagesDiv.appendChild(messageDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
-
-        function updateUserCount() {
-            document.getElementById('users-online').textContent = 
-                `${activeUsers.size} user${activeUsers.size !== 1 ? 's' : ''} online`;
-        }
-
-        // Chat functionality
-        drone.on('open', error => {
-            if (error) return showError('Connection error');
-            
-            currentUser = drone.clientData.username;
-            activeUsers.add(currentUser);
-            updateUserCount();
-
-            const room = drone.subscribe(ROOM_NAME, {
-                historyCount: 100,
-                presence: {
-                    state: { username: currentUser }
-                }
-            });
-
-            room.on('data', message => {
-                if (message.user.clientId === drone.clientId) return;
-                addMessage(message);
-            });
-
-            room.on('members', members => {
-                activeUsers.clear();
-                members.forEach(member => {
-                    if (member.id !== drone.clientId) {
-                        activeUsers.add(member.presence.state.username);
-                    }
-                });
-                updateUserCount();
-            });
-        });
-
-        function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const rawText = input.value.trim();
-            
-            if (!rawText) return;
-            if (activeUsers.size === 0) return showError('No connected users');
-
-            const cleanText = sanitizeMessage(rawText);
-            const message = {
-                text: cleanText,
-                user: {
-                    username: currentUser,
-                    clientId: drone.clientId
-                }
-            };
-
-            // Local display first
-            addMessage(message, true);
-            
-            // Send to others
-            drone.publish({
-                room: ROOM_NAME,
-                message: message
-            });
-
-            input.value = '';
-        }
-
-        function showError(text) {
-            const errorDiv = document.getElementById('errorMessage');
-            errorDiv.textContent = text;
-            setTimeout(() => errorDiv.textContent = '', 3000);
-        }
-
-        // Event listeners
-        document.getElementById('messageInput').addEventListener('keypress', e => {
-            if (e.key === 'Enter') sendMessage();
-        });
-    </script>
+    // Send on Enter key
+    msgInput.addEventListener("keypress", function(e) {
+      if (e.key === "Enter") {
+        send();
+      }
+    });
+  </script>
 </body>
 </html>
