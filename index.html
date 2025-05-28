@@ -1,131 +1,303 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>🔥 Chayt Chat</title>
+  <title>🔥 Chayt</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body {
-      font-family: sans-serif;
-      background: #f4f4f4;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
+    :root {
+      --primary-bg: #1a1a1a;
+      --secondary-bg: #252525;
+      --message-bg: #2d2d2d;
+      --user-message-bg: #3a5bc7;
+      --text-color: #e1e1e1;
+      --secondary-text: #a0a0a0;
+      --accent-color: #3a5bc7;
+      --border-color: #3d3d3d;
     }
 
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
+    body {
+      background-color: var(--primary-bg);
+      color: var(--text-color);
+      height: 100vh;
+      display: flex;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background-color: var(--secondary-bg);
+      border-right: 1px solid var(--border-color);
+      height: 100%;
+      overflow-y: auto;
+    }
+
+    .sidebar-header {
+      padding: 16px;
+      font-size: 20px;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .channels {
+      padding: 8px 0;
+    }
+
+    .channel {
+      padding: 10px 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+    }
+
+    .channel.active {
+      background-color: var(--message-bg);
+    }
+
+    .channel:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .channel-name {
+      flex: 1;
+      font-size: 15px;
+    }
+
+    .channel-unread {
+      background-color: var(--accent-color);
+      color: white;
+      border-radius: 12px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    /* Main Chat Area */
     .chat-container {
-      width: 100%;
-      max-width: 420px;
-      height: 600px;
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      flex: 1;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
+      height: 100%;
     }
 
-    #messages {
+    .chat-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+    }
+
+    .chat-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .chat-members {
+      font-size: 13px;
+      color: var(--secondary-text);
+      margin-left: 8px;
+    }
+
+    .messages {
       flex: 1;
       padding: 16px;
       overflow-y: auto;
-      border-bottom: 1px solid #ddd;
+      background-color: var(--primary-bg);
     }
 
     .message {
-      background: #e3f2fd;
-      margin: 8px 0;
-      padding: 10px 12px;
-      border-radius: 12px;
-      max-width: 80%;
-      word-wrap: break-word;
+      margin-bottom: 16px;
+      max-width: 70%;
     }
 
-    .message.private {
-      background: #ffebee;
-      border-left: 3px solid #f44336;
+    .message.received {
+      margin-right: auto;
     }
 
     .message.sent {
       margin-left: auto;
-      background: #e8f5e9;
-      border-right: 3px solid #4caf50;
     }
 
-    .input-area {
-      display: flex;
-      border-top: 1px solid #ccc;
+    .message-content {
+      padding: 10px 14px;
+      border-radius: 18px;
+      font-size: 15px;
+      line-height: 1.4;
     }
 
-    input {
-      flex: 1;
-      padding: 12px;
-      border: none;
-      outline: none;
-      font-size: 16px;
+    .message.received .message-content {
+      background-color: var(--message-bg);
+      border-top-left-radius: 4px;
     }
 
-    button {
-      padding: 12px;
-      background: #2196f3;
+    .message.sent .message-content {
+      background-color: var(--user-message-bg);
       color: white;
-      border: none;
-      font-weight: bold;
-      cursor: pointer;
+      border-top-right-radius: 4px;
     }
 
+    .message-info {
+      display: flex;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .message-sender {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .message-time {
+      color: var(--secondary-text);
+      font-size: 12px;
+      margin-left: 8px;
+    }
+
+    /* Input Area */
+    .input-area {
+      padding: 16px;
+      border-top: 1px solid var(--border-color);
+      background-color: var(--secondary-bg);
+    }
+
+    .message-input {
+      width: 100%;
+      background-color: var(--message-bg);
+      border: none;
+      border-radius: 20px;
+      padding: 12px 20px;
+      color: var(--text-color);
+      font-size: 15px;
+      outline: none;
+    }
+
+    /* Auth Screen */
     .auth-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 20px;
-      gap: 10px;
+      justify-content: center;
+      background-color: var(--primary-bg);
+      z-index: 100;
     }
 
-    .user-info {
-      padding: 10px;
-      background: #e3f2fd;
+    .auth-box {
+      background-color: var(--secondary-bg);
+      padding: 32px;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 400px;
       text-align: center;
-      font-weight: bold;
     }
 
-    .chat-tabs {
+    .auth-title {
+      font-size: 24px;
+      margin-bottom: 24px;
+      font-weight: 600;
+    }
+
+    .g_id_signin {
+      margin: 0 auto;
+      width: fit-content;
+    }
+
+    /* User Profile */
+    .user-profile {
       display: flex;
-      border-bottom: 1px solid #ddd;
+      align-items: center;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border-color);
+      background-color: var(--secondary-bg);
     }
 
-    .chat-tab {
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      margin-right: 12px;
+      background-color: var(--accent-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      color: white;
+    }
+
+    .user-name {
+      font-weight: 500;
       flex: 1;
+    }
+
+    /* Channel Info */
+    .channel-info {
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .channel-name-large {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .channel-meta {
+      font-size: 14px;
+      color: var(--secondary-text);
+    }
+
+    /* System Messages */
+    .system-message {
       text-align: center;
-      padding: 12px;
-      cursor: pointer;
-      background: #f5f5f5;
-    }
-
-    .chat-tab.active {
-      background: white;
-      font-weight: bold;
-      border-bottom: 2px solid #2196f3;
-    }
-
-    .recipient-selector {
-      padding: 8px;
-      border-bottom: 1px solid #ddd;
-      display: flex;
-    }
-
-    #recipient {
-      flex: 1;
-      padding: 8px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
+      color: var(--secondary-text);
+      font-size: 13px;
+      margin: 16px 0;
     }
   </style>
 </head>
 <body>
-  <div class="chat-container" id="chatContainer">
-    <div id="authContainer" class="auth-container">
-      <h2>Welcome to Chayt</h2>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">Channels</div>
+    <div class="channels" id="channelsList">
+      <!-- Channels will be added here dynamically -->
+    </div>
+  </div>
+
+  <!-- Main Chat Area -->
+  <div class="chat-container">
+    <div class="chat-header">
+      <div class="chat-title" id="currentChannelName">Select a channel</div>
+      <div class="chat-members" id="channelMembersCount"></div>
+    </div>
+    
+    <div class="messages" id="messagesContainer">
+      <!-- Messages will be added here dynamically -->
+    </div>
+    
+    <div class="input-area">
+      <input type="text" class="message-input" id="messageInput" placeholder="Message #channel" disabled>
+    </div>
+    
+    <div class="user-profile" id="userProfile">
+      <!-- User profile will be added here after login -->
+    </div>
+  </div>
+
+  <!-- Auth Screen (shown by default) -->
+  <div class="auth-container" id="authContainer">
+    <div class="auth-box">
+      <div class="auth-title">Welcome to Chayt</div>
       <div id="g_id_onload"
            data-client_id="626223048098-078etpvps2clhd02vs3g5h22sa60537g.apps.googleusercontent.com"
            data-callback="handleGoogleSignIn"
@@ -138,26 +310,8 @@
            data-size="large"
            data-theme="filled_blue"
            data-text="sign_in_with"
-           data-shape="pill"
+           data-shape="rectangular"
            data-logo_alignment="left">
-      </div>
-    </div>
-
-    <div id="chatUI" style="display: none;">
-      <div class="user-info" id="userInfo"></div>
-      <div class="chat-tabs">
-        <div class="chat-tab active" onclick="switchTab('public')">Public</div>
-        <div class="chat-tab" onclick="switchTab('private')">Private</div>
-      </div>
-      <div id="recipientContainer" class="recipient-selector" style="display: none;">
-        <select id="recipient">
-          <option value="">Select a user</option>
-        </select>
-      </div>
-      <div id="messages"></div>
-      <div class="input-area">
-        <input id="msgInput" type="text" placeholder="Say something..." />
-        <button onclick="send()">Send</button>
       </div>
     </div>
   </div>
@@ -187,18 +341,52 @@
     const auth = firebase.auth();
 
     // DOM elements
-    const msgInput = document.getElementById("msgInput");
-    const messagesDiv = document.getElementById("messages");
     const authContainer = document.getElementById("authContainer");
-    const chatUI = document.getElementById("chatUI");
-    const userInfo = document.getElementById("userInfo");
-    const recipientSelect = document.getElementById("recipient");
-    const recipientContainer = document.getElementById("recipientContainer");
+    const channelsList = document.getElementById("channelsList");
+    const messagesContainer = document.getElementById("messagesContainer");
+    const messageInput = document.getElementById("messageInput");
+    const currentChannelName = document.getElementById("currentChannelName");
+    const channelMembersCount = document.getElementById("channelMembersCount");
+    const userProfile = document.getElementById("userProfile");
 
+    // App state
     let currentUser = null;
-    let currentTab = 'public';
-    let users = {};
-    let messagesRef = null;
+    let currentChannel = null;
+    let channels = {
+      "general": {
+        name: "general",
+        displayName: "General",
+        members: {}
+      },
+      "random": {
+        name: "random",
+        displayName: "Random",
+        members: {}
+      },
+      "tennis-club": {
+        name: "tennis-club",
+        displayName: "Tennis Club",
+        members: {}
+      }
+    };
+
+    // Initialize the app
+    function initApp() {
+      auth.onAuthStateChanged((user) => {
+        if (user) {
+          // User is signed in
+          currentUser = user;
+          authContainer.style.display = "none";
+          setupUserProfile();
+          loadChannels();
+          setupPresence();
+        } else {
+          // User is signed out
+          currentUser = null;
+          authContainer.style.display = "flex";
+        }
+      });
+    }
 
     // Handle Google Sign-In
     function handleGoogleSignIn(response) {
@@ -206,26 +394,26 @@
       
       auth.signInWithCredential(credential)
         .then((result) => {
-          currentUser = result.user;
-          userInfo.textContent = `Welcome, ${currentUser.displayName}`;
-          authContainer.style.display = 'none';
-          chatUI.style.display = 'flex';
-          chatUI.flexDirection = 'column';
-          
-          // Set up user presence
-          setupUserPresence();
-          // Load users list
-          loadUsers();
-          // Set up message listeners
-          setupMessageListeners();
+          console.log("User signed in:", result.user);
         })
         .catch((error) => {
           console.error("Sign in error:", error);
+          alert("Sign in failed. Please try again.");
         });
     }
 
-    // Set up user presence in Firebase
-    function setupUserPresence() {
+    // Set up user profile in sidebar
+    function setupUserProfile() {
+      if (!currentUser) return;
+      
+      userProfile.innerHTML = `
+        <div class="user-avatar">${currentUser.displayName ? currentUser.displayName.charAt(0).toUpperCase() : 'U'}</div>
+        <div class="user-name">${currentUser.displayName || 'User'}</div>
+      `;
+    }
+
+    // Set up user presence
+    function setupPresence() {
       const userStatusRef = db.ref(`status/${currentUser.uid}`);
       const connectedRef = db.ref('.info/connected');
       
@@ -246,145 +434,114 @@
       });
     }
 
-    // Load all users
-    function loadUsers() {
-      db.ref('status').on('value', (snapshot) => {
-        users = snapshot.val() || {};
-        updateRecipientList();
-      });
-    }
-
-    // Update recipient dropdown
-    function updateRecipientList() {
-      recipientSelect.innerHTML = '<option value="">Select a user</option>';
+    // Load channels and set up listeners
+    function loadChannels() {
+      // Clear existing channels
+      channelsList.innerHTML = '';
       
-      for (const uid in users) {
-        if (uid !== currentUser.uid) {
-          const user = users[uid];
-          recipientSelect.innerHTML += `<option value="${uid}">${user.name}</option>`;
-        }
+      // Add each channel to the sidebar
+      for (const channelId in channels) {
+        const channel = channels[channelId];
+        const channelElement = document.createElement('div');
+        channelElement.className = 'channel';
+        channelElement.innerHTML = `
+          <div class="channel-name">${channel.displayName}</div>
+          <div class="channel-unread">3</div>
+        `;
+        
+        channelElement.addEventListener('click', () => {
+          selectChannel(channelId);
+        });
+        
+        channelsList.appendChild(channelElement);
+      }
+      
+      // Select the first channel by default
+      if (Object.keys(channels).length > 0) {
+        selectChannel(Object.keys(channels)[0]);
       }
     }
 
-    // Switch between public and private tabs
-    function switchTab(tab) {
-      currentTab = tab;
-      document.querySelectorAll('.chat-tab').forEach(el => {
+    // Select a channel and load its messages
+    function selectChannel(channelId) {
+      currentChannel = channelId;
+      
+      // Update UI
+      document.querySelectorAll('.channel').forEach(el => {
         el.classList.remove('active');
       });
-      document.querySelector(`.chat-tab:nth-child(${tab === 'public' ? 1 : 2})`).classList.add('active');
+      document.querySelector(`.channel[data-channel="${channelId}"]`)?.classList.add('active');
       
-      recipientContainer.style.display = tab === 'private' ? 'flex' : 'none';
+      currentChannelName.textContent = channels[channelId].displayName;
+      channelMembersCount.textContent = `${Object.keys(channels[channelId].members).length} members`;
+      messageInput.placeholder = `Message #${channels[channelId].name}`;
+      messageInput.disabled = false;
       
-      // Clear messages and reload for the new tab
-      messagesDiv.innerHTML = '';
-      setupMessageListeners();
-    }
-
-    // Set up appropriate message listeners based on current tab
-    function setupMessageListeners() {
-      // Remove previous listeners
-      if (messagesRef) {
-        messagesRef.off();
-      }
+      // Clear messages
+      messagesContainer.innerHTML = '';
       
-      if (currentTab === 'public') {
-        // Public chat - listen to all messages
-        messagesRef = db.ref('messages/public');
-      } else {
-        // Private chat - listen to messages where current user is sender or recipient
-        messagesRef = db.ref('messages/private').orderByChild('participants/' + currentUser.uid).equalTo(true);
-      }
-      
-      messagesRef.on('child_added', (snapshot) => {
-        const msg = snapshot.val();
-        displayMessage(msg, snapshot.key);
+      // Load messages for this channel
+      db.ref(`messages/${channelId}`).on('child_added', (snapshot) => {
+        const message = snapshot.val();
+        displayMessage(message);
       });
+      
+      // Add system message
+      addSystemMessage(`${currentUser.displayName} joined the channel`);
     }
 
     // Display a message in the chat
-    function displayMessage(msg, key) {
-      const msgDiv = document.createElement('div');
-      msgDiv.className = 'message';
+    function displayMessage(message) {
+      const messageElement = document.createElement('div');
+      messageElement.className = `message ${message.senderId === currentUser.uid ? 'sent' : 'received'}`;
       
-      // Check if message is private
-      if (msg.private) {
-        msgDiv.classList.add('private');
-        
-        // Check if we're the sender or recipient
-        if (msg.senderId === currentUser.uid) {
-          msgDiv.classList.add('sent');
-          msgDiv.textContent = `To ${users[msg.recipientId]?.name || 'Unknown'}: ${msg.text}`;
-        } else {
-          msgDiv.textContent = `From ${users[msg.senderId]?.name || 'Unknown'}: ${msg.text}`;
-        }
-      } else {
-        // Public message
-        if (msg.senderId === currentUser.uid) {
-          msgDiv.classList.add('sent');
-        }
-        msgDiv.textContent = `${users[msg.senderId]?.name || 'Unknown'}: ${msg.text}`;
-      }
+      const senderName = message.senderName || 'Unknown';
+      const messageTime = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       
-      messagesDiv.appendChild(msgDiv);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      messageElement.innerHTML = `
+        <div class="message-info">
+          <div class="message-sender">${senderName}</div>
+          <div class="message-time">${messageTime}</div>
+        </div>
+        <div class="message-content">${message.text}</div>
+      `;
+      
+      messagesContainer.appendChild(messageElement);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    // Add a system message (e.g., user joined)
+    function addSystemMessage(text) {
+      const systemMessage = document.createElement('div');
+      systemMessage.className = 'system-message';
+      systemMessage.textContent = text;
+      messagesContainer.appendChild(systemMessage);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
     // Send a message
-    function send() {
-      const text = msgInput.value.trim();
-      if (text !== '') {
-        if (currentTab === 'public') {
-          // Public message
-          db.ref('messages/public').push({
-            text: text,
-            time: Date.now(),
-            senderId: currentUser.uid,
-            private: false
-          });
-        } else {
-          // Private message
-          const recipientId = recipientSelect.value;
-          if (!recipientId) {
-            alert('Please select a recipient');
-            return;
-          }
-          
-          const privateRef = db.ref('messages/private');
-          const newMessageRef = privateRef.push();
-          
-          newMessageRef.set({
-            text: text,
-            time: Date.now(),
-            senderId: currentUser.uid,
-            recipientId: recipientId,
-            private: true,
-            participants: {
-              [currentUser.uid]: true,
-              [recipientId]: true
-            }
-          });
-        }
-        
-        msgInput.value = '';
+    function sendMessage() {
+      const text = messageInput.value.trim();
+      if (text && currentChannel) {
+        db.ref(`messages/${currentChannel}`).push({
+          text: text,
+          senderId: currentUser.uid,
+          senderName: currentUser.displayName,
+          timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+        messageInput.value = '';
       }
     }
 
-    // Send on Enter key
-    msgInput.addEventListener('keypress', function(e) {
+    // Event listeners
+    messageInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
-        send();
+        sendMessage();
       }
     });
 
-    // Sign out (optional - you could add a sign out button)
-    function signOut() {
-      auth.signOut().then(() => {
-        currentUser = null;
-        chatUI.style.display = 'none';
-        authContainer.style.display = 'flex';
-      });
-    }
+    // Initialize the app
+    initApp();
   </script>
 </body>
 </html>
