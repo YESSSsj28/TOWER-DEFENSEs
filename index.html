@@ -497,6 +497,24 @@
       gap: 12px;
     }
 
+    /* Password Visibility Toggle */
+    .password-container {
+      position: relative;
+    }
+
+    .toggle-password {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: var(--text-secondary);
+    }
+
+    .password-input {
+      padding-right: 35px !important;
+    }
+
     /* Modals */
     .modal {
       position: fixed;
@@ -848,7 +866,10 @@
 
       <div class="input-group">
         <label for="login-password">Password</label>
-        <input type="password" id="login-password" placeholder="Enter your password">
+        <div class="password-container">
+          <input type="password" id="login-password" class="password-input" placeholder="Enter your password">
+          <i class="fas fa-eye toggle-password" id="toggle-login-password"></i>
+        </div>
       </div>
 
       <button id="login-btn">
@@ -867,12 +888,18 @@
 
       <div class="input-group">
         <label for="register-password">Password</label>
-        <input type="password" id="register-password" placeholder="Create a password">
+        <div class="password-container">
+          <input type="password" id="register-password" class="password-input" placeholder="Create a password">
+          <i class="fas fa-eye toggle-password" id="toggle-register-password"></i>
+        </div>
       </div>
 
       <div class="input-group">
         <label for="confirm-password">Confirm Password</label>
-        <input type="password" id="confirm-password" placeholder="Confirm your password">
+        <div class="password-container">
+          <input type="password" id="confirm-password" class="password-input" placeholder="Confirm your password">
+          <i class="fas fa-eye toggle-password" id="toggle-confirm-password"></i>
+        </div>
       </div>
 
       <button id="register-btn">
@@ -1249,6 +1276,9 @@
     const profileModalAvatarImg = document.getElementById('profile-modal-avatar-img');
     const profileModalName = document.getElementById('profile-modal-name');
     const profileModalDescription = document.getElementById('profile-modal-description');
+    const toggleLoginPassword = document.getElementById('toggle-login-password');
+    const toggleRegisterPassword = document.getElementById('toggle-register-password');
+    const toggleConfirmPassword = document.getElementById('toggle-confirm-password');
 
     // Current User and App State
     let currentUser = null;
@@ -1289,6 +1319,19 @@
       registerBtn.addEventListener('click', registerUser);
       loginBtn.addEventListener('click', loginUser);
       logoutBtn.addEventListener('click', logoutUser);
+
+      // Password visibility toggles
+      toggleLoginPassword.addEventListener('click', function() {
+        togglePasswordVisibility('login-password', this);
+      });
+
+      toggleRegisterPassword.addEventListener('click', function() {
+        togglePasswordVisibility('register-password', this);
+      });
+
+      toggleConfirmPassword.addEventListener('click', function() {
+        togglePasswordVisibility('confirm-password', this);
+      });
 
       // Chat buttons
       messageInput.addEventListener('keypress', (e) => {
@@ -1371,6 +1414,20 @@
           option.classList.add('active');
         });
       });
+    }
+
+    // Toggle password visibility
+    function togglePasswordVisibility(inputId, icon) {
+      const input = document.getElementById(inputId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+      }
     }
 
     // Set up textarea auto-resize
@@ -1500,7 +1557,8 @@
         // Save to localStorage for persistent login
         localStorage.setItem('currentUser', JSON.stringify({
           username: currentUser.username,
-          password: password // Note: In production, use a more secure method
+          password: password, // Note: In production, use a more secure method
+          lastLogin: Date.now()
         }));
 
         // Update UI
@@ -2099,14 +2157,23 @@
             return friends;
           });
           
+          // Update current user's friends list
+          if (!currentUser.friends.includes(requester)) {
+            currentUser.friends.push(requester);
+          }
+          
           showStatus(requestsStatus, 'Friend request accepted!', 'success');
           
           // Reload friends list and open chat with new friend
-          loadFriends();
+          await loadFriends();
           openChat(requester, 'friend');
         } else {
           showStatus(requestsStatus, 'Friend request rejected', 'success');
         }
+        
+        // Update pending requests
+        pendingRequests = pendingRequests.filter(r => r !== requester);
+        updateRequestBadge();
         
         // Reload requests list
         loadFriendRequests();
@@ -2155,6 +2222,11 @@
           updates[`users/${member.username}/groups/${groupId}`] = true;
         });
         await db.ref().update(updates);
+
+        // Update current user's groups
+        if (!currentUser.groups.includes(groupId)) {
+          currentUser.groups.push(groupId);
+        }
 
         showStatus(groupStatus, 'Group created successfully!', 'success');
         
@@ -2275,6 +2347,9 @@
           
           // Remove group from user's groups list
           await db.ref(`users/${currentUser.username}/groups/${currentChat.id}`).remove();
+
+          // Update current user's groups
+          currentUser.groups = currentUser.groups.filter(g => g !== currentChat.id);
 
           showStatus(chatStatus, 'You have left the group', 'success');
           
