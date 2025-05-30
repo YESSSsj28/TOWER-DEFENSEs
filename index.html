@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cross-Device Web Calling</title>
+  <title>Web Call (No Camera Needed)</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -11,18 +11,6 @@
       margin: 0 auto;
       padding: 20px;
       text-align: center;
-    }
-    #video-container {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin: 20px 0;
-    }
-    video {
-      width: 100%;
-      max-width: 400px;
-      background: #000;
-      border-radius: 8px;
     }
     button {
       padding: 10px 20px;
@@ -42,7 +30,7 @@
       margin: 10px;
     }
     #status {
-      margin: 10px 0;
+      margin: 20px 0;
       font-weight: bold;
       min-height: 24px;
     }
@@ -58,10 +46,21 @@
     .user-item:hover {
       background: #f5f5f5;
     }
+    #chat-box {
+      height: 200px;
+      border: 1px solid #ddd;
+      overflow-y: scroll;
+      text-align: left;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    #message-input {
+      width: 70%;
+    }
   </style>
 </head>
 <body>
-  <h1>Web Call System</h1>
+  <h1>Web Call (Data Channel)</h1>
   
   <div id="login-section">
     <input type="text" id="username" placeholder="Your Name" />
@@ -75,26 +74,24 @@
     </div>
     
     <div id="active-call-ui" style="display: none;">
-      <div id="video-container">
-        <video id="local-video" autoplay muted playsinline></video>
-        <video id="remote-video" autoplay playsinline></video>
-      </div>
-      <button id="end-call-btn">End Call</button>
+      <div id="status">Status: Connected to <span id="connected-user"></span></div>
+      <div id="chat-box"></div>
+      <input type="text" id="message-input" placeholder="Type a message" />
+      <button id="send-message-btn">Send</button>
+      <button id="end-call-btn">End Connection</button>
     </div>
     
     <div id="call-controls">
-      <button id="start-call-btn" disabled>Start Call</button>
+      <button id="start-call-btn" disabled>Connect</button>
     </div>
   </div>
-
-  <div id="status">Status: Not connected</div>
 
   <!-- Firebase for signaling -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   
   <script>
-    // Firebase config (replace with your own)
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyD9uzP781-TlDSC9fILQX8M-Xa7Ely_rZc",
       authDomain: "chayt-41951.firebaseapp.com",
@@ -113,19 +110,21 @@
     const loginBtn = document.getElementById('login-btn');
     const startCallBtn = document.getElementById('start-call-btn');
     const endCallBtn = document.getElementById('end-call-btn');
+    const sendMessageBtn = document.getElementById('send-message-btn');
+    const messageInput = document.getElementById('message-input');
     const usernameInput = document.getElementById('username');
-    const localVideo = document.getElementById('local-video');
-    const remoteVideo = document.getElementById('remote-video');
     const statusDisplay = document.getElementById('status');
+    const connectedUserSpan = document.getElementById('connected-user');
     const loginSection = document.getElementById('login-section');
     const callSection = document.getElementById('call-section');
     const activeCallUI = document.getElementById('active-call-ui');
     const userList = document.getElementById('user-list');
     const callControls = document.getElementById('call-controls');
+    const chatBox = document.getElementById('chat-box');
 
     // WebRTC Variables
-    let localStream;
     let peerConnection;
+    let dataChannel;
     let currentUser;
     let targetUser;
     let onlineUsers = {};
@@ -150,31 +149,19 @@
       // Remove user when they disconnect
       userRef.onDisconnect().remove();
       
-      // Get user media (camera & mic)
-      try {
-        localStream = await navigator.mediaDevices.getUserMedia({ 
-          video: true, 
-          audio: true 
-        });
-        localVideo.srcObject = localStream;
-        
-        // Show call UI
-        loginSection.style.display = 'none';
-        callSection.style.display = 'block';
-        statusDisplay.textContent = `Logged in as: ${currentUser}`;
-        
-        // Listen for online users
-        database.ref('users').on('value', (snapshot) => {
-          onlineUsers = snapshot.val() || {};
-          updateUserList();
-        });
-        
-        // Listen for incoming calls
-        setupCallListeners();
-      } catch (err) {
-        console.error("Error accessing media devices:", err);
-        statusDisplay.textContent = "Error: Could not access camera/mic";
-      }
+      // Show call UI
+      loginSection.style.display = 'none';
+      callSection.style.display = 'block';
+      statusDisplay.textContent = `Logged in as: ${currentUser}`;
+      
+      // Listen for online users
+      database.ref('users').on('value', (snapshot) => {
+        onlineUsers = snapshot.val() || {};
+        updateUserList();
+      });
+      
+      // Listen for incoming connections
+      setupConnectionListeners();
     });
 
     // Update list of online users
@@ -197,7 +184,7 @@
       }
     }
 
-    // Select a user to call
+    // Select a user to connect to
     function selectUser(username) {
       // Highlight selected user
       document.querySelectorAll('.user-item').forEach(item => {
@@ -208,11 +195,11 @@
       startCallBtn.disabled = false;
     }
 
-    // Start Call Function
+    // Start Connection Function
     startCallBtn.addEventListener('click', async () => {
       if (!targetUser) return;
       
-      statusDisplay.textContent = `Calling ${targetUser}...`;
+      statusDisplay.textContent = `Connecting to ${targetUser}...`;
       startCallBtn.disabled = true;
       
       // Create peer connection
@@ -224,10 +211,9 @@
         ]
       });
 
-      // Add local stream to connection
-      localStream.getTracks().forEach(track => {
-        peerConnection.addTrack(track, localStream);
-      });
+      // Create data channel
+      dataChannel = peerConnection.createDataChannel("chat");
+      setupDataChannelListeners(dataChannel);
 
       // Listen for ICE candidates (network info)
       peerConnection.onicecandidate = (event) => {
@@ -239,17 +225,7 @@
         }
       };
 
-      // Listen for remote stream
-      peerConnection.ontrack = (event) => {
-        if (!remoteVideo.srcObject) {
-          remoteVideo.srcObject = event.streams[0];
-          activeCallUI.style.display = 'block';
-          callControls.style.display = 'none';
-          statusDisplay.textContent = `In call with ${targetUser}`;
-        }
-      };
-
-      // Create offer (call request)
+      // Create offer (connection request)
       const offer = await peerConnection.createOffer();
       await peerConnection.setLocalDescription(offer);
 
@@ -262,15 +238,37 @@
 
       // Set timeout if no answer
       setTimeout(() => {
-        if (!remoteVideo.srcObject) {
-          statusDisplay.textContent = `${targetUser} is not answering`;
-          cleanupCall();
+        if (!dataChannel || dataChannel.readyState !== 'open') {
+          statusDisplay.textContent = `${targetUser} is not responding`;
+          cleanupConnection();
         }
       }, 30000);
     });
 
-    // Setup call listeners for incoming calls
-    function setupCallListeners() {
+    // Setup data channel listeners
+    function setupDataChannelListeners(channel) {
+      channel.onopen = () => {
+        statusDisplay.textContent = `Connected to ${targetUser}`;
+        connectedUserSpan.textContent = targetUser;
+        activeCallUI.style.display = 'block';
+        callControls.style.display = 'none';
+        messageInput.disabled = false;
+        sendMessageBtn.disabled = false;
+        messageInput.focus();
+      };
+      
+      channel.onclose = () => {
+        addMessage("Connection closed", "system");
+        cleanupConnection();
+      };
+      
+      channel.onmessage = (event) => {
+        addMessage(event.data, "remote");
+      };
+    }
+
+    // Setup connection listeners for incoming connections
+    function setupConnectionListeners() {
       // Listen for offers
       callsRef.on('value', async (snapshot) => {
         const data = snapshot.val();
@@ -279,8 +277,8 @@
         if (data.type === 'offer' && data.sender && data.sender !== currentUser) {
           targetUser = data.sender;
           
-          // Confirm call
-          if (confirm(`Incoming call from ${targetUser}. Accept?`)) {
+          // Confirm connection
+          if (confirm(`Incoming connection from ${targetUser}. Accept?`)) {
             // Create peer connection
             peerConnection = new RTCPeerConnection({
               iceServers: [
@@ -290,10 +288,11 @@
               ]
             });
 
-            // Add local stream
-            localStream.getTracks().forEach(track => {
-              peerConnection.addTrack(track, localStream);
-            });
+            // Listen for data channel
+            peerConnection.ondatachannel = (event) => {
+              dataChannel = event.channel;
+              setupDataChannelListeners(dataChannel);
+            };
 
             // Listen for ICE candidates
             peerConnection.onicecandidate = (event) => {
@@ -303,14 +302,6 @@
                   candidate: event.candidate
                 });
               }
-            };
-
-            // Listen for remote stream
-            peerConnection.ontrack = (event) => {
-              remoteVideo.srcObject = event.streams[0];
-              activeCallUI.style.display = 'block';
-              callControls.style.display = 'none';
-              statusDisplay.textContent = `In call with ${targetUser}`;
             };
 
             // Set remote offer
@@ -327,7 +318,7 @@
               answer: answer
             });
           } else {
-            // Reject call
+            // Reject connection
             database.ref(`calls/${targetUser}`).set({
               type: 'reject',
               sender: currentUser
@@ -342,8 +333,8 @@
         
         // Listen for rejection
         if (data.type === 'reject' && data.sender === targetUser) {
-          statusDisplay.textContent = `${targetUser} declined your call`;
-          cleanupCall();
+          statusDisplay.textContent = `${targetUser} declined your connection`;
+          cleanupConnection();
         }
       });
 
@@ -360,28 +351,72 @@
       });
     }
 
-    // End Call Function
-    endCallBtn.addEventListener('click', () => {
-      cleanupCall();
-      statusDisplay.textContent = `Call ended with ${targetUser}`;
+    // Send message through data channel
+    sendMessageBtn.addEventListener('click', sendMessage);
+    messageInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendMessage();
     });
 
-    // Clean up call resources
-    function cleanupCall() {
+    function sendMessage() {
+      const message = messageInput.value.trim();
+      if (!message || !dataChannel || dataChannel.readyState !== 'open') return;
+      
+      dataChannel.send(message);
+      addMessage(message, "local");
+      messageInput.value = '';
+    }
+
+    // Add message to chat box
+    function addMessage(message, type) {
+      const messageDiv = document.createElement('div');
+      messageDiv.style.margin = '5px 0';
+      messageDiv.style.padding = '5px';
+      messageDiv.style.borderRadius = '5px';
+      
+      if (type === "local") {
+        messageDiv.style.textAlign = 'right';
+        messageDiv.style.backgroundColor = '#e3f2fd';
+        messageDiv.textContent = `You: ${message}`;
+      } else if (type === "remote") {
+        messageDiv.style.textAlign = 'left';
+        messageDiv.style.backgroundColor = '#f1f1f1';
+        messageDiv.textContent = `${targetUser}: ${message}`;
+      } else {
+        messageDiv.style.textAlign = 'center';
+        messageDiv.style.color = '#666';
+        messageDiv.style.fontStyle = 'italic';
+        messageDiv.textContent = message;
+      }
+      
+      chatBox.appendChild(messageDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    // End Connection Function
+    endCallBtn.addEventListener('click', () => {
+      cleanupConnection();
+      statusDisplay.textContent = `Disconnected from ${targetUser}`;
+      addMessage("Connection ended", "system");
+    });
+
+    // Clean up connection resources
+    function cleanupConnection() {
+      if (dataChannel) {
+        dataChannel.close();
+        dataChannel = null;
+      }
       if (peerConnection) {
         peerConnection.close();
         peerConnection = null;
       }
-      if (remoteVideo.srcObject) {
-        remoteVideo.srcObject.getTracks().forEach(track => track.stop());
-        remoteVideo.srcObject = null;
-      }
       activeCallUI.style.display = 'none';
       callControls.style.display = 'block';
       startCallBtn.disabled = true;
+      messageInput.disabled = true;
+      sendMessageBtn.disabled = true;
       targetUser = null;
       
-      // Clear call data
+      // Clear connection data
       if (targetUser) {
         database.ref(`calls/${targetUser}`).remove();
       }
@@ -395,11 +430,8 @@
 
     // Clean up when leaving
     window.addEventListener('beforeunload', () => {
-      cleanupCall();
+      cleanupConnection();
       if (userRef) userRef.remove();
-      if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-      }
     });
   </script>
 </body>
