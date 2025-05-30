@@ -762,6 +762,132 @@
       font-weight: bold;
     }
 
+    /* Message Actions */
+    .message-actions {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      display: none;
+      background: var(--bg-card);
+      border-radius: 20px;
+      padding: 4px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      z-index: 1;
+    }
+
+    .message:hover .message-actions {
+      display: flex;
+    }
+
+    .message-action {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      margin: 0 2px;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .message-action:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Reactions */
+    .reactions {
+      display: flex;
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    .reaction {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 2px 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .reaction:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Pinned Messages */
+    .pinned-messages {
+      background: rgba(99, 102, 241, 0.1);
+      border-left: 3px solid var(--accent);
+      padding: 8px;
+      margin-bottom: 16px;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .pinned-messages h4 {
+      margin-bottom: 8px;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Search Bar */
+    .search-bar {
+      padding: 8px;
+      background: rgba(30, 41, 59, 0.8);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .search-bar input {
+      width: 100%;
+      padding: 8px 12px;
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: var(--text-primary);
+    }
+
+    /* Typing Indicator */
+    .typing-indicator {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 12px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .typing-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--text-secondary);
+      border-radius: 50%;
+      animation: typingAnimation 1.4s infinite ease-in-out;
+    }
+
+    .typing-dot:nth-child(1) {
+      animation-delay: 0s;
+    }
+
+    .typing-dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    /* Blocked Users */
+    .blocked-user-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
     /* Animations */
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
@@ -772,6 +898,11 @@
       0% { opacity: 0.6; }
       50% { opacity: 1; }
       100% { opacity: 0.6; }
+    }
+
+    @keyframes typingAnimation {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-4px); }
     }
 
     .loading {
@@ -915,6 +1046,9 @@
   <div class="app-container" id="app-container" style="display: none;">
     <!-- Sidebar -->
     <div class="sidebar">
+      <div class="search-bar">
+        <input type="text" id="chat-search" placeholder="Search chats...">
+      </div>
       <div class="friends-list" id="friends-list">
         <div class="friend-item" id="add-friend-btn">
           <div class="friend-avatar"><i class="fas fa-user-plus"></i></div>
@@ -994,7 +1128,21 @@
           </div>
         </div>
 
+        <div id="pinned-messages-container" style="display: none;">
+          <div class="pinned-messages">
+            <h4><i class="fas fa-thumbtack"></i> Pinned Messages</h4>
+            <div id="pinned-messages"></div>
+          </div>
+        </div>
+
         <div id="messages"></div>
+        
+        <div class="typing-indicator" id="typing-indicator" style="display: none;">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <span id="typing-text"></span>
+        </div>
         
         <div class="input-area">
           <div class="image-preview-container">
@@ -1111,59 +1259,74 @@
   <div class="modal" id="settings-modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>Appearance Settings</h3>
+        <h3>Settings</h3>
         <button class="modal-close" id="close-settings">&times;</button>
       </div>
-      <div class="input-group">
-        <label>Background</label>
-        <div class="bg-grid">
-          <div class="bg-option active" data-bg="default">
-            <div style="background: #0f172a; height: 100%; background-image: radial-gradient(circle at 10% 20%, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.8) 90%);"></div>
-            <div class="bg-label">Default</div>
-          </div>
-          <div class="bg-option" data-bg="animated-1">
-            <div class="animated-bg-1" style="height: 100%;"></div>
-            <div class="bg-label">Animated 1</div>
-          </div>
-          <div class="bg-option" data-bg="animated-2">
-            <div class="animated-bg-2" style="height: 100%;"></div>
-            <div class="bg-label">Animated 2</div>
-          </div>
-          <div class="bg-option" data-bg="gradient-purple">
-            <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); height: 100%;"></div>
-            <div class="bg-label">Purple</div>
-          </div>
-          <div class="bg-option" data-bg="gradient-blue">
-            <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); height: 100%;"></div>
-            <div class="bg-label">Blue</div>
-          </div>
-          <div class="bg-option" data-bg="gradient-red">
-            <div style="background: linear-gradient(135deg, #ef4444, #b91c1c); height: 100%;"></div>
-            <div class="bg-label">Red</div>
-          </div>
-          <div class="bg-option" data-bg="gradient-green">
-            <div style="background: linear-gradient(135deg, #10b981, #047857); height: 100%;"></div>
-            <div class="bg-label">Green</div>
-          </div>
-          <div class="bg-option" data-bg="gradient-orange">
-            <div style="background: linear-gradient(135deg, #f59e0b, #b45309); height: 100%;"></div>
-            <div class="bg-label">Orange</div>
-          </div>
-          <div class="bg-option" data-bg="black">
-            <div style="background: #000; height: 100%;"></div>
-            <div class="bg-label">Black</div>
-          </div>
-          <div class="bg-option" data-bg="white">
-            <div style="background: #fff; height: 100%;"></div>
-            <div class="bg-label">White</div>
+      
+      <div class="auth-tabs">
+        <div class="auth-tab active" id="appearance-tab">Appearance</div>
+        <div class="auth-tab" id="blocked-users-tab">Blocked Users</div>
+      </div>
+      
+      <div id="appearance-settings">
+        <div class="input-group">
+          <label>Background</label>
+          <div class="bg-grid">
+            <div class="bg-option active" data-bg="default">
+              <div style="background: #0f172a; height: 100%; background-image: radial-gradient(circle at 10% 20%, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.8) 90%);"></div>
+              <div class="bg-label">Default</div>
+            </div>
+            <div class="bg-option" data-bg="animated-1">
+              <div class="animated-bg-1" style="height: 100%;"></div>
+              <div class="bg-label">Animated 1</div>
+            </div>
+            <div class="bg-option" data-bg="animated-2">
+              <div class="animated-bg-2" style="height: 100%;"></div>
+              <div class="bg-label">Animated 2</div>
+            </div>
+            <div class="bg-option" data-bg="gradient-purple">
+              <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); height: 100%;"></div>
+              <div class="bg-label">Purple</div>
+            </div>
+            <div class="bg-option" data-bg="gradient-blue">
+              <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); height: 100%;"></div>
+              <div class="bg-label">Blue</div>
+            </div>
+            <div class="bg-option" data-bg="gradient-red">
+              <div style="background: linear-gradient(135deg, #ef4444, #b91c1c); height: 100%;"></div>
+              <div class="bg-label">Red</div>
+            </div>
+            <div class="bg-option" data-bg="gradient-green">
+              <div style="background: linear-gradient(135deg, #10b981, #047857); height: 100%;"></div>
+              <div class="bg-label">Green</div>
+            </div>
+            <div class="bg-option" data-bg="gradient-orange">
+              <div style="background: linear-gradient(135deg, #f59e0b, #b45309); height: 100%;"></div>
+              <div class="bg-label">Orange</div>
+            </div>
+            <div class="bg-option" data-bg="black">
+              <div style="background: #000; height: 100%;"></div>
+              <div class="bg-label">Black</div>
+            </div>
+            <div class="bg-option" data-bg="white">
+              <div style="background: #fff; height: 100%;"></div>
+              <div class="bg-label">White</div>
+            </div>
           </div>
         </div>
+        <button id="save-settings-btn" style="margin-top: 16px;">
+          <i class="fas fa-save"></i>
+          <span>Save Settings</span>
+        </button>
+        <div id="settings-status" class="status"></div>
       </div>
-      <button id="save-settings-btn" style="margin-top: 16px;">
-        <i class="fas fa-save"></i>
-        <span>Save Settings</span>
-      </button>
-      <div id="settings-status" class="status"></div>
+      
+      <div id="blocked-users-settings" style="display: none;">
+        <div id="blocked-users-list">
+          <!-- Blocked users will be listed here -->
+        </div>
+        <div id="blocked-users-status" class="status"></div>
+      </div>
     </div>
   </div>
 
@@ -1181,6 +1344,30 @@
         </div>
         <div class="profile-name" id="profile-modal-name">User</div>
         <div class="profile-description" id="profile-modal-description">No description yet</div>
+        <button id="block-user-btn" style="width: 100%; margin-top: 12px; background: var(--error);">
+          <i class="fas fa-ban"></i>
+          <span>Block User</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reaction Picker Modal -->
+  <div class="modal" id="reaction-picker-modal">
+    <div class="modal-content" style="width: auto; padding: 12px;">
+      <div class="modal-header">
+        <h3>Add Reaction</h3>
+        <button class="modal-close" id="close-reaction-picker">&times;</button>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <div class="reaction-option" data-reaction="❤️">❤️</div>
+        <div class="reaction-option" data-reaction="😂">😂</div>
+        <div class="reaction-option" data-reaction="😮">😮</div>
+        <div class="reaction-option" data-reaction="😢">😢</div>
+        <div class="reaction-option" data-reaction="👍">👍</div>
+        <div class="reaction-option" data-reaction="👎">👎</div>
+        <div class="reaction-option" data-reaction="🔥">🔥</div>
+        <div class="reaction-option" data-reaction="🎉">🎉</div>
       </div>
     </div>
   </div>
@@ -1279,6 +1466,20 @@
     const toggleLoginPassword = document.getElementById('toggle-login-password');
     const toggleRegisterPassword = document.getElementById('toggle-register-password');
     const toggleConfirmPassword = document.getElementById('toggle-confirm-password');
+    const chatSearchInput = document.getElementById('chat-search');
+    const pinnedMessagesContainer = document.getElementById('pinned-messages-container');
+    const pinnedMessagesList = document.getElementById('pinned-messages');
+    const typingIndicator = document.getElementById('typing-indicator');
+    const typingText = document.getElementById('typing-text');
+    const appearanceTab = document.getElementById('appearance-tab');
+    const blockedUsersTab = document.getElementById('blocked-users-tab');
+    const appearanceSettings = document.getElementById('appearance-settings');
+    const blockedUsersSettings = document.getElementById('blocked-users-settings');
+    const blockedUsersList = document.getElementById('blocked-users-list');
+    const blockedUsersStatus = document.getElementById('blocked-users-status');
+    const blockUserBtn = document.getElementById('block-user-btn');
+    const reactionPickerModal = document.getElementById('reaction-picker-modal');
+    const closeReactionPicker = document.getElementById('close-reaction-picker');
 
     // Current User and App State
     let currentUser = null;
@@ -1290,6 +1491,10 @@
     let selectedImage = null;
     let profilePictureFile = null;
     let chatActivity = {}; // Tracks last activity time for each chat
+    let messageDrafts = {}; // Stores unsent message drafts
+    let typingTimeout = null;
+    let currentlyViewingProfile = null;
+    let selectedMessageForReaction = null;
 
     // Initialize the app
     function init() {
@@ -1313,6 +1518,22 @@
         loginTab.classList.remove('active');
         registerForm.style.display = 'flex';
         loginForm.style.display = 'none';
+      });
+
+      // Settings tabs
+      appearanceTab.addEventListener('click', () => {
+        appearanceTab.classList.add('active');
+        blockedUsersTab.classList.remove('active');
+        appearanceSettings.style.display = 'block';
+        blockedUsersSettings.style.display = 'none';
+      });
+
+      blockedUsersTab.addEventListener('click', () => {
+        blockedUsersTab.classList.add('active');
+        appearanceTab.classList.remove('active');
+        blockedUsersSettings.style.display = 'block';
+        appearanceSettings.style.display = 'none';
+        loadBlockedUsers();
       });
 
       // Auth buttons
@@ -1340,10 +1561,28 @@
           sendText();
         }
       });
+      
+      messageInput.addEventListener('input', () => {
+        // Save draft
+        if (currentChat) {
+          messageDrafts[currentChat.id] = messageInput.value;
+        }
+        
+        // Show typing indicator
+        if (currentChat && currentChat.type === 'friend') {
+          db.ref(`typing/${currentChat.id}/${currentUser.username}`).set(true);
+          clearTimeout(typingTimeout);
+          typingTimeout = setTimeout(() => {
+            db.ref(`typing/${currentChat.id}/${currentUser.username}`).remove();
+          }, 2000);
+        }
+      });
+      
       sendTextBtn.addEventListener('click', sendText);
       sendImageBtn.addEventListener('click', uploadImage);
       uploadInput.addEventListener('change', handleImageUpload);
       removeImageBtn.addEventListener('click', removeImage);
+      chatSearchInput.addEventListener('input', searchChats);
 
       // Friend buttons
       addFriendBtn.addEventListener('click', () => {
@@ -1384,6 +1623,7 @@
       // Settings buttons
       settingsBtn.addEventListener('click', () => {
         settingsModal.classList.add('active');
+        appearanceTab.click();
       });
       closeSettings.addEventListener('click', () => {
         settingsModal.classList.remove('active');
@@ -1404,6 +1644,7 @@
       closeProfileView.addEventListener('click', () => {
         profileViewModal.classList.remove('active');
       });
+      blockUserBtn.addEventListener('click', blockUser);
 
       // Background options
       document.querySelectorAll('.bg-option').forEach(option => {
@@ -1412,6 +1653,20 @@
             opt.classList.remove('active');
           });
           option.classList.add('active');
+        });
+      });
+
+      // Reaction picker
+      closeReactionPicker.addEventListener('click', () => {
+        reactionPickerModal.classList.remove('active');
+      });
+      
+      document.querySelectorAll('.reaction-option').forEach(option => {
+        option.addEventListener('click', () => {
+          if (selectedMessageForReaction) {
+            addReaction(selectedMessageForReaction, option.dataset.reaction);
+            reactionPickerModal.classList.remove('active');
+          }
         });
       });
     }
@@ -1496,7 +1751,8 @@
           createdAt: Date.now(),
           friends: [],
           friendRequests: [],
-          groups: [],
+          groups: {},
+          blockedUsers: [],
           profile: {
             description: '',
             avatarUrl: ''
@@ -1550,7 +1806,8 @@
           username: user.username,
           friends: user.friends || [],
           friendRequests: user.friendRequests || [],
-          groups: user.groups || [],
+          groups: user.groups ? Object.keys(user.groups) : [],
+          blockedUsers: user.blockedUsers || [],
           profile: user.profile || { description: '', avatarUrl: '' }
         };
 
@@ -1608,6 +1865,11 @@
 
     // Logout user
     function logoutUser() {
+      // Save current draft if any
+      if (currentChat && messageInput.value.trim()) {
+        messageDrafts[currentChat.id] = messageInput.value;
+      }
+      
       currentUser = null;
       localStorage.removeItem('currentUser');
       authContainer.style.display = 'flex';
@@ -1666,6 +1928,9 @@
         
         // Add each friend to the list
         for (const friendUsername of currentUser.friends) {
+          // Skip if friend is blocked
+          if (currentUser.blockedUsers.includes(friendUsername)) continue;
+          
           const snapshot = await db.ref(`users/${friendUsername}`).once('value');
           const friend = snapshot.val();
           
@@ -1717,12 +1982,30 @@
       items.forEach(item => container.appendChild(item));
     }
 
+    // Search chats
+    function searchChats() {
+      const searchTerm = chatSearchInput.value.toLowerCase();
+      const allItems = document.querySelectorAll('.friend-item');
+      
+      allItems.forEach(item => {
+        const name = item.querySelector('.friend-name')?.textContent.toLowerCase() || '';
+        if (name.includes(searchTerm)) {
+          item.style.display = 'flex';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    }
+
     // Load friends for group creation
     async function loadFriendsForGroup() {
       try {
         friendsToAdd.innerHTML = '';
         
         for (const friendUsername of currentUser.friends) {
+          // Skip if friend is blocked
+          if (currentUser.blockedUsers.includes(friendUsername)) continue;
+          
           const friendCheckbox = document.createElement('div');
           friendCheckbox.className = 'friend-checkbox';
           friendCheckbox.innerHTML = `
@@ -1752,7 +2035,7 @@
         
         // Add friends not already in group
         for (const friendUsername of currentUser.friends) {
-          if (!currentMembers.includes(friendUsername)) {
+          if (!currentMembers.includes(friendUsername) && !currentUser.blockedUsers.includes(friendUsername)) {
             const friendCheckbox = document.createElement('div');
             friendCheckbox.className = 'friend-checkbox';
             friendCheckbox.innerHTML = `
@@ -1773,6 +2056,9 @@
         requestsList.innerHTML = '';
         
         for (const requester of pendingRequests) {
+          // Skip if requester is blocked
+          if (currentUser.blockedUsers.includes(requester)) continue;
+          
           const requestItem = document.createElement('div');
           requestItem.className = 'request-item';
           requestItem.innerHTML = `
@@ -1787,6 +2073,9 @@
               <button class="reject-request" data-username="${requester}">
                 <i class="fas fa-times"></i> Reject
               </button>
+              <button class="block-request" data-username="${requester}" style="background: var(--error);">
+                <i class="fas fa-ban"></i> Block
+              </button>
             </div>
           `;
           
@@ -1800,6 +2089,10 @@
         
         document.querySelectorAll('.reject-request').forEach(btn => {
           btn.addEventListener('click', () => handleFriendRequest(btn.dataset.username, false));
+        });
+        
+        document.querySelectorAll('.block-request').forEach(btn => {
+          btn.addEventListener('click', () => blockUser(btn.dataset.username));
         });
       } catch (error) {
         console.error('Error loading friend requests:', error);
@@ -1866,9 +2159,35 @@
       currentChat = { id, type };
       messagesContainer.innerHTML = '';
       
+      // Load any saved draft
+      if (messageDrafts[id]) {
+        messageInput.value = messageDrafts[id];
+        messageInput.style.height = 'auto';
+        messageInput.style.height = (messageInput.scrollHeight) + 'px';
+      } else {
+        messageInput.value = '';
+        messageInput.style.height = 'auto';
+      }
+      
       if (type === 'friend') {
         chatTitle.textContent = id;
         chatActions.style.display = 'none';
+        
+        // Set up typing indicator listener
+        db.ref(`typing/${id}`).on('value', (snapshot) => {
+          const typingData = snapshot.val();
+          if (typingData) {
+            const typingUsers = Object.keys(typingData).filter(u => u !== currentUser.username);
+            if (typingUsers.length > 0) {
+              typingText.textContent = `${typingUsers[0]} is typing...`;
+              typingIndicator.style.display = 'flex';
+            } else {
+              typingIndicator.style.display = 'none';
+            }
+          } else {
+            typingIndicator.style.display = 'none';
+          }
+        });
       } else if (type === 'group') {
         const group = groups.find(g => g.id === id);
         if (group) {
@@ -1881,11 +2200,34 @@
           } else {
             chatActions.style.display = 'none';
           }
+          
+          // Set up typing indicator listener for group
+          db.ref(`typing/${id}`).on('value', (snapshot) => {
+            const typingData = snapshot.val();
+            if (typingData) {
+              const typingUsers = Object.keys(typingData).filter(u => u !== currentUser.username);
+              if (typingUsers.length > 0) {
+                if (typingUsers.length === 1) {
+                  typingText.textContent = `${typingUsers[0]} is typing...`;
+                } else if (typingUsers.length > 1) {
+                  typingText.textContent = `${typingUsers.length} people are typing...`;
+                }
+                typingIndicator.style.display = 'flex';
+              } else {
+                typingIndicator.style.display = 'none';
+              }
+            } else {
+              typingIndicator.style.display = 'none';
+            }
+          });
         }
       }
       
       // Load messages
       loadMessages(id, type);
+      
+      // Load pinned messages
+      loadPinnedMessages(id, type);
       
       // Update chat activity
       chatActivity[id] = Date.now();
@@ -1898,24 +2240,52 @@
       messagesContainer.innerHTML = '';
       
       // Listen for new messages
-      db.ref(`messages/${type}/${id}`).on('child_added', (snapshot) => {
+      db.ref(`messages/${type}/${id}`).orderByChild('time').on('child_added', (snapshot) => {
         const msg = snapshot.val();
         const isCurrentUser = msg.userId === currentUser?.username;
         
+        // Skip if message is from blocked user
+        if (currentUser.blockedUsers.includes(msg.userId)) return;
+        
         const msgDiv = document.createElement('div');
         msgDiv.className = `message ${isCurrentUser ? 'sent' : 'received'}`;
+        msgDiv.dataset.messageId = snapshot.key;
         
         if (msg.type === "text") {
           msgDiv.innerHTML = `
+            <div class="message-actions">
+              <div class="message-action" data-action="react"><i class="far fa-smile"></i></div>
+              ${isCurrentUser ? `
+                <div class="message-action" data-action="edit"><i class="far fa-edit"></i></div>
+                <div class="message-action" data-action="delete"><i class="far fa-trash-alt"></i></div>
+                <div class="message-action" data-action="pin"><i class="fas fa-thumbtack"></i></div>
+              ` : ''}
+            </div>
             <div class="message-user-profile">
               <div class="message-user-avatar" data-username="${msg.username}">${msg.username.charAt(0).toUpperCase()}</div>
               <div class="message-username" data-username="${msg.username}">${msg.username} ${msg.username === 'Yug' ? '<span class="owner-badge">OWNER</span>' : ''}</div>
             </div>
             <div class="text">${msg.text}</div>
-            <div class="timestamp">${formatTime(msg.time)}</div>
+            ${msg.reactions ? `
+              <div class="reactions">
+                ${Object.entries(msg.reactions).map(([reaction, users]) => `
+                  <div class="reaction" data-reaction="${reaction}">
+                    ${reaction} ${users.length}
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+            <div class="timestamp">${formatTime(msg.time)} ${msg.edited ? '(edited)' : ''}</div>
           `;
         } else if (msg.type === "image") {
           msgDiv.innerHTML = `
+            <div class="message-actions">
+              <div class="message-action" data-action="react"><i class="far fa-smile"></i></div>
+              ${isCurrentUser ? `
+                <div class="message-action" data-action="delete"><i class="far fa-trash-alt"></i></div>
+                <div class="message-action" data-action="pin"><i class="fas fa-thumbtack"></i></div>
+              ` : ''}
+            </div>
             <div class="message-user-profile">
               <div class="message-user-avatar" data-username="${msg.username}">${msg.username.charAt(0).toUpperCase()}</div>
               <div class="message-username" data-username="${msg.username}">${msg.username} ${msg.username === 'Yug' ? '<span class="owner-badge">OWNER</span>' : ''}</div>
@@ -1923,6 +2293,15 @@
             <div class="image-container">
               <img src="${msg.url}" alt="Sent image">
             </div>
+            ${msg.reactions ? `
+              <div class="reactions">
+                ${Object.entries(msg.reactions).map(([reaction, users]) => `
+                  <div class="reaction" data-reaction="${reaction}">
+                    ${reaction} ${users.length}
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
             <div class="timestamp">${formatTime(msg.time)}</div>
           `;
         }
@@ -1934,6 +2313,149 @@
         document.querySelectorAll(`[data-username="${msg.username}"]`).forEach(el => {
           el.addEventListener('click', () => viewUserProfile(msg.username));
         });
+        
+        // Add click events to message actions
+        msgDiv.querySelectorAll('.message-action').forEach(action => {
+          action.addEventListener('click', (e) => {
+            e.stopPropagation();
+            handleMessageAction(action.dataset.action, snapshot.key, msg);
+          });
+        });
+        
+        // Add click events to reactions
+        if (msgDiv.querySelector('.reactions')) {
+          msgDiv.querySelectorAll('.reaction').forEach(reaction => {
+            reaction.addEventListener('click', (e) => {
+              e.stopPropagation();
+              toggleReaction(snapshot.key, reaction.dataset.reaction, msg);
+            });
+          });
+        }
+      });
+    }
+
+    // Load pinned messages for a chat
+    function loadPinnedMessages(id, type) {
+      pinnedMessagesList.innerHTML = '';
+      
+      db.ref(`pinnedMessages/${type}/${id}`).orderByChild('time').once('value', (snapshot) => {
+        const pinnedMessages = snapshot.val();
+        if (pinnedMessages) {
+          pinnedMessagesContainer.style.display = 'block';
+          
+          Object.entries(pinnedMessages).forEach(([key, msg]) => {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${msg.userId === currentUser?.username ? 'sent' : 'received'}`;
+            msgDiv.style.marginBottom = '8px';
+            
+            if (msg.type === "text") {
+              msgDiv.innerHTML = `
+                <div class="message-user-profile">
+                  <div class="message-user-avatar" data-username="${msg.username}">${msg.username.charAt(0).toUpperCase()}</div>
+                  <div class="message-username" data-username="${msg.username}">${msg.username}</div>
+                </div>
+                <div class="text">${msg.text}</div>
+                <div class="timestamp">${formatTime(msg.time)} ${msg.edited ? '(edited)' : ''}</div>
+              `;
+            } else if (msg.type === "image") {
+              msgDiv.innerHTML = `
+                <div class="message-user-profile">
+                  <div class="message-user-avatar" data-username="${msg.username}">${msg.username.charAt(0).toUpperCase()}</div>
+                  <div class="message-username" data-username="${msg.username}">${msg.username}</div>
+                </div>
+                <div class="image-container">
+                  <img src="${msg.url}" alt="Sent image" style="max-height: 100px;">
+                </div>
+                <div class="timestamp">${formatTime(msg.time)}</div>
+              `;
+            }
+            
+            pinnedMessagesList.appendChild(msgDiv);
+            
+            // Add click event to profile elements
+            document.querySelectorAll(`[data-username="${msg.username}"]`).forEach(el => {
+              el.addEventListener('click', () => viewUserProfile(msg.username));
+            });
+          });
+        } else {
+          pinnedMessagesContainer.style.display = 'none';
+        }
+      });
+    }
+
+    // Handle message actions (edit, delete, react, pin)
+    function handleMessageAction(action, messageId, message) {
+      if (!currentChat) return;
+      
+      switch (action) {
+        case 'edit':
+          editMessage(messageId, message);
+          break;
+        case 'delete':
+          deleteMessage(messageId);
+          break;
+        case 'react':
+          selectedMessageForReaction = messageId;
+          reactionPickerModal.classList.add('active');
+          break;
+        case 'pin':
+          pinMessage(messageId, message);
+          break;
+      }
+    }
+
+    // Edit a message
+    function editMessage(messageId, message) {
+      if (message.type !== 'text') return;
+      
+      const newText = prompt('Edit your message:', message.text);
+      if (newText && newText !== message.text) {
+        db.ref(`messages/${currentChat.type}/${currentChat.id}/${messageId}`).update({
+          text: newText,
+          edited: true
+        });
+      }
+    }
+
+    // Delete a message
+    function deleteMessage(messageId) {
+      if (confirm('Are you sure you want to delete this message?')) {
+        db.ref(`messages/${currentChat.type}/${currentChat.id}/${messageId}`).remove();
+        
+        // Also remove from pinned messages if it was pinned
+        db.ref(`pinnedMessages/${currentChat.type}/${currentChat.id}/${messageId}`).remove();
+      }
+    }
+
+    // Pin a message
+    function pinMessage(messageId, message) {
+      db.ref(`pinnedMessages/${currentChat.type}/${currentChat.id}/${messageId}`).set(message);
+      showStatus(chatStatus, 'Message pinned', 'success');
+    }
+
+    // Add or toggle reaction
+    function toggleReaction(messageId, reaction, message) {
+      if (!currentChat) return;
+      
+      const reactionRef = db.ref(`messages/${currentChat.type}/${currentChat.id}/${messageId}/reactions/${reaction}`);
+      
+      reactionRef.transaction((currentUsers) => {
+        currentUsers = currentUsers || [];
+        
+        // If user already reacted with this emoji, remove their reaction
+        const userIndex = currentUsers.indexOf(currentUser.username);
+        if (userIndex !== -1) {
+          currentUsers.splice(userIndex, 1);
+          // If no more reactions of this type, remove the reaction entirely
+          if (currentUsers.length === 0) {
+            return null;
+          }
+        } else {
+          // Add user's reaction
+          currentUsers.push(currentUser.username);
+        }
+        
+        return currentUsers;
       });
     }
 
@@ -1960,16 +2482,24 @@
         text: text,
         time: Date.now(),
         username: currentUser.username,
-        userId: currentUser.username
+        userId: currentUser.username,
+        edited: false
       });
       
       // Update chat activity
       chatActivity[currentChat.id] = Date.now();
       sortFriendsList();
       
+      // Clear draft
+      delete messageDrafts[currentChat.id];
       messageInput.value = '';
       messageInput.style.height = 'auto';
       messageInput.focus();
+      
+      // Clear typing indicator
+      if (currentChat.type === 'friend') {
+        db.ref(`typing/${currentChat.id}/${currentUser.username}`).remove();
+      }
     }
 
     // Handle image upload selection
@@ -2102,6 +2632,16 @@
         // Check if request already sent
         if (targetUser.friendRequests && targetUser.friendRequests.includes(currentUser.username)) {
           throw new Error('Request already sent');
+        }
+        
+        // Check if user is blocked
+        if (targetUser.blockedUsers && targetUser.blockedUsers.includes(currentUser.username)) {
+          throw new Error('You are blocked by this user');
+        }
+        
+        // Check if you've blocked this user
+        if (currentUser.blockedUsers.includes(username)) {
+          throw new Error('You have blocked this user');
         }
         
         // Add request to target user's friendRequests array
@@ -2588,6 +3128,7 @@
           throw new Error('User not found');
         }
 
+        currentlyViewingProfile = username;
         profileModalTitle.textContent = `${username}'s Profile`;
         profileModalName.textContent = username;
         profileModalDescription.textContent = user.profile?.description || 'No description yet';
@@ -2603,10 +3144,131 @@
           profileModalAvatarText.style.display = 'block';
         }
 
+        // Show/hide block button based on current status
+        if (currentUser.blockedUsers.includes(username)) {
+          blockUserBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Unblock User</span>';
+          blockUserBtn.style.background = 'var(--success)';
+        } else {
+          blockUserBtn.innerHTML = '<i class="fas fa-ban"></i><span>Block User</span>';
+          blockUserBtn.style.background = 'var(--error)';
+        }
+
         profileViewModal.classList.add('active');
       } catch (error) {
         console.error('Error viewing profile:', error);
         showStatus(chatStatus, `Error: ${error.message}`, 'error');
+      }
+    }
+
+    // Block or unblock a user
+    async function blockUser(username = currentlyViewingProfile) {
+      if (!username) return;
+      
+      try {
+        const isBlocked = currentUser.blockedUsers.includes(username);
+        
+        if (isBlocked) {
+          // Unblock user
+          await db.ref(`users/${currentUser.username}/blockedUsers`).transaction((blockedUsers) => {
+            blockedUsers = blockedUsers || [];
+            return blockedUsers.filter(u => u !== username);
+          });
+          
+          currentUser.blockedUsers = currentUser.blockedUsers.filter(u => u !== username);
+          showStatus(chatStatus, `Unblocked ${username}`, 'success');
+        } else {
+          // Block user
+          await db.ref(`users/${currentUser.username}/blockedUsers`).transaction((blockedUsers) => {
+            blockedUsers = blockedUsers || [];
+            if (!blockedUsers.includes(username)) {
+              blockedUsers.push(username);
+            }
+            return blockedUsers;
+          });
+          
+          // Remove from friends if they were friends
+          if (currentUser.friends.includes(username)) {
+            await db.ref(`users/${currentUser.username}/friends`).transaction((friends) => {
+              friends = friends || [];
+              return friends.filter(f => f !== username);
+            });
+            
+            // Also remove from the other user's friends list
+            await db.ref(`users/${username}/friends`).transaction((friends) => {
+              friends = friends || [];
+              return friends.filter(f => f !== currentUser.username);
+            });
+            
+            currentUser.friends = currentUser.friends.filter(f => f !== username);
+          }
+          
+          // Remove any pending requests
+          await db.ref(`users/${currentUser.username}/friendRequests`).transaction((requests) => {
+            requests = requests || [];
+            return requests.filter(r => r !== username);
+          });
+          
+          await db.ref(`users/${username}/friendRequests`).transaction((requests) => {
+            requests = requests || [];
+            return requests.filter(r => r !== currentUser.username);
+          });
+          
+          currentUser.blockedUsers.push(username);
+          showStatus(chatStatus, `Blocked ${username}`, 'success');
+        }
+        
+        // Reload data
+        loadFriends();
+        loadFriendRequests();
+        
+        // Update UI if viewing profile
+        if (currentlyViewingProfile === username) {
+          if (isBlocked) {
+            blockUserBtn.innerHTML = '<i class="fas fa-ban"></i><span>Block User</span>';
+            blockUserBtn.style.background = 'var(--error)';
+          } else {
+            blockUserBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Unblock User</span>';
+            blockUserBtn.style.background = 'var(--success)';
+          }
+        }
+        
+        // Close chat if currently chatting with blocked user
+        if (currentChat && currentChat.type === 'friend' && currentChat.id === username) {
+          currentChat = null;
+          messagesContainer.innerHTML = '';
+          chatTitle.textContent = 'Direct Messages';
+        }
+      } catch (error) {
+        console.error('Error blocking/unblocking user:', error);
+        showStatus(chatStatus, `Error: ${error.message}`, 'error');
+      }
+    }
+
+    // Load blocked users
+    async function loadBlockedUsers() {
+      try {
+        blockedUsersList.innerHTML = '';
+        
+        for (const username of currentUser.blockedUsers) {
+          const blockedUserItem = document.createElement('div');
+          blockedUserItem.className = 'blocked-user-item';
+          blockedUserItem.innerHTML = `
+            <div>${username}</div>
+            <button class="unblock-user" data-username="${username}" style="background: var(--success);">
+              <i class="fas fa-user-check"></i> Unblock
+            </button>
+          `;
+          
+          blockedUsersList.appendChild(blockedUserItem);
+        }
+        
+        // Add event listeners to unblock buttons
+        document.querySelectorAll('.unblock-user').forEach(btn => {
+          btn.addEventListener('click', () => blockUser(btn.dataset.username));
+        });
+      } catch (error) {
+        console.error('Error loading blocked users:', error);
+        showStatus(blockedUsersStatus, `Error: ${error.message}`, 'error');
       }
     }
 
