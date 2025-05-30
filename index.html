@@ -130,6 +130,7 @@
     let onlineUsers = {};
     let userRef;
     let callsRef;
+    let isProcessingOffer = false;
 
     // Login Function
     loginBtn.addEventListener('click', async () => {
@@ -272,9 +273,10 @@
       // Listen for offers
       callsRef.on('value', async (snapshot) => {
         const data = snapshot.val();
-        if (!data || !data.type) return;
+        if (!data || !data.type || isProcessingOffer) return;
         
         if (data.type === 'offer' && data.sender && data.sender !== currentUser) {
+          isProcessingOffer = true;
           targetUser = data.sender;
           
           // Confirm connection
@@ -317,13 +319,24 @@
               sender: currentUser,
               answer: answer
             });
+            
+            // Clear the offer data to prevent reprocessing
+            database.ref(`calls/${currentUser}`).update({
+              type: null,
+              offer: null,
+              sender: null
+            });
           } else {
             // Reject connection
             database.ref(`calls/${targetUser}`).set({
               type: 'reject',
               sender: currentUser
             });
+            
+            // Clear the offer data
+            database.ref(`calls/${currentUser}`).remove();
           }
+          isProcessingOffer = false;
         }
         
         // Listen for answer
@@ -415,6 +428,7 @@
       messageInput.disabled = true;
       sendMessageBtn.disabled = true;
       targetUser = null;
+      isProcessingOffer = false;
       
       // Clear connection data
       if (targetUser) {
