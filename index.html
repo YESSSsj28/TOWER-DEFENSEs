@@ -806,6 +806,7 @@
       display: flex;
       gap: 4px;
       margin-top: 4px;
+      flex-wrap: wrap;
     }
 
     .reaction {
@@ -1605,10 +1606,11 @@
         
         // Show typing indicator
         if (currentChat && currentChat.type === 'friend') {
-          db.ref(`typing/${currentChat.id}/${currentUser.username}`).set(true);
+          const chatId = getChatId(currentChat.id, currentChat.type);
+          db.ref(`typing/${chatId}/${currentUser.username}`).set(true);
           clearTimeout(typingTimeout);
           typingTimeout = setTimeout(() => {
-            db.ref(`typing/${currentChat.id}/${currentUser.username}`).remove();
+            db.ref(`typing/${chatId}/${currentUser.username}`).remove();
           }, 2000);
         }
       });
@@ -1714,6 +1716,15 @@
                          friendItem.dataset.username ? 'friend' : 'group');
         }
       });
+    }
+
+    // Get consistent chat ID for friend chats
+    function getChatId(id, type) {
+      if (type === 'friend') {
+        const users = [currentUser.username, id].sort();
+        return users.join('_');
+      }
+      return id;
     }
 
     // Show context menu
@@ -2290,12 +2301,14 @@
         messageInput.style.height = 'auto';
       }
       
+      const chatId = getChatId(id, type);
+      
       if (type === 'friend') {
         chatTitle.textContent = id;
         chatActions.style.display = 'none';
         
         // Set up typing indicator listener
-        db.ref(`typing/${id}`).on('value', (snapshot) => {
+        db.ref(`typing/${chatId}`).on('value', (snapshot) => {
           const typingData = snapshot.val();
           if (typingData) {
             const typingUsers = Object.keys(typingData).filter(u => u !== currentUser.username);
@@ -2323,7 +2336,7 @@
           }
           
           // Set up typing indicator listener for group
-          db.ref(`typing/${id}`).on('value', (snapshot) => {
+          db.ref(`typing/${chatId}`).on('value', (snapshot) => {
             const typingData = snapshot.val();
             if (typingData) {
               const typingUsers = Object.keys(typingData).filter(u => u !== currentUser.username);
@@ -2345,10 +2358,10 @@
       }
       
       // Load messages
-      loadMessages(id, type);
+      loadMessages(chatId, type);
       
       // Load pinned messages
-      loadPinnedMessages(id, type);
+      loadPinnedMessages(chatId, type);
       
       // Update chat activity
       chatActivity[id] = Date.now();
@@ -2531,7 +2544,8 @@
       
       const newText = prompt('Edit your message:', message.text);
       if (newText && newText !== message.text) {
-        db.ref(`messages/${currentChat.type}/${currentChat.id}/${messageId}`).update({
+        const chatId = getChatId(currentChat.id, currentChat.type);
+        db.ref(`messages/${currentChat.type}/${chatId}/${messageId}`).update({
           text: newText,
           edited: true
         });
@@ -2541,16 +2555,18 @@
     // Delete a message
     function deleteMessage(messageId) {
       if (confirm('Are you sure you want to delete this message?')) {
-        db.ref(`messages/${currentChat.type}/${currentChat.id}/${messageId}`).remove();
+        const chatId = getChatId(currentChat.id, currentChat.type);
+        db.ref(`messages/${currentChat.type}/${chatId}/${messageId}`).remove();
         
         // Also remove from pinned messages if it was pinned
-        db.ref(`pinnedMessages/${currentChat.type}/${currentChat.id}/${messageId}`).remove();
+        db.ref(`pinnedMessages/${currentChat.type}/${chatId}/${messageId}`).remove();
       }
     }
 
     // Pin a message
     function pinMessage(messageId, message) {
-      db.ref(`pinnedMessages/${currentChat.type}/${currentChat.id}/${messageId}`).set(message);
+      const chatId = getChatId(currentChat.id, currentChat.type);
+      db.ref(`pinnedMessages/${currentChat.type}/${chatId}/${messageId}`).set(message);
       showStatus(chatStatus, 'Message pinned', 'success');
     }
 
@@ -2558,7 +2574,8 @@
     function toggleReaction(messageId, reaction, message) {
       if (!currentChat) return;
       
-      const reactionRef = db.ref(`messages/${currentChat.type}/${currentChat.id}/${messageId}/reactions/${reaction}`);
+      const chatId = getChatId(currentChat.id, currentChat.type);
+      const reactionRef = db.ref(`messages/${currentChat.type}/${chatId}/${messageId}/reactions/${reaction}`);
       
       reactionRef.transaction((currentUsers) => {
         currentUsers = currentUsers || [];
@@ -2602,7 +2619,9 @@
 
       messageSendLock = true;
       
-      db.ref(`messages/${currentChat.type}/${currentChat.id}`).push({
+      const chatId = getChatId(currentChat.id, currentChat.type);
+      
+      db.ref(`messages/${currentChat.type}/${chatId}`).push({
         type: "text",
         text: text,
         time: Date.now(),
@@ -2623,7 +2642,7 @@
         
         // Clear typing indicator
         if (currentChat.type === 'friend') {
-          db.ref(`typing/${currentChat.id}/${currentUser.username}`).remove();
+          db.ref(`typing/${chatId}/${currentUser.username}`).remove();
         }
       })
       .catch(error => {
@@ -2711,8 +2730,9 @@
         }
         
         const imageUrl = data.data.url;
+        const chatId = getChatId(currentChat.id, currentChat.type);
         
-        await db.ref(`messages/${currentChat.type}/${currentChat.id}`).push({
+        await db.ref(`messages/${currentChat.type}/${chatId}`).push({
           type: "image",
           url: imageUrl,
           time: Date.now(),
