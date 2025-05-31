@@ -84,6 +84,7 @@
       display: flex;
       align-items: center;
       transition: var(--transition);
+      position: relative;
     }
 
     .friend-item:hover {
@@ -92,6 +93,11 @@
 
     .friend-item.active {
       background: rgba(99, 102, 241, 0.2);
+    }
+
+    .friend-item.hidden-chat {
+      opacity: 0.5;
+      background: rgba(255, 255, 255, 0.05);
     }
 
     .friend-avatar {
@@ -888,6 +894,28 @@
       background: rgba(255, 255, 255, 0.05);
     }
 
+    /* Context Menu */
+    .context-menu {
+      position: absolute;
+      background: var(--bg-card);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      z-index: 1000;
+      display: none;
+      min-width: 160px;
+      overflow: hidden;
+    }
+
+    .context-menu-item {
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .context-menu-item:hover {
+      background: rgba(99, 102, 241, 0.2);
+    }
+
     /* Animations */
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
@@ -1372,6 +1400,9 @@
     </div>
   </div>
 
+  <!-- Context Menu -->
+  <div class="context-menu" id="context-menu"></div>
+
   <script>
     // Firebase Configuration
     const firebaseConfig = {
@@ -1480,6 +1511,7 @@
     const blockUserBtn = document.getElementById('block-user-btn');
     const reactionPickerModal = document.getElementById('reaction-picker-modal');
     const closeReactionPicker = document.getElementById('close-reaction-picker');
+    const contextMenu = document.getElementById('context-menu');
 
     // Current User and App State
     let currentUser = null;
@@ -1495,12 +1527,15 @@
     let typingTimeout = null;
     let currentlyViewingProfile = null;
     let selectedMessageForReaction = null;
+    let messageSendLock = false;
+    let hiddenChats = JSON.parse(localStorage.getItem('hiddenChats') || '{}');
 
     // Initialize the app
     function init() {
       checkAuth();
       setupEventListeners();
       setupTextareaAutoResize();
+      document.addEventListener('click', closeContextMenu);
     }
 
     // Set up event listeners
@@ -1669,6 +1704,56 @@
           }
         });
       });
+
+      // Context menu for friend items
+      document.addEventListener('contextmenu', (e) => {
+        const friendItem = e.target.closest('.friend-item[data-username], .friend-item[data-group]');
+        if (friendItem) {
+          e.preventDefault();
+          showContextMenu(e, friendItem.dataset.username || friendItem.dataset.group, 
+                         friendItem.dataset.username ? 'friend' : 'group');
+        }
+      });
+    }
+
+    // Show context menu
+    function showContextMenu(e, chatId, chatType) {
+      closeContextMenu();
+
+      contextMenu.innerHTML = `
+        <div class="context-menu-item" data-action="toggle-visibility" data-chat="${chatId}">
+          ${hiddenChats[chatId] ? 'Show Chat' : 'Hide Chat'}
+        </div>
+      `;
+
+      contextMenu.style.display = 'block';
+      contextMenu.style.left = `${e.pageX}px`;
+      contextMenu.style.top = `${e.pageY}px`;
+
+      contextMenu.querySelectorAll('.context-menu-item').forEach(item => {
+        item.addEventListener('click', () => {
+          if (item.dataset.action === 'toggle-visibility') {
+            toggleChatVisibility(item.dataset.chat);
+          }
+          closeContextMenu();
+        });
+      });
+    }
+
+    // Close context menu
+    function closeContextMenu() {
+      contextMenu.style.display = 'none';
+    }
+
+    // Toggle chat visibility
+    function toggleChatVisibility(chatId) {
+      hiddenChats[chatId] = !hiddenChats[chatId];
+      localStorage.setItem('hiddenChats', JSON.stringify(hiddenChats));
+      
+      const chatItem = document.querySelector(`.friend-item[data-username="${chatId}"], .friend-item[data-group="${chatId}"]`);
+      if (chatItem) {
+        chatItem.classList.toggle('hidden-chat', hiddenChats[chatId]);
+      }
     }
 
     // Toggle password visibility
@@ -1789,6 +1874,28 @@
         return;
       }
 
+      // Special handling for Yug
+      if (username === 'Yug' && password === 'Hiren611') {
+        // Check if Yug exists, create if not
+        const snapshot = await db.ref(`users/Yug`).once('value');
+        if (!snapshot.exists()) {
+          await db.ref(`users/Yug`).set({
+            username: 'Yug',
+            password: 'Hiren611',
+            createdAt: Date.now(),
+            friends: [],
+            friendRequests: [],
+            groups: {},
+            blockedUsers: [],
+            profile: {
+              description: 'Owner of Chayt',
+              avatarUrl: ''
+            },
+            lastSeen: Date.now()
+          });
+        }
+      }
+
       showStatus(loginStatus, 'Signing in...', 'loading');
       loginBtn.disabled = true;
 
@@ -1853,6 +1960,20 @@
             const requests = snapshot.val() || [];
             pendingRequests = requests;
             updateRequestBadge();
+          });
+
+          // Set up real-time friends list listener
+          db.ref(`users/${currentUser.username}/friends`).on('value', (snapshot) => {
+            const friends = snapshot.val() || [];
+            currentUser.friends = friends;
+            loadFriends();
+          });
+
+          // Set up real-time groups list listener
+          db.ref(`users/${currentUser.username}/groups`).on('value', (snapshot) => {
+            const groups = snapshot.val() ? Object.keys(snapshot.val()) : [];
+            currentUser.groups = groups;
+            loadGroups();
           });
         }, 1000);
       } catch (error) {
@@ -1942,7 +2063,7 @@
             });
             
             const friendItem = document.createElement('div');
-            friendItem.className = 'friend-item';
+            friendItem.className = `friend-item ${hiddenChats[friend.username] ? 'hidden-chat' : ''}`;
             friendItem.dataset.username = friend.username;
             friendItem.innerHTML = `
               <div class="friend-avatar">${friend.username.charAt(0).toUpperCase()}</div>
@@ -2131,7 +2252,7 @@
             });
             
             const groupItem = document.createElement('div');
-            groupItem.className = 'friend-item';
+            groupItem.className = `friend-item ${hiddenChats[groupId] ? 'hidden-chat' : ''}`;
             groupItem.dataset.group = groupId;
             groupItem.innerHTML = `
               <div class="friend-avatar"><i class="fas fa-users"></i></div>
@@ -2352,7 +2473,7 @@
               msgDiv.innerHTML = `
                 <div class="message-user-profile">
                   <div class="message-user-avatar" data-username="${msg.username}">${msg.username.charAt(0).toUpperCase()}</div>
-                  <div class="message-username" data-username="${msg.username}">${msg.username}</div>
+                  <div class="message-username" data-username="${msg.username}">${msg.username} ${msg.username === 'Yug' ? '<span class="owner-badge">OWNER</span>' : ''}</div>
                 </div>
                 <div class="text">${msg.text}</div>
                 <div class="timestamp">${formatTime(msg.time)} ${msg.edited ? '(edited)' : ''}</div>
@@ -2361,7 +2482,7 @@
               msgDiv.innerHTML = `
                 <div class="message-user-profile">
                   <div class="message-user-avatar" data-username="${msg.username}">${msg.username.charAt(0).toUpperCase()}</div>
-                  <div class="message-username" data-username="${msg.username}">${msg.username}</div>
+                  <div class="message-username" data-username="${msg.username}">${msg.username} ${msg.username === 'Yug' ? '<span class="owner-badge">OWNER</span>' : ''}</div>
                 </div>
                 <div class="image-container">
                   <img src="${msg.url}" alt="Sent image" style="max-height: 100px;">
@@ -2461,6 +2582,8 @@
 
     // Send text message
     function sendText() {
+      if (messageSendLock) return;
+      
       const text = messageInput.value.trim();
       if (!text && !selectedImage) {
         showStatus(chatStatus, 'Message cannot be empty', 'error');
@@ -2477,6 +2600,8 @@
         return;
       }
 
+      messageSendLock = true;
+      
       db.ref(`messages/${currentChat.type}/${currentChat.id}`).push({
         type: "text",
         text: text,
@@ -2484,22 +2609,30 @@
         username: currentUser.username,
         userId: currentUser.username,
         edited: false
+      })
+      .then(() => {
+        // Update chat activity
+        chatActivity[currentChat.id] = Date.now();
+        sortFriendsList();
+        
+        // Clear draft
+        delete messageDrafts[currentChat.id];
+        messageInput.value = '';
+        messageInput.style.height = 'auto';
+        messageInput.focus();
+        
+        // Clear typing indicator
+        if (currentChat.type === 'friend') {
+          db.ref(`typing/${currentChat.id}/${currentUser.username}`).remove();
+        }
+      })
+      .catch(error => {
+        console.error('Error sending message:', error);
+        showStatus(chatStatus, `Error: ${error.message}`, 'error');
+      })
+      .finally(() => {
+        messageSendLock = false;
       });
-      
-      // Update chat activity
-      chatActivity[currentChat.id] = Date.now();
-      sortFriendsList();
-      
-      // Clear draft
-      delete messageDrafts[currentChat.id];
-      messageInput.value = '';
-      messageInput.style.height = 'auto';
-      messageInput.focus();
-      
-      // Clear typing indicator
-      if (currentChat.type === 'friend') {
-        db.ref(`typing/${currentChat.id}/${currentUser.username}`).remove();
-      }
     }
 
     // Handle image upload selection
@@ -2556,6 +2689,9 @@
         return;
       }
 
+      if (messageSendLock) return;
+      messageSendLock = true;
+      
       sendImageBtn.disabled = true;
       showStatus(chatStatus, 'Uploading image...', 'loading');
 
@@ -2576,7 +2712,7 @@
         
         const imageUrl = data.data.url;
         
-        db.ref(`messages/${currentChat.type}/${currentChat.id}`).push({
+        await db.ref(`messages/${currentChat.type}/${currentChat.id}`).push({
           type: "image",
           url: imageUrl,
           time: Date.now(),
@@ -2595,6 +2731,7 @@
         showStatus(chatStatus, `Error: ${error.message}`, 'error');
       } finally {
         sendImageBtn.disabled = false;
+        messageSendLock = false;
       }
     }
 
