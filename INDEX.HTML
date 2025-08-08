@@ -128,6 +128,32 @@
       });
     }
 
+    // Helper modals for dropdown
+    function showScheduleModal() {
+      const when = prompt('Schedule for (YYYY-MM-DD HH:MM):', '');
+      if (!when) return;
+      const time = new Date(when).getTime();
+      if (isNaN(time) || time < Date.now()) {
+        alert('Please enter a valid future time');
+        return;
+      }
+      const delay = time - Date.now();
+      showStatus(chatStatus, `Message scheduled for ${when}`, 'success');
+      setTimeout(() => sendText(), delay);
+    }
+    
+    function showTTLModal() {
+      const ttl = prompt('Message expires in (minutes, 0 for no expiry):', '0');
+      const ttlMs = parseInt(ttl) * 60 * 1000;
+      if (isNaN(ttlMs) || ttlMs < 0) {
+        alert('Please enter a valid number');
+        return;
+      }
+      // Store TTL in a global var for next message
+      window.nextMessageTTL = ttlMs;
+      showStatus(chatStatus, `Next message expires in ${ttl} minutes`, 'success');
+    }
+    
     // Music sharing
     async function shareMusic() {
       const url = document.getElementById('music-url').value.trim();
@@ -523,7 +549,7 @@
     }
 
     .owner-badge {
-      background: linear-gradient(90deg, #f43f5e, #ec4899);
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       font-weight: bold;
@@ -532,7 +558,7 @@
     }
 
     /* Input Area */
-    .input-area { padding: 14px; background: rgba(18, 26, 43, 0.7); backdrop-filter: var(--backdrop); border-top: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; gap: 10px; }
+    .input-area { padding: 14px; background: rgba(18, 26, 43, 0.7); backdrop-filter: var(--backdrop); border-top: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; gap: 10px; position: relative; }
 
     .input-row {
       display: flex;
@@ -557,7 +583,7 @@
     .input-row textarea:focus {
       outline: none;
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+      box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2);
     }
 
     .input-row textarea::placeholder {
@@ -620,7 +646,7 @@
     }
 
     .auth-header h2 {
-      background: linear-gradient(90deg, #8b5cf6, #6366f1);
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       font-size: 24px;
@@ -651,6 +677,7 @@
     .auth-tab.active {
       background: var(--accent);
       font-weight: 600;
+      color: #0b1020;
     }
 
     .auth-form {
@@ -765,10 +792,14 @@
       background: rgba(15, 23, 42, 0.7);
     }
 
-    .btn-group {
-      display: flex;
-      gap: 12px;
-    }
+    .input-controls { display: flex; justify-content: space-between; align-items: center; }
+    .primary-controls { display: flex; gap: 8px; }
+    .control-btn { padding: 8px; background: transparent; border: none; color: var(--text-secondary); border-radius: 8px; cursor: pointer; transition: var(--transition); }
+    .control-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+    .dropdown-menu { position: absolute; bottom: 100%; right: 0; background: var(--bg-card); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); padding: 8px; min-width: 180px; z-index: 1000; }
+    .dropdown-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; cursor: pointer; transition: var(--transition); }
+    .dropdown-item:hover { background: rgba(255,255,255,0.1); }
+    .dropdown-item i { width: 16px; }
 
     /* Password Visibility Toggle */
     .password-container {
@@ -835,7 +866,7 @@
 
     .modal-header h3 {
       font-size: 20px;
-      background: linear-gradient(90deg, #8b5cf6, #6366f1);
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
@@ -1250,13 +1281,13 @@
 
     /* Animated Backgrounds */
     .animated-bg-1 {
-      background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+      background: linear-gradient(-45deg, var(--accent), var(--accent-2), #38bdf8, #10b981);
       background-size: 400% 400%;
       animation: gradientBG 15s ease infinite;
     }
 
     .animated-bg-2 {
-      background: linear-gradient(-45deg, #6366f1, #8b5cf6, #ec4899, #f43f5e);
+      background: linear-gradient(-45deg, var(--accent-2), var(--accent), #f59e0b, #ef4444);
       background-size: 400% 400%;
       animation: gradientBG 15s ease infinite;
     }
@@ -1481,50 +1512,67 @@
           </div>
           
           <div class="btn-group">
-            <div class="file-input-container">
-              <input type="file" id="upload" accept="image/*">
-              <div class="custom-file-input">
-                <i class="fas fa-image"></i>
-                <span>Choose Image</span>
-              </div>
-            </div>
-            
-            <button id="send-image-btn" disabled>
-              <i class="fas fa-upload"></i>
-              <span>Send Image</span>
-            </button>
-            
-            <div class="file-input-container">
-              <input type="file" id="file-upload" />
-              <div class="custom-file-input">
+          <div class="input-controls">
+            <div class="primary-controls">
+              <button id="emoji-gif-btn" class="control-btn" title="Emoji & GIF">
+                <i class="far fa-laugh"></i>
+              </button>
+              <button id="attach-btn" class="control-btn" title="Attach">
                 <i class="fas fa-paperclip"></i>
-                <span>Attach File</span>
-              </div>
+              </button>
+              <button id="record-voice-btn" class="control-btn" title="Voice Message">
+                <i class="fas fa-microphone"></i>
+              </button>
             </div>
-
-            <button id="record-voice-btn">
-              <i class="fas fa-microphone"></i>
-              <span>Voice</span>
-            </button>
-
-            <input type="datetime-local" id="schedule-time" style="background: rgba(15,23,42,0.5); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: var(--text-primary); padding: 8px 12px;">
-            <button id="schedule-send-btn"><i class="fas fa-clock"></i> Schedule</button>
-
-            <select id="ttl-select" style="background: rgba(15,23,42,0.5); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: var(--text-primary); padding: 8px 12px;">
-              <option value="0">No Expiry</option>
-              <option value="60000">1 min</option>
-              <option value="300000">5 min</option>
-              <option value="3600000">1 hour</option>
-              <option value="86400000">1 day</option>
-            </select>
-
-            <button id="emoji-gif-btn"><i class="far fa-laugh"></i> Emoji/GIF</button>
-            <button id="stickers-btn"><i class="fas fa-face-smile"></i> Stickers</button>
-            <button id="games-btn"><i class="fas fa-gamepad"></i> Games</button>
-            <button id="polls-btn"><i class="fas fa-poll"></i> Poll</button>
-            <button id="draw-btn"><i class="fas fa-pen"></i> Draw</button>
-            <button id="whiteboard-btn"><i class="fas fa-chalkboard"></i> Whiteboard</button>
-            <button id="ai-assistant-btn"><i class="fas fa-robot"></i> AI</button>
+            <div class="secondary-controls">
+              <button id="more-options-btn" class="control-btn" title="More">
+                <i class="fas fa-ellipsis-h"></i>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Hidden file inputs -->
+          <input type="file" id="upload" accept="image/*" style="display:none;">
+          <input type="file" id="file-upload" style="display:none;">
+          
+          <!-- More options dropdown -->
+          <div id="more-options-dropdown" class="dropdown-menu" style="display:none;">
+            <div class="dropdown-item" data-action="image">
+              <i class="fas fa-image"></i>
+              <span>Image</span>
+            </div>
+            <div class="dropdown-item" data-action="file">
+              <i class="fas fa-file"></i>
+              <span>File</span>
+            </div>
+            <div class="dropdown-item" data-action="schedule">
+              <i class="fas fa-clock"></i>
+              <span>Schedule</span>
+            </div>
+            <div class="dropdown-item" data-action="ttl">
+              <i class="fas fa-hourglass-half"></i>
+              <span>Disappearing</span>
+            </div>
+            <div class="dropdown-item" data-action="games">
+              <i class="fas fa-gamepad"></i>
+              <span>Games</span>
+            </div>
+            <div class="dropdown-item" data-action="polls">
+              <i class="fas fa-poll"></i>
+              <span>Poll</span>
+            </div>
+            <div class="dropdown-item" data-action="draw">
+              <i class="fas fa-pen"></i>
+              <span>Draw</span>
+            </div>
+            <div class="dropdown-item" data-action="whiteboard">
+              <i class="fas fa-chalkboard"></i>
+              <span>Whiteboard</span>
+            </div>
+            <div class="dropdown-item" data-action="ai">
+              <i class="fas fa-robot"></i>
+              <span>AI Assistant</span>
+            </div>
           </div>
           
           <div id="chat-status" class="status"></div>
@@ -2391,6 +2439,42 @@
       // Scheduling
       if (scheduleSendBtn) scheduleSendBtn.addEventListener('click', scheduleMessage);
 
+      // New input controls
+      const attachBtn = document.getElementById('attach-btn');
+      const moreOptionsBtn = document.getElementById('more-options-btn');
+      const moreOptionsDropdown = document.getElementById('more-options-dropdown');
+      
+      if (attachBtn) attachBtn.addEventListener('click', () => fileUpload.click());
+      if (moreOptionsBtn) moreOptionsBtn.addEventListener('click', () => {
+        moreOptionsDropdown.style.display = moreOptionsDropdown.style.display === 'none' ? 'block' : 'none';
+      });
+      
+      // More options dropdown
+      document.addEventListener('click', (e) => {
+        if (!moreOptionsDropdown.contains(e.target) && !moreOptionsBtn.contains(e.target)) {
+          moreOptionsDropdown.style.display = 'none';
+        }
+      });
+      
+      document.querySelectorAll('.dropdown-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const action = item.dataset.action;
+          moreOptionsDropdown.style.display = 'none';
+          
+          switch(action) {
+            case 'image': upload.click(); break;
+            case 'file': fileUpload.click(); break;
+            case 'schedule': showScheduleModal(); break;
+            case 'ttl': showTTLModal(); break;
+            case 'games': gamesModal.classList.add('active'); break;
+            case 'polls': pollsModalEl.classList.add('active'); break;
+            case 'draw': drawModalEl.classList.add('active'); break;
+            case 'whiteboard': whiteboardModalEl.classList.add('active'); break;
+            case 'ai': aiModal.classList.add('active'); break;
+          }
+        });
+      });
+      
       // Emoji/GIF
       if (emojiGifBtn) emojiGifBtn.addEventListener('click', () => emojiGifModal.classList.add('active'));
       if (closeEmojiGif) closeEmojiGif.addEventListener('click', () => emojiGifModal.classList.remove('active'));
@@ -3424,7 +3508,8 @@
       
       const chatId = getChatId(currentChat.id, currentChat.type);
       
-      const ttlMs = parseInt(ttlSelect?.value || '0', 10);
+      const ttlMs = window.nextMessageTTL || parseInt(ttlSelect?.value || '0', 10);
+      window.nextMessageTTL = null; // Reset after use
       db.ref(`messages/${currentChat.type}/${chatId}`).push({
         type: "text",
         text: text,
