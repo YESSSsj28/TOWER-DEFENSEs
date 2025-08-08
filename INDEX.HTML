@@ -36,337 +36,6 @@
       --header-height: 64px;
       --input-height: 86px;
     }
-
-    // Scheduling
-    function scheduleMessage() {
-      const when = new Date(scheduleTimeInput.value).getTime();
-      if (!when || when < Date.now() + 1000) {
-        return showStatus(chatStatus, 'Pick a time in the future', 'error');
-      }
-      const draft = messageInput.value.trim();
-      if (!draft) return showStatus(chatStatus, 'Type a message to schedule', 'error');
-      const delay = when - Date.now();
-      showStatus(chatStatus, `Scheduled in ${Math.ceil(delay/1000)}s`, 'success');
-      setTimeout(() => {
-        if (messageInput.value.trim() === draft) sendText();
-      }, delay);
-    }
-
-    // Read receipts
-    function markMessageRead(chatId, messageId, notifyOnly = false) {
-      const path = `messages/${currentChat.type}/${chatId}/${messageId}/readBy/${currentUser.username}`;
-      db.ref(path).set(true);
-      if (!notifyOnly) return;
-    }
-
-    // Threaded replies
-    function promptThreadReply(messageId, message) {
-      const reply = prompt('Reply:', '');
-      if (!reply) return;
-      const chatId = getChatId(currentChat.id, currentChat.type);
-      db.ref(`messages/${currentChat.type}/${chatId}`).push({
-        type: 'text',
-        text: reply,
-        threadParent: messageId,
-        threadParentPreview: (message.text || '').slice(0, 80),
-        time: Date.now(), username: currentUser.username, userId: currentUser.username
-      });
-    }
-
-    // GIF search (GIPHY public beta key usage demo)
-    async function searchGifs() {
-      const q = gifSearch.value.trim();
-      if (!q) return;
-      gifResults.innerHTML = 'Searching...';
-      const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q=${encodeURIComponent(q)}&limit=12`);
-      const data = await res.json();
-      gifResults.innerHTML = '';
-      (data.data || []).forEach(g => {
-        const url = g.images.fixed_height_small.url;
-        const el = document.createElement('img');
-        el.src = url; el.style.width = '100%'; el.style.cursor = 'pointer';
-        el.addEventListener('click', async () => {
-          const chatId = getChatId(currentChat.id, currentChat.type);
-          await db.ref(`messages/${currentChat.type}/${chatId}`).push({ type:'image', url, time: Date.now(), username: currentUser.username, userId: currentUser.username });
-          emojiGifModal.classList.remove('active');
-        });
-        gifResults.appendChild(el);
-      });
-    }
-
-    // Games (lightweight demo payloads)
-    function launchGame(game) {
-      const chatId = getChatId(currentChat.id, currentChat.type);
-      const payload = { type: 'game', game, state: { createdAt: Date.now() }, username: currentUser.username, userId: currentUser.username, time: Date.now() };
-      db.ref(`messages/${currentChat.type}/${chatId}`).push(payload);
-      gamesModal.classList.remove('active');
-    }
-    function renderGameMessage(msg) {
-      return `<div style="padding:8px; background: rgba(255,255,255,0.05); border-radius:8px;">Game: <b>${msg.game}</b> — click to open in Games</div>`;
-    }
-
-    // Status Updates
-    function postStatus() {
-      const text = document.getElementById('status-text').value.trim();
-      if (!text) return;
-      db.ref(`status/${currentUser.username}`).push({ text: maybeEncrypt(text), time: Date.now() });
-      document.getElementById('status-text').value = '';
-      loadStatusFeed();
-    }
-    function loadStatusFeed() {
-      const feed = document.getElementById('status-feed');
-      if (!feed) return;
-      feed.innerHTML = 'Loading...';
-      db.ref('status').limitToLast(50).once('value', snap => {
-        const all = snap.val() || {};
-        const items = [];
-        Object.entries(all).forEach(([user, posts]) => {
-          Object.values(posts).forEach(p => items.push({ user, ...p }));
-        });
-        items.sort((a,b)=>b.time-a.time);
-        feed.innerHTML = items.map(i => `<div style=\"padding:8px; background: rgba(255,255,255,0.06); border-radius:8px; margin:6px 0;\"><b>${i.user}</b>: ${maybeDecrypt(i.text || '')} <span style=\"opacity:.6;font-size:11px;\">${formatTime(i.time)}</span></div>`).join('');
-      });
-    }
-
-    // Helper modals for dropdown
-    function showScheduleModal() {
-      const when = prompt('Schedule for (YYYY-MM-DD HH:MM):', '');
-      if (!when) return;
-      const time = new Date(when).getTime();
-      if (isNaN(time) || time < Date.now()) {
-        alert('Please enter a valid future time');
-        return;
-      }
-      const delay = time - Date.now();
-      showStatus(chatStatus, `Message scheduled for ${when}`, 'success');
-      setTimeout(() => sendText(), delay);
-    }
-    
-    function showTTLModal() {
-      const ttl = prompt('Message expires in (minutes, 0 for no expiry):', '0');
-      const ttlMs = parseInt(ttl) * 60 * 1000;
-      if (isNaN(ttlMs) || ttlMs < 0) {
-        alert('Please enter a valid number');
-        return;
-      }
-      // Store TTL in a global var for next message
-      window.nextMessageTTL = ttlMs;
-      showStatus(chatStatus, `Next message expires in ${ttl} minutes`, 'success');
-    }
-    
-    // Music sharing
-    async function shareMusic() {
-      const url = document.getElementById('music-url').value.trim();
-      if (!url || !currentChat) return;
-      const chatId = getChatId(currentChat.id, currentChat.type);
-      await db.ref(`messages/${currentChat.type}/${chatId}`).push({ type:'text', text: maybeEncrypt(`[Music] ${url}`), music:{ url }, time: Date.now(), username: currentUser.username, userId: currentUser.username });
-      document.getElementById('music-modal').classList.remove('active');
-      document.getElementById('music-url').value = '';
-    }
-
-    // Message search (client-side)
-    function runMessageSearch() {
-      const q = document.getElementById('search-query')?.value.toLowerCase() || '';
-      const results = document.getElementById('search-results'); if (!results) return;
-      results.innerHTML = '';
-      const chatId = currentChat ? getChatId(currentChat.id, currentChat.type) : null;
-      if (!chatId || !q) return;
-      db.ref(`messages/${currentChat.type}/${chatId}`).orderByChild('time').once('value', snap => {
-        const all = snap.val() || {};
-        const matched = Object.entries(all).filter(([id, m]) => (maybeDecrypt(m.text || '')).toLowerCase().includes(q));
-        matched.sort((a,b)=>a[1].time-b[1].time);
-        results.innerHTML = matched.map(([id, m]) => `<div style=\"padding:6px; border-bottom:1px solid rgba(255,255,255,0.06);\">${formatTime(m.time)} — ${maybeDecrypt(m.text || '')}</div>`).join('');
-      });
-    }
-
-    // Polls
-    function addPollOption() {
-      const input = document.createElement('input');
-      input.className = 'poll-option';
-      input.placeholder = 'Another option';
-      pollsModalEl.querySelector('.input-group:last-of-type').insertBefore(input, createPollBtn);
-    }
-    async function createPoll() {
-      const question = pollQuestion.value.trim();
-      const options = Array.from(document.querySelectorAll('.poll-option')).map(i => i.value.trim()).filter(Boolean);
-      if (!question || options.length < 2) return showStatus(chatStatus, 'Need a question and 2+ options', 'error');
-      const chatId = getChatId(currentChat.id, currentChat.type);
-      await db.ref(`messages/${currentChat.type}/${chatId}`).push({ type:'poll', question, options, votes: {}, time: Date.now(), username: currentUser.username, userId: currentUser.username });
-      pollsModalEl.classList.remove('active');
-    }
-    function renderPollMessage(msg, id, isSelf) {
-      const optionsHtml = msg.options.map((opt, idx) => `<button class="vote-btn" data-id="${id}" data-idx="${idx}">${opt}</button>`).join(' ');
-      const results = msg.votes ? Object.values(msg.votes) : [];
-      const counts = msg.options.map((_, i) => results.filter(v => v === i).length);
-      return `
-        <div><b>${msg.question}</b></div>
-        <div style="display:flex; gap:6px; margin:6px 0;">${optionsHtml}</div>
-        <div style="font-size: 12px; opacity: 0.8;">${counts.map((c,i)=>`${msg.options[i]}: ${c}`).join(' • ')}</div>
-      `;
-    }
-    document.addEventListener('click', (e) => {
-      const btn = e.target.closest('.vote-btn');
-      if (!btn) return;
-      const id = btn.dataset.id;
-      const idx = parseInt(btn.dataset.idx, 10);
-      const chatId = getChatId(currentChat.id, currentChat.type);
-      db.ref(`messages/${currentChat.type}/${chatId}/${id}/votes/${currentUser.username}`).set(idx);
-    });
-
-    // Drawing tool helpers
-    function setupDrawing(canvas, colorInput, sizeInput) {
-      const ctx = canvas.getContext('2d');
-      let drawing = false; let last = null;
-      canvas.addEventListener('mousedown', (e) => { drawing = true; last = [e.offsetX, e.offsetY]; });
-      canvas.addEventListener('mouseup', () => drawing = false);
-      canvas.addEventListener('mouseleave', () => drawing = false);
-      canvas.addEventListener('mousemove', (e) => {
-        if (!drawing) return;
-        ctx.strokeStyle = colorInput.value; ctx.lineWidth = parseInt(sizeInput.value, 10); ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(last[0], last[1]); ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); last = [e.offsetX, e.offsetY];
-      });
-    }
-    function clearCanvas(canvas) {
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-    async function sendDrawing() {
-      const blob = await new Promise((resolve) => drawCanvas.toBlob(resolve));
-      const storageRef = storage.ref().child(`draw/${currentUser.username}/draw_${Date.now()}.png`);
-      await storageRef.put(blob);
-      const url = await storageRef.getDownloadURL();
-      const chatId = getChatId(currentChat.id, currentChat.type);
-      await db.ref(`messages/${currentChat.type}/${chatId}`).push({ type:'image', url, time: Date.now(), username: currentUser.username, userId: currentUser.username });
-      drawModalEl.classList.remove('active');
-      showStatus(chatStatus, 'Drawing sent', 'success');
-    }
-
-    // Whiteboard (shared via realtime strokes)
-    function setupWhiteboard() {
-      const ctx = whiteboardCanvas.getContext('2d');
-      let drawing = false; let last = null;
-      const chatId = () => currentChat ? getChatId(currentChat.id, currentChat.type) : null;
-      whiteboardCanvas.addEventListener('mousedown', (e) => { drawing = true; last = [e.offsetX, e.offsetY]; });
-      whiteboardCanvas.addEventListener('mouseup', () => drawing = false);
-      whiteboardCanvas.addEventListener('mouseleave', () => drawing = false);
-      whiteboardCanvas.addEventListener('mousemove', (e) => {
-        if (!drawing || !currentChat) return;
-        const stroke = { x1:last[0], y1:last[1], x2:e.offsetX, y2:e.offsetY, color: whiteboardColor.value, size: parseInt(whiteboardSize.value, 10) };
-        db.ref(`whiteboard/${currentChat.type}/${chatId()}`).push(stroke);
-        drawStroke(ctx, stroke);
-        last = [e.offsetX, e.offsetY];
-      });
-      whiteboardClear.addEventListener('click', () => {
-        if (!currentChat) return; db.ref(`whiteboard/${currentChat.type}/${chatId()}`).remove(); ctx.clearRect(0,0,whiteboardCanvas.width, whiteboardCanvas.height);
-      });
-      // Subscribe
-      setInterval(() => {
-        if (!currentChat) return; 
-        db.ref(`whiteboard/${currentChat.type}/${chatId()}`).off('child_added');
-        db.ref(`whiteboard/${currentChat.type}/${chatId()}`).on('child_added', snap => drawStroke(ctx, snap.val()));
-      }, 1000);
-      function drawStroke(ctx, s) { ctx.strokeStyle = s.color; ctx.lineWidth = s.size; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(s.x1,s.y1); ctx.lineTo(s.x2,s.y2); ctx.stroke(); }
-    }
-
-    // AI assistant
-    async function askAI() {
-      const prompt = aiPrompt.value.trim(); if (!prompt) return;
-      if (!togetherApiKey) { showStatus(aiResult, 'Enter Together API key', 'error'); return; }
-      showStatus(aiResult, 'Thinking...', 'loading');
-      try {
-        const res = await fetch('https://api.together.xyz/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${togetherApiKey}` },
-          body: JSON.stringify({
-            model: 'meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo',
-            messages: [{ role: 'system', content: 'You are a helpful assistant.' }, { role: 'user', content: prompt }],
-            max_tokens: 256,
-            temperature: 0.6
-          })
-        });
-        const data = await res.json();
-        const text = data?.choices?.[0]?.message?.content || JSON.stringify(data);
-        aiResult.textContent = text;
-        aiResult.className = 'status';
-      } catch (e) {
-        showStatus(aiResult, `AI error: ${e.message}`, 'error');
-      }
-    }
-    async function insertAIToChat() {
-      const text = aiResult.textContent.trim(); if (!text) return;
-      const chatId = getChatId(currentChat.id, currentChat.type);
-      await db.ref(`messages/${currentChat.type}/${chatId}`).push({ type:'text', text, time: Date.now(), username: currentUser.username, userId: currentUser.username });
-      aiModal.classList.remove('active');
-    }
-
-    // WebRTC: lightweight 1:1 calls with Firebase signaling
-    async function startCall(video) {
-      if (!currentChat) return showStatus(chatStatus, 'Open a chat first', 'error');
-      if (currentChat.type !== 'friend') return showStatus(chatStatus, 'Calls are 1:1 for now', 'error');
-      isVideoCall = !!video;
-      callModal.classList.add('active');
-      callStatus.textContent = 'Starting call...'; callStatus.className = 'status loading';
-      const chatId = getChatId(currentChat.id, currentChat.type);
-      const config = { iceServers: [ { urls: 'stun:stun.l.google.com:19302' } ] };
-      rtcPeerConnection = new RTCPeerConnection(config);
-      rtcRemoteStream = new MediaStream();
-      remoteVideo.srcObject = rtcRemoteStream;
-      rtcPeerConnection.ontrack = (e) => e.streams[0].getTracks().forEach(t => rtcRemoteStream.addTrack(t));
-      rtcPeerConnection.onicecandidate = (e) => { if (e.candidate) db.ref(`calls/${chatId}/candidates`).push(JSON.parse(JSON.stringify(e.candidate))); };
-      try {
-        rtcLocalStream = await navigator.mediaDevices.getUserMedia({ audio: true, video });
-        rtcLocalStream.getTracks().forEach(t => rtcPeerConnection.addTrack(t, rtcLocalStream));
-        localVideo.srcObject = rtcLocalStream;
-        screenShareBtn.style.display = video ? 'inline-flex' : 'none';
-        const offer = await rtcPeerConnection.createOffer();
-        await rtcPeerConnection.setLocalDescription(offer);
-        await db.ref(`calls/${chatId}`).set({ offer: offer.toJSON(), caller: currentUser.username, createdAt: Date.now() });
-        db.ref(`calls/${chatId}/answer`).on('value', async (snap) => {
-          const ans = snap.val(); if (ans) await rtcPeerConnection.setRemoteDescription(new RTCSessionDescription(ans));
-        });
-        db.ref(`calls/${chatId}/candidates`).on('child_added', async (snap) => {
-          const c = snap.val(); try { await rtcPeerConnection.addIceCandidate(new RTCIceCandidate(c)); } catch (_) {}
-        });
-        callStatus.textContent = 'Ringing...'; callStatus.className = 'status info';
-      } catch (e) { showStatus(callStatus, `Call error: ${e.message}`, 'error'); }
-    }
-    async function endCall() {
-      const chatId = currentChat ? getChatId(currentChat.id, currentChat.type) : null;
-      try { rtcPeerConnection?.close(); } catch {}
-      rtcPeerConnection = null;
-      rtcLocalStream?.getTracks().forEach(t => t.stop()); rtcLocalStream = null;
-      rtcRemoteStream = null; localVideo.srcObject = null; remoteVideo.srcObject = null;
-      if (chatId) await db.ref(`calls/${chatId}`).remove();
-      callModal.classList.remove('active');
-    }
-    function toggleMic() { setMic(!isMicEnabled()); }
-    function isMicEnabled() { return rtcLocalStream?.getAudioTracks().every(t => t.enabled); }
-    function setMic(on) { rtcLocalStream?.getAudioTracks().forEach(t => t.enabled = on); toggleMicBtn.innerHTML = on ? '<i class="fas fa-microphone"></i> Mic' : '<i class="fas fa-microphone-slash"></i> Mic'; }
-    function toggleCam() { rtcLocalStream?.getVideoTracks().forEach(t => t.enabled = !t.enabled); }
-    async function toggleScreenShare() {
-      if (!rtcPeerConnection) return;
-      if (!isScreenSharing) {
-        try {
-          const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-          const sender = rtcPeerConnection.getSenders().find(s => s.track?.kind === 'video');
-          await sender?.replaceTrack(screenStream.getVideoTracks()[0]);
-          isScreenSharing = true;
-          toggleScreenBtn.innerHTML = '<i class="fas fa-desktop"></i> Stop';
-        } catch (e) { showStatus(callStatus, `Screen share error: ${e.message}`, 'error'); }
-      } else {
-        const cam = (await navigator.mediaDevices.getUserMedia({ video: isVideoCall, audio: true })).getVideoTracks()[0];
-        const sender = rtcPeerConnection.getSenders().find(s => s.track?.kind === 'video');
-        await sender?.replaceTrack(cam);
-        isScreenSharing = false;
-        toggleScreenBtn.innerHTML = '<i class="fas fa-desktop"></i> Screen';
-      }
-    }
-    function togglePTT() {
-      const active = pttToggleBtn.dataset.active === 'true';
-      pttToggleBtn.dataset.active = (!active).toString();
-      pttToggleBtn.innerHTML = active ? '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
-      showStatus(chatStatus, `Push-to-talk ${!active ? 'enabled' : 'disabled'}. Hold Space to talk.`, 'info');
-    }
     * {
       margin: 0;
       padding: 0;
@@ -2038,6 +1707,337 @@
   <div class="context-menu" id="context-menu"></div>
 
   <script>
+    // Missing functions that were in CSS section
+    function scheduleMessage() {
+      const when = new Date(scheduleTimeInput?.value).getTime();
+      if (!when || when < Date.now() + 1000) {
+        return showStatus(chatStatus, 'Pick a time in the future', 'error');
+      }
+      const draft = messageInput.value.trim();
+      if (!draft) return showStatus(chatStatus, 'Type a message to schedule', 'error');
+      const delay = when - Date.now();
+      showStatus(chatStatus, `Scheduled in ${Math.ceil(delay/1000)}s`, 'success');
+      setTimeout(() => {
+        if (messageInput.value.trim() === draft) sendText();
+      }, delay);
+    }
+
+    function markMessageRead(chatId, messageId, notifyOnly = false) {
+      const path = `messages/${currentChat.type}/${chatId}/${messageId}/readBy/${currentUser.username}`;
+      db.ref(path).set(true);
+      if (!notifyOnly) return;
+    }
+
+    function promptThreadReply(messageId, message) {
+      const reply = prompt('Reply:', '');
+      if (!reply) return;
+      const chatId = getChatId(currentChat.id, currentChat.type);
+      db.ref(`messages/${currentChat.type}/${chatId}`).push({
+        type: 'text',
+        text: reply,
+        threadParent: messageId,
+        threadParentPreview: (message.text || '').slice(0, 80),
+        time: Date.now(), username: currentUser.username, userId: currentUser.username
+      });
+    }
+
+    async function searchGifs() {
+      const q = gifSearch?.value.trim();
+      if (!q) return;
+      gifResults.innerHTML = 'Searching...';
+      const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q=${encodeURIComponent(q)}&limit=12`);
+      const data = await res.json();
+      gifResults.innerHTML = '';
+      (data.data || []).forEach(g => {
+        const url = g.images.fixed_height_small.url;
+        const el = document.createElement('img');
+        el.src = url; el.style.width = '100%'; el.style.cursor = 'pointer';
+        el.addEventListener('click', async () => {
+          const chatId = getChatId(currentChat.id, currentChat.type);
+          await db.ref(`messages/${currentChat.type}/${chatId}`).push({ type:'image', url, time: Date.now(), username: currentUser.username, userId: currentUser.username });
+          emojiGifModal.classList.remove('active');
+        });
+        gifResults.appendChild(el);
+      });
+    }
+
+    function launchGame(game) {
+      const chatId = getChatId(currentChat.id, currentChat.type);
+      const payload = { type: 'game', game, state: { createdAt: Date.now() }, username: currentUser.username, userId: currentUser.username, time: Date.now() };
+      db.ref(`messages/${currentChat.type}/${chatId}`).push(payload);
+      gamesModal.classList.remove('active');
+    }
+
+    function renderGameMessage(msg) {
+      return `<div style="padding:8px; background: rgba(255,255,255,0.05); border-radius:8px;">Game: <b>${msg.game}</b> — click to open in Games</div>`;
+    }
+
+    function postStatus() {
+      const text = document.getElementById('status-text')?.value.trim();
+      if (!text) return;
+      db.ref(`status/${currentUser.username}`).push({ text: maybeEncrypt(text), time: Date.now() });
+      document.getElementById('status-text').value = '';
+      loadStatusFeed();
+    }
+
+    function loadStatusFeed() {
+      const feed = document.getElementById('status-feed');
+      if (!feed) return;
+      feed.innerHTML = 'Loading...';
+      db.ref('status').limitToLast(50).once('value', snap => {
+        const all = snap.val() || {};
+        const items = [];
+        Object.entries(all).forEach(([user, posts]) => {
+          Object.values(posts).forEach(p => items.push({ user, ...p }));
+        });
+        items.sort((a,b)=>b.time-a.time);
+        feed.innerHTML = items.map(i => `<div style=\"padding:8px; background: rgba(255,255,255,0.06); border-radius:8px; margin:6px 0;\"><b>${i.user}</b>: ${maybeDecrypt(i.text || '')} <span style=\"opacity:.6;font-size:11px;\">${formatTime(i.time)}</span></div>`).join('');
+      });
+    }
+
+    function showScheduleModal() {
+      const when = prompt('Schedule for (YYYY-MM-DD HH:MM):', '');
+      if (!when) return;
+      const time = new Date(when).getTime();
+      if (isNaN(time) || time < Date.now()) {
+        alert('Please enter a valid future time');
+        return;
+      }
+      const delay = time - Date.now();
+      showStatus(chatStatus, `Message scheduled for ${when}`, 'success');
+      setTimeout(() => sendText(), delay);
+    }
+    
+    function showTTLModal() {
+      const ttl = prompt('Message expires in (minutes, 0 for no expiry):', '0');
+      const ttlMs = parseInt(ttl) * 60 * 1000;
+      if (isNaN(ttlMs) || ttlMs < 0) {
+        alert('Please enter a valid number');
+        return;
+      }
+      window.nextMessageTTL = ttlMs;
+      showStatus(chatStatus, `Next message expires in ${ttl} minutes`, 'success');
+    }
+    
+    async function shareMusic() {
+      const url = document.getElementById('music-url')?.value.trim();
+      if (!url || !currentChat) return;
+      const chatId = getChatId(currentChat.id, currentChat.type);
+      await db.ref(`messages/${currentChat.type}/${chatId}`).push({ type:'text', text: maybeEncrypt(`[Music] ${url}`), music:{ url }, time: Date.now(), username: currentUser.username, userId: currentUser.username });
+      document.getElementById('music-modal').classList.remove('active');
+      document.getElementById('music-url').value = '';
+    }
+
+    function runMessageSearch() {
+      const q = document.getElementById('search-query')?.value.toLowerCase() || '';
+      const results = document.getElementById('search-results'); 
+      if (!results) return;
+      results.innerHTML = '';
+      const chatId = currentChat ? getChatId(currentChat.id, currentChat.type) : null;
+      if (!chatId || !q) return;
+      db.ref(`messages/${currentChat.type}/${chatId}`).orderByChild('time').once('value', snap => {
+        const all = snap.val() || {};
+        const matched = Object.entries(all).filter(([id, m]) => (maybeDecrypt(m.text || '')).toLowerCase().includes(q));
+        matched.sort((a,b)=>a[1].time-b[1].time);
+        results.innerHTML = matched.map(([id, m]) => `<div style=\"padding:6px; border-bottom:1px solid rgba(255,255,255,0.06);\">${formatTime(m.time)} — ${maybeDecrypt(m.text || '')}</div>`).join('');
+      });
+    }
+
+    function addPollOption() {
+      const input = document.createElement('input');
+      input.className = 'poll-option';
+      input.placeholder = 'Another option';
+      pollsModalEl?.querySelector('.input-group:last-of-type').insertBefore(input, createPollBtn);
+    }
+
+    async function createPoll() {
+      const question = pollQuestion?.value.trim();
+      const options = Array.from(document.querySelectorAll('.poll-option')).map(i => i.value.trim()).filter(Boolean);
+      if (!question || options.length < 2) return showStatus(chatStatus, 'Need a question and 2+ options', 'error');
+      const chatId = getChatId(currentChat.id, currentChat.type);
+      await db.ref(`messages/${currentChat.type}/${chatId}`).push({ type:'poll', question, options, votes: {}, time: Date.now(), username: currentUser.username, userId: currentUser.username });
+      pollsModalEl.classList.remove('active');
+    }
+
+    function renderPollMessage(msg, id, isSelf) {
+      const optionsHtml = msg.options.map((opt, idx) => `<button class="vote-btn" data-id="${id}" data-idx="${idx}">${opt}</button>`).join(' ');
+      const results = msg.votes ? Object.values(msg.votes) : [];
+      const counts = msg.options.map((_, i) => results.filter(v => v === i).length);
+      return `
+        <div><b>${msg.question}</b></div>
+        <div style="display:flex; gap:6px; margin:6px 0;">${optionsHtml}</div>
+        <div style="font-size: 12px; opacity: 0.8;">${counts.map((c,i)=>`${msg.options[i]}: ${c}`).join(' • ')}</div>
+      `;
+    }
+
+    // Add vote button event listener
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('.vote-btn');
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const idx = parseInt(btn.dataset.idx, 10);
+      const chatId = getChatId(currentChat.id, currentChat.type);
+      db.ref(`messages/${currentChat.type}/${chatId}/${id}/votes/${currentUser.username}`).set(idx);
+    });
+
+    function setupDrawing(canvas, colorInput, sizeInput) {
+      const ctx = canvas.getContext('2d');
+      let drawing = false; let last = null;
+      canvas.addEventListener('mousedown', (e) => { drawing = true; last = [e.offsetX, e.offsetY]; });
+      canvas.addEventListener('mouseup', () => drawing = false);
+      canvas.addEventListener('mouseleave', () => drawing = false);
+      canvas.addEventListener('mousemove', (e) => {
+        if (!drawing) return;
+        ctx.strokeStyle = colorInput.value; ctx.lineWidth = parseInt(sizeInput.value, 10); ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(last[0], last[1]); ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); last = [e.offsetX, e.offsetY];
+      });
+    }
+
+    function clearCanvas(canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    async function sendDrawing() {
+      const blob = await new Promise((resolve) => drawCanvas.toBlob(resolve));
+      const storageRef = storage.ref().child(`draw/${currentUser.username}/draw_${Date.now()}.png`);
+      await storageRef.put(blob);
+      const url = await storageRef.getDownloadURL();
+      const chatId = getChatId(currentChat.id, currentChat.type);
+      await db.ref(`messages/${currentChat.type}/${chatId}`).push({ type:'image', url, time: Date.now(), username: currentUser.username, userId: currentUser.username });
+      drawModalEl.classList.remove('active');
+      showStatus(chatStatus, 'Drawing sent', 'success');
+    }
+
+    function setupWhiteboard() {
+      const ctx = whiteboardCanvas.getContext('2d');
+      let drawing = false; let last = null;
+      const chatId = () => currentChat ? getChatId(currentChat.id, currentChat.type) : null;
+      whiteboardCanvas.addEventListener('mousedown', (e) => { drawing = true; last = [e.offsetX, e.offsetY]; });
+      whiteboardCanvas.addEventListener('mouseup', () => drawing = false);
+      whiteboardCanvas.addEventListener('mouseleave', () => drawing = false);
+      whiteboardCanvas.addEventListener('mousemove', (e) => {
+        if (!drawing || !currentChat) return;
+        const stroke = { x1:last[0], y1:last[1], x2:e.offsetX, y2:e.offsetY, color: whiteboardColor.value, size: parseInt(whiteboardSize.value, 10) };
+        db.ref(`whiteboard/${currentChat.type}/${chatId()}`).push(stroke);
+        drawStroke(ctx, stroke);
+        last = [e.offsetX, e.offsetY];
+      });
+      whiteboardClear.addEventListener('click', () => {
+        if (!currentChat) return; db.ref(`whiteboard/${currentChat.type}/${chatId()}`).remove(); ctx.clearRect(0,0,whiteboardCanvas.width, whiteboardCanvas.height);
+      });
+      setInterval(() => {
+        if (!currentChat) return; 
+        db.ref(`whiteboard/${currentChat.type}/${chatId()}`).off('child_added');
+        db.ref(`whiteboard/${currentChat.type}/${chatId()}`).on('child_added', snap => drawStroke(ctx, snap.val()));
+      }, 1000);
+      function drawStroke(ctx, s) { ctx.strokeStyle = s.color; ctx.lineWidth = s.size; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(s.x1,s.y1); ctx.lineTo(s.x2,s.y2); ctx.stroke(); }
+    }
+
+    async function askAI() {
+      const prompt = aiPrompt?.value.trim(); 
+      if (!prompt) return;
+      if (!togetherApiKey) { showStatus(aiResult, 'Enter Together API key', 'error'); return; }
+      showStatus(aiResult, 'Thinking...', 'loading');
+      try {
+        const res = await fetch('https://api.together.xyz/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${togetherApiKey}` },
+          body: JSON.stringify({
+            model: 'meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo',
+            messages: [{ role: 'system', content: 'You are a helpful assistant.' }, { role: 'user', content: prompt }],
+            max_tokens: 256,
+            temperature: 0.6
+          })
+        });
+        const data = await res.json();
+        const text = data?.choices?.[0]?.message?.content || JSON.stringify(data);
+        aiResult.textContent = text;
+        aiResult.className = 'status';
+      } catch (e) {
+        showStatus(aiResult, `AI error: ${e.message}`, 'error');
+      }
+    }
+
+    async function insertAIToChat() {
+      const text = aiResult.textContent.trim(); if (!text) return;
+      const chatId = getChatId(currentChat.id, currentChat.type);
+      await db.ref(`messages/${currentChat.type}/${chatId}`).push({ type:'text', text, time: Date.now(), username: currentUser.username, userId: currentUser.username });
+      aiModal.classList.remove('active');
+    }
+
+    async function startCall(video) {
+      if (!currentChat) return showStatus(chatStatus, 'Open a chat first', 'error');
+      if (currentChat.type !== 'friend') return showStatus(chatStatus, 'Calls are 1:1 for now', 'error');
+      isVideoCall = !!video;
+      callModal.classList.add('active');
+      callStatus.textContent = 'Starting call...'; callStatus.className = 'status loading';
+      const chatId = getChatId(currentChat.id, currentChat.type);
+      const config = { iceServers: [ { urls: 'stun:stun.l.google.com:19302' } ] };
+      rtcPeerConnection = new RTCPeerConnection(config);
+      rtcRemoteStream = new MediaStream();
+      remoteVideo.srcObject = rtcRemoteStream;
+      rtcPeerConnection.ontrack = (e) => e.streams[0].getTracks().forEach(t => rtcRemoteStream.addTrack(t));
+      rtcPeerConnection.onicecandidate = (e) => { if (e.candidate) db.ref(`calls/${chatId}/candidates`).push(JSON.parse(JSON.stringify(e.candidate))); };
+      try {
+        rtcLocalStream = await navigator.mediaDevices.getUserMedia({ audio: true, video });
+        rtcLocalStream.getTracks().forEach(t => rtcPeerConnection.addTrack(t, rtcLocalStream));
+        localVideo.srcObject = rtcLocalStream;
+        screenShareBtn.style.display = video ? 'inline-flex' : 'none';
+        const offer = await rtcPeerConnection.createOffer();
+        await rtcPeerConnection.setLocalDescription(offer);
+        await db.ref(`calls/${chatId}`).set({ offer: offer.toJSON(), caller: currentUser.username, createdAt: Date.now() });
+        db.ref(`calls/${chatId}/answer`).on('value', async (snap) => {
+          const ans = snap.val(); if (ans) await rtcPeerConnection.setRemoteDescription(new RTCSessionDescription(ans));
+        });
+        db.ref(`calls/${chatId}/candidates`).on('child_added', async (snap) => {
+          const c = snap.val(); try { await rtcPeerConnection.addIceCandidate(new RTCIceCandidate(c)); } catch (_) {}
+        });
+        callStatus.textContent = 'Ringing...'; callStatus.className = 'status info';
+      } catch (e) { showStatus(callStatus, `Call error: ${e.message}`, 'error'); }
+    }
+
+    async function endCall() {
+      const chatId = currentChat ? getChatId(currentChat.id, currentChat.type) : null;
+      try { rtcPeerConnection?.close(); } catch {}
+      rtcPeerConnection = null;
+      rtcLocalStream?.getTracks().forEach(t => t.stop()); rtcLocalStream = null;
+      rtcRemoteStream = null; localVideo.srcObject = null; remoteVideo.srcObject = null;
+      if (chatId) await db.ref(`calls/${chatId}`).remove();
+      callModal.classList.remove('active');
+    }
+
+    function toggleMic() { setMic(!isMicEnabled()); }
+    function isMicEnabled() { return rtcLocalStream?.getAudioTracks().every(t => t.enabled); }
+    function setMic(on) { rtcLocalStream?.getAudioTracks().forEach(t => t.enabled = on); toggleMicBtn.innerHTML = on ? '<i class="fas fa-microphone"></i> Mic' : '<i class="fas fa-microphone-slash"></i> Mic'; }
+    function toggleCam() { rtcLocalStream?.getVideoTracks().forEach(t => t.enabled = !t.enabled); }
+    
+    async function toggleScreenShare() {
+      if (!rtcPeerConnection) return;
+      if (!isScreenSharing) {
+        try {
+          const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+          const sender = rtcPeerConnection.getSenders().find(s => s.track?.kind === 'video');
+          await sender?.replaceTrack(screenStream.getVideoTracks()[0]);
+          isScreenSharing = true;
+          toggleScreenBtn.innerHTML = '<i class="fas fa-desktop"></i> Stop';
+        } catch (e) { showStatus(callStatus, `Screen share error: ${e.message}`, 'error'); }
+      } else {
+        const cam = (await navigator.mediaDevices.getUserMedia({ video: isVideoCall, audio: true })).getVideoTracks()[0];
+        const sender = rtcPeerConnection.getSenders().find(s => s.track?.kind === 'video');
+        await sender?.replaceTrack(cam);
+        isScreenSharing = false;
+        toggleScreenBtn.innerHTML = '<i class="fas fa-desktop"></i> Screen';
+      }
+    }
+
+    function togglePTT() {
+      const active = pttToggleBtn.dataset.active === 'true';
+      pttToggleBtn.dataset.active = (!active).toString();
+      pttToggleBtn.innerHTML = active ? '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
+      showStatus(chatStatus, `Push-to-talk ${!active ? 'enabled' : 'disabled'}. Hold Space to talk.`, 'info');
+    }
+
     // Firebase Configuration
     const firebaseConfig = {
       apiKey: "AIzaSyD9uzP781-TlDSC9fILQX8M-Xa7Ely_rZc",
@@ -2207,17 +2207,6 @@
     const aiSendBtn = document.getElementById('ai-send-btn');
     const aiInsertBtn = document.getElementById('ai-insert-btn');
     const aiResult = document.getElementById('ai-result');
-    
-    // Add missing DOM elements
-    const sendImageBtn = document.getElementById('send-image-btn');
-    const ttlSelect = document.getElementById('ttl-select');
-    const scheduleTimeInput = document.getElementById('schedule-time');
-    const scheduleSendBtn = document.getElementById('schedule-send-btn');
-    const gamesBtn = document.getElementById('games-btn');
-    const pollsBtn = document.getElementById('polls-btn');
-    const drawBtn = document.getElementById('draw-btn');
-    const whiteboardBtn = document.getElementById('whiteboard-btn');
-    const aiAssistantBtn = document.getElementById('ai-assistant-btn');
     const statusBtn = document.getElementById('status-updates-btn');
     const statusModal = document.getElementById('status-modal');
     const closeStatus = document.getElementById('close-status');
