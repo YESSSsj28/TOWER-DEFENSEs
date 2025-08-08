@@ -525,7 +525,29 @@
     }
 
     /* Messages */
-    #messages { flex: 1; overflow-y: auto; padding: 28px; display: flex; flex-direction: column; gap: 14px; }
+    #messages { 
+      flex: 1; 
+      overflow-y: auto; 
+      padding: 28px; 
+      display: flex; 
+      flex-direction: column; 
+      gap: 14px; 
+      background: rgba(18, 26, 43, 0.3);
+    }
+
+    .messages-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .theme-default { background: rgba(18, 26, 43, 0.3); }
+    .theme-dark { background: rgba(0, 0, 0, 0.5); }
+    .theme-light { background: rgba(255, 255, 255, 0.1); }
+    .theme-colorful { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(167, 139, 250, 0.1)); }
 
     .message { max-width: 72%; padding: 14px 16px; border-radius: 14px; position: relative; animation: fadeIn 0.3s ease; line-height: 1.55; word-wrap: break-word; transition: var(--transition); box-shadow: 0 6px 20px rgba(0,0,0,0.18); }
 
@@ -1462,6 +1484,7 @@
             <button id="chat-theme-btn" title="Chat Theme"><i class="fas fa-palette"></i></button>
             <button id="message-search-btn" title="Search Messages"><i class="fas fa-search"></i></button>
             <button id="music-share-btn" title="Share Music"><i class="fas fa-music"></i></button>
+            <button id="test-message-btn" title="Test Message" onclick="addTestMessage()"><i class="fas fa-bug"></i></button>
           </div>
           <div class="chat-actions" id="chat-actions" style="display: none;">
             <button id="add-friends-to-group-btn"><i class="fas fa-user-plus"></i> Add Friends</button>
@@ -1534,6 +1557,17 @@
           <!-- Hidden file inputs -->
           <input type="file" id="upload" accept="image/*" style="display:none;">
           <input type="file" id="file-upload" style="display:none;">
+          
+          <!-- Hidden elements for additional features -->
+          <select id="ttl-select" style="display:none;">
+            <option value="0">No expiry</option>
+            <option value="300000">5 minutes</option>
+            <option value="600000">10 minutes</option>
+            <option value="3600000">1 hour</option>
+          </select>
+          <input type="datetime-local" id="schedule-time" style="display:none;">
+          <button id="schedule-send-btn" style="display:none;">Schedule</button>
+          <button id="send-image-btn" style="display:none;">Send Image</button>
           
           <!-- More options dropdown -->
           <div id="more-options-dropdown" class="dropdown-menu" style="display:none;">
@@ -2173,6 +2207,31 @@
     const aiSendBtn = document.getElementById('ai-send-btn');
     const aiInsertBtn = document.getElementById('ai-insert-btn');
     const aiResult = document.getElementById('ai-result');
+    
+    // Add missing DOM elements
+    const sendImageBtn = document.getElementById('send-image-btn');
+    const ttlSelect = document.getElementById('ttl-select');
+    const scheduleTimeInput = document.getElementById('schedule-time');
+    const scheduleSendBtn = document.getElementById('schedule-send-btn');
+    const gamesBtn = document.getElementById('games-btn');
+    const pollsBtn = document.getElementById('polls-btn');
+    const drawBtn = document.getElementById('draw-btn');
+    const whiteboardBtn = document.getElementById('whiteboard-btn');
+    const aiAssistantBtn = document.getElementById('ai-assistant-btn');
+    const statusBtn = document.getElementById('status-updates-btn');
+    const statusModal = document.getElementById('status-modal');
+    const closeStatus = document.getElementById('close-status');
+    const postStatusBtn = document.getElementById('post-status-btn');
+    const musicBtn = document.getElementById('music-share-btn');
+    const musicModal = document.getElementById('music-modal');
+    const closeMusic = document.getElementById('close-music');
+    const shareMusicBtn = document.getElementById('share-music-btn');
+    const messageSearchBtn = document.getElementById('message-search-btn');
+    const searchModal = document.getElementById('search-modal');
+    const closeSearch = document.getElementById('close-search');
+    const searchQuery = document.getElementById('search-query');
+    const chatThemeBtn = document.getElementById('chat-theme-btn');
+    const securityTab = document.getElementById('security-tab');
 
     // Current User and App State
     let currentUser = null;
@@ -2202,6 +2261,58 @@
     let recordedChunks = [];
     let pttActive = false;
 
+    // Encryption/Decryption helpers (simple XOR for demo)
+    function maybeEncrypt(text) {
+      // Simple XOR encryption for demo purposes
+      const key = 'chayt2024';
+      let result = '';
+      for (let i = 0; i < text.length; i++) {
+        result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+      }
+      return btoa(result);
+    }
+
+    function maybeDecrypt(text) {
+      try {
+        const key = 'chayt2024';
+        const decoded = atob(text);
+        let result = '';
+        for (let i = 0; i < decoded.length; i++) {
+          result += String.fromCharCode(decoded.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+        }
+        return result;
+      } catch (e) {
+        return text; // Return original if decryption fails
+      }
+    }
+
+    // Cycle chat theme
+    function cycleChatTheme() {
+      const themes = ['default', 'dark', 'light', 'colorful'];
+      const currentTheme = localStorage.getItem('chatTheme') || 'default';
+      const currentIndex = themes.indexOf(currentTheme);
+      const nextIndex = (currentIndex + 1) % themes.length;
+      const nextTheme = themes[nextIndex];
+      
+      localStorage.setItem('chatTheme', nextTheme);
+      applyChatTheme(nextTheme);
+      showStatus(chatStatus, `Theme changed to ${nextTheme}`, 'success');
+    }
+
+    function applyChatTheme(theme) {
+      const messagesContainer = document.getElementById('messages');
+      messagesContainer.className = `messages-container theme-${theme}`;
+    }
+
+    // Save security settings
+    function saveSecurity() {
+      const passphrase = document.getElementById('e2ee-passphrase').value;
+      if (passphrase) {
+        localStorage.setItem('e2eePassphrase', passphrase);
+        showStatus(document.getElementById('security-status'), 'Security settings saved', 'success');
+      }
+    }
+
     // Initialize the app
     function init() {
       ensureAuth().then(() => {
@@ -2209,6 +2320,10 @@
         setupEventListeners();
         setupTextareaAutoResize();
         document.addEventListener('click', closeContextMenu);
+        
+        // Apply saved chat theme
+        const savedTheme = localStorage.getItem('chatTheme') || 'default';
+        applyChatTheme(savedTheme);
       });
     }
 
@@ -2259,10 +2374,9 @@
         loadBlockedUsers();
       });
       // Security tab wiring if present
-      const securityTabEl = document.getElementById('security-tab');
-      if (securityTabEl) {
-        securityTabEl.addEventListener('click', () => {
-          securityTabEl.classList.add('active');
+      if (securityTab) {
+        securityTab.addEventListener('click', () => {
+          securityTab.classList.add('active');
           appearanceTab.classList.remove('active');
           blockedUsersTab.classList.remove('active');
           document.getElementById('security-settings').style.display = 'block';
@@ -2518,34 +2632,21 @@
       if (aiInsertBtn) aiInsertBtn.addEventListener('click', insertAIToChat);
 
       // Status updates
-      const statusBtn = document.getElementById('status-updates-btn');
-      const statusModal = document.getElementById('status-modal');
-      const closeStatus = document.getElementById('close-status');
-      const postStatusBtn = document.getElementById('post-status-btn');
       if (statusBtn) statusBtn.addEventListener('click', () => { statusModal.classList.add('active'); loadStatusFeed(); });
       if (closeStatus) closeStatus.addEventListener('click', () => statusModal.classList.remove('active'));
       if (postStatusBtn) postStatusBtn.addEventListener('click', postStatus);
 
       // Music share
-      const musicBtn = document.getElementById('music-share-btn');
-      const musicModal = document.getElementById('music-modal');
-      const closeMusic = document.getElementById('close-music');
-      const shareMusicBtn = document.getElementById('share-music-btn');
       if (musicBtn) musicBtn.addEventListener('click', () => musicModal.classList.add('active'));
       if (closeMusic) closeMusic.addEventListener('click', () => musicModal.classList.remove('active'));
       if (shareMusicBtn) shareMusicBtn.addEventListener('click', shareMusic);
 
       // Message search
-      const messageSearchBtn = document.getElementById('message-search-btn');
-      const searchModal = document.getElementById('search-modal');
-      const closeSearch = document.getElementById('close-search');
-      const searchQuery = document.getElementById('search-query');
       if (messageSearchBtn) messageSearchBtn.addEventListener('click', () => searchModal.classList.add('active'));
       if (closeSearch) closeSearch.addEventListener('click', () => searchModal.classList.remove('active'));
       if (searchQuery) searchQuery.addEventListener('input', runMessageSearch);
 
       // Chat theme per-chat
-      const chatThemeBtn = document.getElementById('chat-theme-btn');
       if (chatThemeBtn) chatThemeBtn.addEventListener('click', () => cycleChatTheme());
     }
 
@@ -2914,7 +3015,7 @@
       try {
         // Clear existing friends
         friends = [];
-        const friendsListItems = document.querySelectorAll('.friend-item:not(#add-friend-btn):not(#friend-requests-btn):not(#create-group-btn)');
+        const friendsListItems = document.querySelectorAll('.friend-item:not(#add-friend-btn):not(#friend-requests-btn):not(#create-group-btn):not(#status-updates-btn)');
         friendsListItems.forEach(item => item.remove());
         
         // Add each friend to the list
@@ -2951,6 +3052,8 @@
         
         // Sort friends by last activity (most recent first)
         sortFriendsList();
+        
+        console.log('Friends loaded:', friends.length);
       } catch (error) {
         console.error('Error loading friends:', error);
       }
@@ -2968,8 +3071,8 @@
         return bActivity - aActivity;
       });
       
-      // Re-add items in sorted order (after the first 3 fixed items)
-      const fixedItems = Array.from(container.children).slice(0, 3);
+      // Re-add items in sorted order (after the first 4 fixed items)
+      const fixedItems = Array.from(container.children).slice(0, 4);
       items.forEach(item => container.appendChild(item));
     }
 
@@ -3147,6 +3250,7 @@
 
     // Open a chat (friend or group)
     function openChat(id, type) {
+      console.log('Opening chat:', id, type);
       currentChat = { id, type };
       messagesContainer.innerHTML = '';
       
@@ -3232,9 +3336,13 @@
       // Clear existing messages
       messagesContainer.innerHTML = '';
       
+      // Remove any existing listeners
+      db.ref(`messages/${type}/${id}`).off('child_added');
+      
       // Listen for new messages
       db.ref(`messages/${type}/${id}`).orderByChild('time').on('child_added', (snapshot) => {
         const msg = snapshot.val();
+        console.log('New message received:', msg);
         const isCurrentUser = msg.userId === currentUser?.username;
         
         // Skip if message is from blocked user
@@ -3258,7 +3366,7 @@
               <div class="message-user-avatar" data-username="${msg.username}">${msg.username.charAt(0).toUpperCase()}</div>
               <div class="message-username" data-username="${msg.username}">${msg.username} ${msg.username === 'Yug' ? '<span class="owner-badge">OWNER</span>' : ''}</div>
             </div>
-            <div class="text">${maybeDecrypt(msg.text)}</div>
+            <div class="text">${maybeDecrypt(msg.text || '')}</div>
             ${msg.music ? `<div style=\"margin-top:6px;\"><audio controls src=\"${msg.music.url}\" style=\"width:260px;\"></audio></div>` : ''}
             ${msg.threadParent ? `<div style="font-size:12px; opacity:0.8;">Replying to: ${msg.threadParentPreview || ''}</div>` : ''}
             ${msg.readBy ? `<div style=\"font-size:10px; opacity:0.7;\">Seen by ${Object.keys(msg.readBy).length}</div>` : ''}
@@ -3321,6 +3429,28 @@
           action.addEventListener('click', (e) => {
             e.stopPropagation();
             handleMessageAction(action.dataset.action, snapshot.key, msg);
+          });
+        });
+        
+        // Add click events to reply, mark read, and delete buttons
+        msgDiv.querySelectorAll('.reply-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            promptThreadReply(snapshot.key, msg);
+          });
+        });
+        
+        msgDiv.querySelectorAll('.mark-read-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            markMessageRead(id, btn.dataset.id, true);
+          });
+        });
+        
+        msgDiv.querySelectorAll('.delete-me-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteForMe(id, btn.dataset.id);
           });
         });
         
@@ -3507,12 +3637,13 @@
       messageSendLock = true;
       
       const chatId = getChatId(currentChat.id, currentChat.type);
+      console.log('Sending message to chat:', chatId);
       
-      const ttlMs = window.nextMessageTTL || parseInt(ttlSelect?.value || '0', 10);
+      const ttlMs = window.nextMessageTTL || 0;
       window.nextMessageTTL = null; // Reset after use
       db.ref(`messages/${currentChat.type}/${chatId}`).push({
         type: "text",
-        text: text,
+        text: maybeEncrypt(text),
         time: Date.now(),
         username: currentUser.username,
         userId: currentUser.username,
@@ -3534,6 +3665,8 @@
         if (currentChat.type === 'friend') {
           db.ref(`typing/${chatId}/${currentUser.username}`).remove();
         }
+        
+        showStatus(chatStatus, 'Message sent!', 'success');
       })
       .catch(error => {
         console.error('Error sending message:', error);
@@ -4384,6 +4517,24 @@
         console.error('Error loading blocked users:', error);
         showStatus(blockedUsersStatus, `Error: ${error.message}`, 'error');
       }
+    }
+
+    // Test function to add a sample message (for debugging)
+    function addTestMessage() {
+      if (!currentChat) {
+        showStatus(chatStatus, 'Open a chat first', 'error');
+        return;
+      }
+      
+      const chatId = getChatId(currentChat.id, currentChat.type);
+      db.ref(`messages/${currentChat.type}/${chatId}`).push({
+        type: "text",
+        text: maybeEncrypt("This is a test message from " + currentUser.username),
+        time: Date.now(),
+        username: currentUser.username,
+        userId: currentUser.username,
+        edited: false
+      });
     }
 
     // Initialize the app
