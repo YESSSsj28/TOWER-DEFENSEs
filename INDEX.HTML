@@ -1260,6 +1260,10 @@
               <i class="fas fa-gamepad"></i>
               <span>Games</span>
             </div>
+            <div class="dropdown-item" data-action="ai">
+              <i class="fas fa-robot"></i>
+              <span>AI Assistant</span>
+            </div>
             <div class="dropdown-item" data-action="polls">
               <i class="fas fa-poll"></i>
               <span>Poll</span>
@@ -1414,6 +1418,30 @@
         <input id="search-query" placeholder="Type to search messages">
       </div>
       <div id="search-results" style="max-height: 400px; overflow:auto; margin-top:8px;"></div>
+    </div>
+  </div>
+
+  <!-- AI Assistant Modal -->
+  <div class="modal" id="ai-modal">
+    <div class="modal-content" style="max-width: 720px;">
+      <div class="modal-header">
+        <h3>AI Assistant</h3>
+        <button class="modal-close" id="close-ai">&times;</button>
+      </div>
+      <div class="input-group">
+        <label for="ai-api-key">OpenAI API Key</label>
+        <input type="password" id="ai-api-key" placeholder="sk-..." autocomplete="off">
+        <button id="save-ai-key-btn" style="margin-top: 8px;"><i class="fas fa-key"></i> Save Key</button>
+      </div>
+      <div class="input-group">
+        <label for="ai-prompt">Ask something</label>
+        <textarea id="ai-prompt" rows="3" placeholder="Write a reply to the last message, summarize the chat, draft a friendly response, etc."></textarea>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap: wrap;">
+        <button id="ask-ai-btn"><i class="fas fa-robot"></i> Ask AI</button>
+        <button id="insert-ai-response-btn" style="background: var(--success);"><i class="fas fa-level-down-alt"></i> Insert to Message</button>
+      </div>
+      <div id="ai-response" style="margin-top:12px; padding:12px; background: rgba(255,255,255,0.06); border-radius:8px; min-height: 64px;"></div>
     </div>
   </div>
 
@@ -1737,6 +1765,32 @@
       });
     }
 
+    async function askAI() {
+      const key = localStorage.getItem('openai_api_key');
+      if (!key) { aiResponse.textContent = 'Set your OpenAI API key first.'; return; }
+      const prompt = (aiPrompt?.value || '').trim();
+      if (!prompt) { aiResponse.textContent = 'Type a prompt.'; return; }
+      aiResponse.textContent = 'Thinking...';
+      try {
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+          body: JSON.stringify({
+            model: 'gpt-3.5-turbo',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.7
+          })
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const text = data.choices?.[0]?.message?.content?.trim() || 'No response';
+        aiResponse.textContent = text;
+      } catch (e) {
+        console.error(e);
+        aiResponse.textContent = `Error: ${e.message}`;
+      }
+    }
+
     function launchGame(game) {
       if (!currentChat) {
         showStatus(chatStatus, 'Open a chat first', 'error');
@@ -1767,7 +1821,66 @@
     }
 
     function renderGameMessage(msg) {
-      return `<div style="padding:8px; background: rgba(255,255,255,0.05); border-radius:8px;">Game: <b>${msg.game}</b> — click to open in Games</div>`;
+      return `<div style="padding:8px; background: rgba(255,255,255,0.05); border-radius:8px; cursor:pointer;" onclick="playGame('${msg.game || ''}')">Game: <b>${msg.game}</b> — click to open</div>`;
+    }
+
+    // Simple TicTacToe game for demo
+    function renderTicTacToe() {
+      const board = Array(9).fill(null);
+      let current = 'X';
+      const container = document.getElementById('game-container');
+      const statusEl = document.createElement('div');
+      statusEl.style.marginBottom = '8px';
+      function winner(b) {
+        const lines = [
+          [0,1,2],[3,4,5],[6,7,8],
+          [0,3,6],[1,4,7],[2,5,8],
+          [0,4,8],[2,4,6]
+        ];
+        for (const [a,b2,c] of lines) {
+          if (board[a] && board[a] === board[b2] && board[a] === board[c]) return board[a];
+        }
+        if (board.every(Boolean)) return 'draw';
+        return null;
+      }
+      function render() {
+        container.innerHTML = '';
+        const grid = document.createElement('div');
+        grid.style.display = 'grid';
+        grid.style.gridTemplateColumns = 'repeat(3, 100px)';
+        grid.style.gap = '6px';
+        statusEl.textContent = `Turn: ${current}`;
+        container.appendChild(statusEl);
+        container.appendChild(grid);
+        board.forEach((cell, idx) => {
+          const btn = document.createElement('button');
+          btn.textContent = cell || '';
+          btn.style.height = '100px';
+          btn.style.fontSize = '28px';
+          btn.style.background = 'var(--bg-card)';
+          btn.style.color = 'var(--text-primary)';
+          btn.style.borderRadius = '8px';
+          btn.disabled = Boolean(cell) || Boolean(winner(board));
+          btn.addEventListener('click', () => {
+            if (board[idx]) return;
+            board[idx] = current;
+            const w = winner(board);
+            if (w) {
+              statusEl.textContent = w === 'draw' ? 'Draw!' : `${w} wins!`;
+            } else {
+              current = current === 'X' ? 'O' : 'X';
+            }
+            render();
+          });
+          grid.appendChild(btn);
+        });
+        const closeBtn = document.createElement('button');
+        closeBtn.textContent = 'Close';
+        closeBtn.style.marginTop = '12px';
+        closeBtn.addEventListener('click', () => gamesModal.classList.remove('active'));
+        container.appendChild(closeBtn);
+      }
+      render();
     }
 
     function playGame(gameName) {
@@ -1779,17 +1892,20 @@
       
       // You can add specific game logic here
       const gameContainer = document.getElementById('game-container');
-      if (gameContainer) {
-        gameContainer.innerHTML = `
-          <div style="text-align: center; padding: 20px;">
-            <h3>🎮 ${gameName}</h3>
-            <p>Game is starting...</p>
-            <button onclick="gamesModal.classList.remove('active')" style="padding:8px 16px; background: var(--accent); border:none; border-radius:4px; color:white; cursor:pointer;">
-              Close
-            </button>
-          </div>
-        `;
+      if (!gameContainer) return;
+      if (gameName === 'tictactoe') {
+        renderTicTacToe();
+        return;
       }
+      gameContainer.innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+          <h3>🎮 ${gameName}</h3>
+          <p>Game is starting...</p>
+          <button onclick="gamesModal.classList.remove('active')" style="padding:8px 16px; background: var(--accent); border:none; border-radius:4px; color:white; cursor:pointer;">
+            Close
+          </button>
+        </div>
+      `;
     }
 
     function postStatus() {
@@ -2171,6 +2287,14 @@
     const gamesModal = document.getElementById('games-modal');
     const closeGames = document.getElementById('close-games');
     const gameContainer = document.getElementById('game-container');
+    const aiModal = document.getElementById('ai-modal');
+    const closeAi = document.getElementById('close-ai');
+    const aiApiKeyInput = document.getElementById('ai-api-key');
+    const saveAiKeyBtn = document.getElementById('save-ai-key-btn');
+    const aiPrompt = document.getElementById('ai-prompt');
+    const askAiBtn = document.getElementById('ask-ai-btn');
+    const insertAiResponseBtn = document.getElementById('insert-ai-response-btn');
+    const aiResponse = document.getElementById('ai-response');
     const pollsModalEl = document.getElementById('polls-modal');
     const closePolls = document.getElementById('close-polls');
     const pollQuestion = document.getElementById('poll-question');
@@ -2569,6 +2693,24 @@
       if (gamesBtn) gamesBtn.addEventListener('click', () => gamesModal.classList.add('active'));
       if (closeGames) closeGames.addEventListener('click', () => gamesModal.classList.remove('active'));
       document.querySelectorAll('.game-launch').forEach(btn => btn.addEventListener('click', () => launchGame(btn.dataset.game)));
+
+      // AI Assistant
+      if (closeAi) closeAi.addEventListener('click', () => aiModal.classList.remove('active'));
+      const savedKey = localStorage.getItem('openai_api_key');
+      if (savedKey && aiApiKeyInput) aiApiKeyInput.value = savedKey.replace(/.(?=.{4})/g, '*');
+      if (saveAiKeyBtn) saveAiKeyBtn.addEventListener('click', () => {
+        const key = aiApiKeyInput.value.trim();
+        if (!/^sk-/.test(key)) return showStatus(chatStatus, 'Enter a valid OpenAI key', 'error');
+        localStorage.setItem('openai_api_key', key);
+        showStatus(chatStatus, 'API key saved', 'success');
+      });
+      if (askAiBtn) askAiBtn.addEventListener('click', askAI);
+      if (insertAiResponseBtn) insertAiResponseBtn.addEventListener('click', () => {
+        if (!aiResponse.textContent) return;
+        messageInput.value = (messageInput.value ? messageInput.value + '\n' : '') + aiResponse.textContent;
+        aiModal.classList.remove('active');
+        messageInput.focus();
+      });
 
       // Polls
       if (pollsBtn) pollsBtn.addEventListener('click', () => pollsModalEl.classList.add('active'));
