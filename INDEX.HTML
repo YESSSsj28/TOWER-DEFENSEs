@@ -166,8 +166,18 @@
     .sticker-grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; max-height:260px; overflow:auto; }
     .link-card { background: rgba(255,255,255,0.06); padding:10px; border-radius:8px; margin-top:6px; }
     .friend-item.pinned::before { content:'\f08d'; font-family: 'Font Awesome 6 Free'; font-weight:900; color: var(--accent); margin-right:6px; }
-    .economy { font-size:12px; color: var(--text-secondary); display:flex; gap:8px; justify-content:center; }
-    .badge { background: rgba(255,255,255,0.08); padding:2px 6px; border-radius:8px; font-size:11px; }
+    .economy { font-size:12px; color: var(--text-secondary); display:flex; gap:8px; justify-content:center; margin-top: 8px; }
+    .badge { background: rgba(255,255,255,0.08); padding:4px 8px; border-radius:8px; font-size:11px; font-weight: 500; }
+    .status-indicator { 
+      position: absolute; 
+      top: 8px; 
+      right: 8px; 
+      width: 8px; 
+      height: 8px; 
+      border-radius: 50%; 
+      background: var(--success); 
+      animation: pulse 2s infinite; 
+    }
     .filters { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; align-items:center; }
     .filters label { font-size:12px; color: var(--text-secondary); }
 
@@ -1086,6 +1096,10 @@
           <div class="friend-avatar"><i class="fas fa-bullhorn"></i></div>
           <div class="friend-name">Status Updates</div>
         </div>
+        <div class="friend-item" id="notes-btn">
+          <div class="friend-avatar"><i class="fas fa-sticky-note"></i></div>
+          <div class="friend-name">Notes</div>
+        </div>
         <!-- Friends and groups will be added here dynamically -->
       </div>
       
@@ -1373,6 +1387,7 @@
         <button class="game-launch" data-game="hangman">Hangman</button>
         <button class="game-launch" data-game="trivia">Trivia</button>
         <button class="game-launch" data-game="casino">Mini Casino</button>
+        <button class="game-launch" data-game="uno">UNO</button>
       </div>
       <div id="game-container" style="margin-top:12px;"></div>
     </div>
@@ -1707,6 +1722,40 @@
     </div>
   </div>
 
+  <!-- Notes Modal -->
+  <div class="modal" id="notes-modal">
+    <div class="modal-content" style="max-width: 800px;">
+      <div class="modal-header">
+        <h3>📝 Notes</h3>
+        <button class="modal-close" id="close-notes">&times;</button>
+      </div>
+      <div style="display: flex; gap: 16px;">
+        <div style="flex: 1;">
+          <div class="input-group">
+            <label for="note-title">Title</label>
+            <input type="text" id="note-title" placeholder="Note title">
+          </div>
+          <div class="input-group">
+            <label for="note-content">Content</label>
+            <textarea id="note-content" rows="10" placeholder="Write your note here..."></textarea>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 12px;">
+            <button id="save-note-btn" style="flex: 1;">
+              <i class="fas fa-save"></i> Save Note
+            </button>
+            <button id="new-note-btn" style="background: var(--bg-card);">
+              <i class="fas fa-plus"></i> New
+            </button>
+          </div>
+        </div>
+        <div style="flex: 1; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 16px;">
+          <h4>Your Notes</h4>
+          <div id="notes-list" style="max-height: 400px; overflow-y: auto;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Context Menu -->
   <div class="context-menu" id="context-menu"></div>
 
@@ -1765,25 +1814,57 @@
       });
     }
 
+    // AI Memory System
+    let aiMemory = JSON.parse(localStorage.getItem('aiMemory') || '{}');
+    
     async function askAI() {
-      const key = localStorage.getItem('openai_api_key');
-      if (!key) { aiResponse.textContent = 'Set your OpenAI API key first.'; return; }
+      const key = "e7456d10d09865a39f2c7aebf2540368cc74962f12195cb3f1383dce541ad3c9";
+      if (!key) { aiResponse.textContent = 'AI key not configured.'; return; }
+      
       const prompt = (aiPrompt?.value || '').trim();
       if (!prompt) { aiResponse.textContent = 'Type a prompt.'; return; }
+      
       aiResponse.textContent = 'Thinking...';
+      
       try {
-        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        // Get conversation history for current chat
+        const chatId = currentChat ? getChatId(currentChat.id, currentChat.type) : 'general';
+        const conversationHistory = aiMemory[chatId] || [];
+        
+        // Add current prompt to history
+        conversationHistory.push({ role: 'user', content: prompt });
+        
+        // Keep only last 10 messages for context
+        if (conversationHistory.length > 10) {
+          conversationHistory.splice(0, conversationHistory.length - 10);
+        }
+        
+        const res = await fetch('https://api.together.xyz/v1/chat/completions', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+          headers: { 
+            'Content-Type': 'application/json', 
+            'Authorization': `Bearer ${key}` 
+          },
           body: JSON.stringify({
-            model: 'gpt-3.5-turbo',
-            messages: [{ role: 'user', content: prompt }],
-            temperature: 0.7
+            model: 'meta-llama/Llama-2-70b-chat-hf',
+            messages: [
+              { role: 'system', content: 'You are a helpful AI assistant integrated into a chat application. You have memory of previous conversations and can help with various tasks. Be friendly and concise.' },
+              ...conversationHistory
+            ],
+            temperature: 0.7,
+            max_tokens: 500
           })
         });
+        
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         const text = data.choices?.[0]?.message?.content?.trim() || 'No response';
+        
+        // Add AI response to history
+        conversationHistory.push({ role: 'assistant', content: text });
+        aiMemory[chatId] = conversationHistory;
+        localStorage.setItem('aiMemory', JSON.stringify(aiMemory));
+        
         aiResponse.textContent = text;
       } catch (e) {
         console.error(e);
@@ -1798,10 +1879,18 @@
       }
       
       const chatId = getChatId(currentChat.id, currentChat.type);
+      const gameId = `${game}_${Date.now()}`;
       const payload = { 
         type: 'game', 
         game, 
-        state: { createdAt: Date.now() }, 
+        gameId,
+        status: 'waiting',
+        players: [currentUser.username],
+        state: { 
+          createdAt: Date.now(),
+          currentPlayer: currentUser.username,
+          gameData: {}
+        }, 
         username: currentUser.username, 
         userId: currentUser.username, 
         time: Date.now() 
@@ -1811,7 +1900,7 @@
       
       db.ref(`messages/${currentChat.type}/${chatId}`).push(payload)
         .then(() => {
-          showStatus(chatStatus, `Game "${game}" launched!`, 'success');
+          showStatus(chatStatus, `Game "${game}" launched! Waiting for players...`, 'success');
           gamesModal.classList.remove('active');
         })
         .catch((error) => {
@@ -1821,85 +1910,351 @@
     }
 
     function renderGameMessage(msg) {
-      return `<div style="padding:8px; background: rgba(255,255,255,0.05); border-radius:8px; cursor:pointer;" onclick="playGame('${msg.game || ''}')">Game: <b>${msg.game}</b> — click to open</div>`;
+      const status = msg.status || 'waiting';
+      const players = msg.players || [];
+      const playerCount = players.length;
+      const maxPlayers = msg.game === 'uno' ? 8 : 2;
+      
+      let statusText = '';
+      if (status === 'waiting') {
+        statusText = `Waiting for players (${playerCount}/${maxPlayers})`;
+      } else if (status === 'playing') {
+        statusText = `In progress - ${msg.state?.currentPlayer}'s turn`;
+      } else if (status === 'finished') {
+        statusText = `Game finished - ${msg.state?.winner || 'No winner'} won`;
+      }
+      
+      return `<div style="padding:8px; background: rgba(255,255,255,0.05); border-radius:8px; cursor:pointer;" onclick="playGame('${msg.game || ''}', '${msg.gameId || ''}')">
+        <div><b>🎮 ${msg.game.toUpperCase()}</b></div>
+        <div style="font-size:12px; opacity:0.8;">${statusText}</div>
+        <div style="font-size:11px; opacity:0.6;">Players: ${players.join(', ')}</div>
+      </div>`;
     }
 
-    // Simple TicTacToe game for demo
-    function renderTicTacToe() {
-      const board = Array(9).fill(null);
-      let current = 'X';
+    // Enhanced TicTacToe game with multiplayer support
+    function renderTicTacToe(gameId = null) {
       const container = document.getElementById('game-container');
-      const statusEl = document.createElement('div');
-      statusEl.style.marginBottom = '8px';
-      function winner(b) {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+          <h3>🎮 TIC TAC TOE</h3>
+          <div id="tictactoe-status" style="margin-bottom: 16px; font-weight: bold;">Loading game...</div>
+          <div id="tictactoe-board" style="display: grid; grid-template-columns: repeat(3, 80px); gap: 4px; margin: 0 auto; width: fit-content;"></div>
+          <div style="margin-top: 16px;">
+            <button id="join-tictactoe-btn" style="padding:8px 16px; background: var(--accent); border:none; border-radius:4px; color:white; cursor:pointer; margin-right:8px;">
+              Join Game
+            </button>
+            <button onclick="gamesModal.classList.remove('active')" style="padding:8px 16px; background: var(--bg-card); border:none; border-radius:4px; color:white; cursor:pointer;">
+              Close
+            </button>
+          </div>
+        </div>
+      `;
+      
+      if (gameId) {
+        // Join existing game
+        joinGame('tictactoe', gameId);
+      } else {
+        // Create new game
+        createNewGame('tictactoe');
+      }
+    }
+
+    // UNO Game Implementation
+    function renderUNO(gameId = null) {
+      const container = document.getElementById('game-container');
+      container.innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+          <h3>🎴 UNO</h3>
+          <div id="uno-status" style="margin-bottom: 16px; font-weight: bold;">Loading game...</div>
+          <div id="uno-game-area" style="display: none;">
+            <div id="uno-current-card" style="margin: 16px; padding: 20px; background: white; border-radius: 8px; display: inline-block; font-size: 24px; color: black;">
+              🃏
+            </div>
+            <div id="uno-player-hand" style="margin: 16px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;"></div>
+          </div>
+          <div style="margin-top: 16px;">
+            <button id="join-uno-btn" style="padding:8px 16px; background: var(--accent); border:none; border-radius:4px; color:white; cursor:pointer; margin-right:8px;">
+              Join Game
+            </button>
+            <button onclick="gamesModal.classList.remove('active')" style="padding:8px 16px; background: var(--bg-card); border:none; border-radius:4px; color:white; cursor:pointer;">
+              Close
+            </button>
+          </div>
+        </div>
+      `;
+      
+      if (gameId) {
+        // Join existing game
+        joinGame('uno', gameId);
+      } else {
+        // Create new game
+        createNewGame('uno');
+      }
+    }
+
+    // Game management functions
+    function createNewGame(gameType) {
+      const gameId = `${gameType}_${Date.now()}`;
+      const chatId = getChatId(currentChat.id, currentChat.type);
+      
+      const gameData = {
+        type: gameType,
+        status: 'waiting',
+        players: [currentUser.username],
+        currentPlayer: currentUser.username,
+        gameState: gameType === 'uno' ? initializeUNOState() : initializeTicTacToeState(),
+        createdAt: Date.now()
+      };
+      
+      db.ref(`games/${gameId}`).set(gameData);
+      
+      // Add game message to chat
+      db.ref(`messages/${currentChat.type}/${chatId}`).push({
+        type: 'game',
+        game: gameType,
+        gameId: gameId,
+        status: 'waiting',
+        players: [currentUser.username],
+        state: gameData,
+        username: currentUser.username,
+        userId: currentUser.username,
+        time: Date.now()
+      });
+      
+      showStatus(chatStatus, `${gameType.toUpperCase()} game created! Waiting for players...`, 'success');
+    }
+
+    function joinGame(gameType, gameId) {
+      db.ref(`games/${gameId}`).once('value').then(snapshot => {
+        const game = snapshot.val();
+        if (!game) {
+          showStatus(chatStatus, 'Game not found', 'error');
+          return;
+        }
+        
+        if (game.players.includes(currentUser.username)) {
+          // Already in game, just watch
+          watchGame(gameType, gameId);
+        } else if (game.status === 'waiting') {
+          // Join the game
+          db.ref(`games/${gameId}/players`).push(currentUser.username);
+          watchGame(gameType, gameId);
+        } else {
+          showStatus(chatStatus, 'Game already in progress', 'error');
+        }
+      });
+    }
+
+    function watchGame(gameType, gameId) {
+      db.ref(`games/${gameId}`).on('value', snapshot => {
+        const game = snapshot.val();
+        if (!game) return;
+        
+        if (gameType === 'uno') {
+          updateUNODisplay(game);
+        } else if (gameType === 'tictactoe') {
+          updateTicTacToeDisplay(game);
+        }
+      });
+    }
+
+    // UNO Game Logic
+    function initializeUNOState() {
+      const colors = ['red', 'blue', 'green', 'yellow'];
+      const numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+      const specials = ['skip', 'reverse', 'draw2', 'wild', 'wild4'];
+      
+      let deck = [];
+      
+      // Add number cards
+      colors.forEach(color => {
+        numbers.forEach(number => {
+          deck.push({ color, number, type: 'number' });
+        });
+      });
+      
+      // Add special cards
+      colors.forEach(color => {
+        specials.slice(0, 3).forEach(special => {
+          deck.push({ color, special, type: 'special' });
+        });
+      });
+      
+      // Add wild cards
+      for (let i = 0; i < 4; i++) {
+        deck.push({ color: 'wild', special: 'wild', type: 'wild' });
+        deck.push({ color: 'wild', special: 'wild4', type: 'wild' });
+      }
+      
+      // Shuffle deck
+      deck = deck.sort(() => Math.random() - 0.5);
+      
+      return {
+        deck: deck,
+        discardPile: [deck.pop()],
+        playerHands: {},
+        currentColor: deck[0].color !== 'wild' ? deck[0].color : 'red',
+        direction: 1, // 1 for clockwise, -1 for counter-clockwise
+        currentPlayerIndex: 0
+      };
+    }
+
+    function updateUNODisplay(game) {
+      const statusEl = document.getElementById('uno-status');
+      const gameArea = document.getElementById('uno-game-area');
+      const currentCardEl = document.getElementById('uno-current-card');
+      const playerHandEl = document.getElementById('uno-player-hand');
+      
+      if (game.status === 'waiting') {
+        statusEl.textContent = `Waiting for players (${game.players.length}/8)`;
+        gameArea.style.display = 'none';
+        return;
+      }
+      
+      gameArea.style.display = 'block';
+      statusEl.textContent = `Current player: ${game.currentPlayer}`;
+      
+      // Show current card
+      const topCard = game.gameState.discardPile[game.gameState.discardPile.length - 1];
+      if (topCard) {
+        const cardColor = topCard.color === 'wild' ? game.gameState.currentColor : topCard.color;
+        const cardSymbol = topCard.number || topCard.special || '🃏';
+        currentCardEl.style.backgroundColor = cardColor;
+        currentCardEl.textContent = cardSymbol;
+      }
+      
+      // Show player's hand
+      const playerHand = game.gameState.playerHands[currentUser.username] || [];
+      playerHandEl.innerHTML = '';
+      
+      playerHand.forEach((card, index) => {
+        const cardEl = document.createElement('div');
+        cardEl.style.cssText = `
+          padding: 8px 12px;
+          background: ${card.color === 'wild' ? 'linear-gradient(45deg, red, blue, green, yellow)' : card.color};
+          border-radius: 4px;
+          color: white;
+          cursor: pointer;
+          font-weight: bold;
+          border: 2px solid ${game.currentPlayer === currentUser.username ? 'gold' : 'transparent'};
+        `;
+        cardEl.textContent = card.number || card.special || '🃏';
+        cardEl.onclick = () => playUNOCard(gameId, index);
+        playerHandEl.appendChild(cardEl);
+      });
+    }
+
+    function playUNOCard(gameId, cardIndex) {
+      // UNO card playing logic would go here
+      console.log('Playing UNO card:', cardIndex);
+    }
+
+    // TicTacToe Game Logic
+    function initializeTicTacToeState() {
+      return {
+        board: Array(9).fill(null),
+        currentPlayer: 'X',
+        winner: null,
+        gameOver: false
+      };
+    }
+
+    function updateTicTacToeDisplay(game) {
+      const statusEl = document.getElementById('tictactoe-status');
+      const boardEl = document.getElementById('tictactoe-board');
+      
+      if (game.status === 'waiting') {
+        statusEl.textContent = `Waiting for players (${game.players.length}/2)`;
+        return;
+      }
+      
+      statusEl.textContent = `Current player: ${game.gameState.currentPlayer}`;
+      
+      boardEl.innerHTML = '';
+      game.gameState.board.forEach((cell, index) => {
+        const cellEl = document.createElement('button');
+        cellEl.textContent = cell || '';
+        cellEl.style.cssText = `
+          width: 80px;
+          height: 80px;
+          font-size: 24px;
+          background: var(--bg-card);
+          color: var(--text-primary);
+          border: none;
+          border-radius: 4px;
+          cursor: ${game.currentPlayer === currentUser.username && !cell ? 'pointer' : 'not-allowed'};
+        `;
+        cellEl.disabled = cell || game.currentPlayer !== currentUser.username || game.gameState.gameOver;
+        cellEl.onclick = () => playTicTacToeMove(gameId, index);
+        boardEl.appendChild(cellEl);
+      });
+      
+      if (game.gameState.winner) {
+        statusEl.textContent = `Winner: ${game.gameState.winner}`;
+      } else if (game.gameState.gameOver) {
+        statusEl.textContent = 'Game ended in a draw!';
+      }
+    }
+
+    function playTicTacToeMove(gameId, position) {
+      db.ref(`games/${gameId}/gameState`).once('value').then(snapshot => {
+        const gameState = snapshot.val();
+        if (gameState.board[position] || gameState.gameOver) return;
+        
+        const newState = { ...gameState };
+        newState.board[position] = newState.currentPlayer;
+        
+        // Check for winner
         const lines = [
           [0,1,2],[3,4,5],[6,7,8],
           [0,3,6],[1,4,7],[2,5,8],
           [0,4,8],[2,4,6]
         ];
-        for (const [a,b2,c] of lines) {
-          if (board[a] && board[a] === board[b2] && board[a] === board[c]) return board[a];
+        
+        for (const [a,b,c] of lines) {
+          if (newState.board[a] && newState.board[a] === newState.board[b] && newState.board[a] === newState.board[c]) {
+            newState.winner = newState.board[a];
+            newState.gameOver = true;
+            break;
+          }
         }
-        if (board.every(Boolean)) return 'draw';
-        return null;
-      }
-      function render() {
-        container.innerHTML = '';
-        const grid = document.createElement('div');
-        grid.style.display = 'grid';
-        grid.style.gridTemplateColumns = 'repeat(3, 100px)';
-        grid.style.gap = '6px';
-        statusEl.textContent = `Turn: ${current}`;
-        container.appendChild(statusEl);
-        container.appendChild(grid);
-        board.forEach((cell, idx) => {
-          const btn = document.createElement('button');
-          btn.textContent = cell || '';
-          btn.style.height = '100px';
-          btn.style.fontSize = '28px';
-          btn.style.background = 'var(--bg-card)';
-          btn.style.color = 'var(--text-primary)';
-          btn.style.borderRadius = '8px';
-          btn.disabled = Boolean(cell) || Boolean(winner(board));
-          btn.addEventListener('click', () => {
-            if (board[idx]) return;
-            board[idx] = current;
-            const w = winner(board);
-            if (w) {
-              statusEl.textContent = w === 'draw' ? 'Draw!' : `${w} wins!`;
-            } else {
-              current = current === 'X' ? 'O' : 'X';
-            }
-            render();
-          });
-          grid.appendChild(btn);
+        
+        if (!newState.winner && newState.board.every(cell => cell)) {
+          newState.gameOver = true;
+        }
+        
+        if (!newState.gameOver) {
+          newState.currentPlayer = newState.currentPlayer === 'X' ? 'O' : 'X';
+        }
+        
+        db.ref(`games/${gameId}`).update({
+          gameState: newState,
+          currentPlayer: newState.currentPlayer
         });
-        const closeBtn = document.createElement('button');
-        closeBtn.textContent = 'Close';
-        closeBtn.style.marginTop = '12px';
-        closeBtn.addEventListener('click', () => gamesModal.classList.remove('active'));
-        container.appendChild(closeBtn);
-      }
-      render();
+      });
     }
 
-    function playGame(gameName) {
-      console.log('Playing game:', gameName);
-      showStatus(chatStatus, `Starting ${gameName}...`, 'success');
+    function playGame(gameName, gameId = null) {
+      console.log('Playing game:', gameName, 'Game ID:', gameId);
+      showStatus(chatStatus, `Joining ${gameName}...`, 'success');
       
       // Open games modal and show the specific game
       gamesModal.classList.add('active');
       
-      // You can add specific game logic here
       const gameContainer = document.getElementById('game-container');
       if (!gameContainer) return;
+      
       if (gameName === 'tictactoe') {
-        renderTicTacToe();
+        renderTicTacToe(gameId);
+        return;
+      } else if (gameName === 'uno') {
+        renderUNO(gameId);
         return;
       }
+      
       gameContainer.innerHTML = `
         <div style="text-align: center; padding: 20px;">
-          <h3>🎮 ${gameName}</h3>
+          <h3>🎮 ${gameName.toUpperCase()}</h3>
           <p>Game is starting...</p>
           <button onclick="gamesModal.classList.remove('active')" style="padding:8px 16px; background: var(--accent); border:none; border-radius:4px; color:white; cursor:pointer;">
             Close
@@ -2328,6 +2683,14 @@
     const searchQuery = document.getElementById('search-query');
     const chatThemeBtn = document.getElementById('chat-theme-btn');
     const securityTab = document.getElementById('security-tab');
+    const notesBtn = document.getElementById('notes-btn');
+    const notesModal = document.getElementById('notes-modal');
+    const closeNotes = document.getElementById('close-notes');
+    const saveNoteBtn = document.getElementById('save-note-btn');
+    const newNoteBtn = document.getElementById('new-note-btn');
+    const noteTitle = document.getElementById('note-title');
+    const noteContent = document.getElementById('note-content');
+    const notesList = document.getElementById('notes-list');
 
     // Current User and App State
     let currentUser = null;
@@ -2408,6 +2771,94 @@
       }
     }
 
+    // Notes functionality
+    function loadNotes() {
+      const notes = JSON.parse(localStorage.getItem(`notes_${currentUser.username}`) || '[]');
+      notesList.innerHTML = '';
+      
+      notes.forEach((note, index) => {
+        const noteEl = document.createElement('div');
+        noteEl.style.cssText = `
+          padding: 12px;
+          background: rgba(255,255,255,0.05);
+          border-radius: 8px;
+          margin-bottom: 8px;
+          cursor: pointer;
+          border-left: 3px solid var(--accent);
+        `;
+        noteEl.innerHTML = `
+          <div style="font-weight: bold; margin-bottom: 4px;">${note.title}</div>
+          <div style="font-size: 12px; opacity: 0.8; margin-bottom: 8px;">${new Date(note.timestamp).toLocaleString()}</div>
+          <div style="font-size: 13px; opacity: 0.9;">${note.content.substring(0, 100)}${note.content.length > 100 ? '...' : ''}</div>
+          <div style="margin-top: 8px;">
+            <button onclick="editNote(${index})" style="padding: 4px 8px; font-size: 11px; margin-right: 4px;">Edit</button>
+            <button onclick="deleteNote(${index})" style="padding: 4px 8px; font-size: 11px; background: var(--error);">Delete</button>
+          </div>
+        `;
+        notesList.appendChild(noteEl);
+      });
+    }
+
+    function saveNote() {
+      const title = noteTitle.value.trim();
+      const content = noteContent.value.trim();
+      
+      if (!title || !content) {
+        showStatus(chatStatus, 'Please fill in both title and content', 'error');
+        return;
+      }
+      
+      const notes = JSON.parse(localStorage.getItem(`notes_${currentUser.username}`) || '[]');
+      const currentNoteIndex = parseInt(noteTitle.dataset.noteIndex || '-1');
+      
+      if (currentNoteIndex >= 0) {
+        // Update existing note
+        notes[currentNoteIndex] = { title, content, timestamp: Date.now() };
+      } else {
+        // Add new note
+        notes.push({ title, content, timestamp: Date.now() });
+      }
+      
+      localStorage.setItem(`notes_${currentUser.username}`, JSON.stringify(notes));
+      loadNotes();
+      
+      // Clear form
+      noteTitle.value = '';
+      noteContent.value = '';
+      delete noteTitle.dataset.noteIndex;
+      
+      showStatus(chatStatus, 'Note saved successfully!', 'success');
+    }
+
+    function createNewNote() {
+      noteTitle.value = '';
+      noteContent.value = '';
+      delete noteTitle.dataset.noteIndex;
+      noteTitle.focus();
+    }
+
+    function editNote(index) {
+      const notes = JSON.parse(localStorage.getItem(`notes_${currentUser.username}`) || '[]');
+      const note = notes[index];
+      
+      if (note) {
+        noteTitle.value = note.title;
+        noteContent.value = note.content;
+        noteTitle.dataset.noteIndex = index;
+        noteTitle.focus();
+      }
+    }
+
+    function deleteNote(index) {
+      if (confirm('Are you sure you want to delete this note?')) {
+        const notes = JSON.parse(localStorage.getItem(`notes_${currentUser.username}`) || '[]');
+        notes.splice(index, 1);
+        localStorage.setItem(`notes_${currentUser.username}`, JSON.stringify(notes));
+        loadNotes();
+        showStatus(chatStatus, 'Note deleted successfully!', 'success');
+      }
+    }
+
     // Initialize the app
     function init() {
       ensureAuth().then(() => {
@@ -2419,6 +2870,9 @@
         // Apply saved chat theme
         const savedTheme = localStorage.getItem('chatTheme') || 'default';
         applyChatTheme(savedTheme);
+        
+        // Load saved theme
+        loadSavedTheme();
       });
     }
 
@@ -2510,6 +2964,17 @@
         // Save draft
         if (currentChat) {
           messageDrafts[currentChat.id] = messageInput.value;
+        }
+        
+        // Auto-trigger AI when "yai" is typed
+        const text = messageInput.value.toLowerCase();
+        if (text.includes('yai') && text.trim() === 'yai') {
+          // Open AI modal and set the prompt
+          setTimeout(() => {
+            aiModal.classList.add('active');
+            aiPrompt.value = 'Hello! How can I help you today?';
+            aiPrompt.focus();
+          }, 500);
         }
         
         // Show typing indicator
@@ -2749,6 +3214,15 @@
 
       // Chat theme per-chat
       if (chatThemeBtn) chatThemeBtn.addEventListener('click', () => cycleChatTheme());
+
+      // Notes functionality
+      if (notesBtn) notesBtn.addEventListener('click', () => {
+        notesModal.classList.add('active');
+        loadNotes();
+      });
+      if (closeNotes) closeNotes.addEventListener('click', () => notesModal.classList.remove('active'));
+      if (saveNoteBtn) saveNoteBtn.addEventListener('click', saveNote);
+      if (newNoteBtn) newNoteBtn.addEventListener('click', createNewNote);
     }
 
     // Get consistent chat ID for friend chats
@@ -3001,6 +3475,16 @@
           loadFriends();
           loadFriendRequests();
           loadGroups();
+          
+          // Show welcome message
+          showStatus(chatStatus, `Welcome back, ${currentUser.username}! 🎉`, 'success');
+          
+          // Add welcome message to general chat if it's the first time
+          const isFirstTime = !localStorage.getItem(`welcome_${currentUser.username}`);
+          if (isFirstTime) {
+            localStorage.setItem(`welcome_${currentUser.username}`, 'true');
+            showStatus(chatStatus, 'Check out the features: Games, AI Assistant, Voice Messages, and more!', 'info');
+          }
           
           // Set up real-time friend request listener
           db.ref(`users/${currentUser.username}/friendRequests`).on('value', (snapshot) => {
@@ -3453,11 +3937,14 @@
         msgDiv.className = `message ${isCurrentUser ? 'sent' : 'received'}`;
         msgDiv.dataset.messageId = snapshot.key;
         
-        if (msg.type === "text") {
+        if (msg.type === "text" || msg.type === "deleted") {
+          const isDeleted = msg.type === "deleted";
+          const messageText = isDeleted ? `<div class="text" style="opacity: 0.6; font-style: italic;">🗑️ ${msg.text}</div>` : `<div class="text">${maybeDecrypt(msg.text || '')}</div>`;
+          
           msgDiv.innerHTML = `
             <div class="message-actions">
               <div class="message-action" data-action="react"><i class="far fa-smile"></i></div>
-              ${isCurrentUser ? `
+              ${isCurrentUser && !isDeleted ? `
                 <div class="message-action" data-action="edit"><i class="far fa-edit"></i></div>
                 <div class="message-action" data-action="delete"><i class="far fa-trash-alt"></i></div>
                 <div class="message-action" data-action="pin"><i class="fas fa-thumbtack"></i></div>
@@ -3467,11 +3954,11 @@
               <div class="message-user-avatar" data-username="${msg.username}">${msg.username.charAt(0).toUpperCase()}</div>
               <div class="message-username" data-username="${msg.username}">${msg.username} ${msg.username === 'Yug' ? '<span class="owner-badge">OWNER</span>' : ''}</div>
             </div>
-            <div class="text">${maybeDecrypt(msg.text || '')}</div>
-            ${msg.music ? `<div style=\"margin-top:6px;\"><audio controls src=\"${msg.music.url}\" style=\"width:260px;\"></audio></div>` : ''}
-            ${msg.threadParent ? `<div style="font-size:12px; opacity:0.8;">Replying to: ${msg.threadParentPreview || ''}</div>` : ''}
-            ${msg.readBy ? `<div style=\"font-size:10px; opacity:0.7;\">Seen by ${Object.keys(msg.readBy).length}</div>` : ''}
-            ${msg.reactions ? `
+            ${messageText}
+            ${msg.music && !isDeleted ? `<div style=\"margin-top:6px;\"><audio controls src=\"${msg.music.url}\" style=\"width:260px;\"></audio></div>` : ''}
+            ${msg.threadParent && !isDeleted ? `<div style="font-size:12px; opacity:0.8;">Replying to: ${msg.threadParentPreview || ''}</div>` : ''}
+            ${msg.readBy && !isDeleted ? `<div style=\"font-size:10px; opacity:0.7;\">Seen by ${Object.keys(msg.readBy).length}</div>` : ''}
+            ${msg.reactions && !isDeleted ? `
               <div class="reactions">
                 ${Object.entries(msg.reactions).map(([reaction, users]) => `
                   <div class="reaction" data-reaction="${reaction}">
@@ -3481,11 +3968,11 @@
               </div>
             ` : ''}
             <div class="timestamp">${formatTime(msg.time)} ${msg.edited ? '(edited)' : ''}</div>
-            <div style="display:flex; gap:6px; margin-top:6px;">
+            ${!isDeleted ? `<div style="display:flex; gap:6px; margin-top:6px;">
               <button class="reply-btn" data-id="${snapshot.key}" style="padding:4px 8px; font-size:12px;">Reply</button>
               ${!isCurrentUser ? `<button class=\"mark-read-btn\" data-id=\"${snapshot.key}\" style=\"padding:4px 8px; font-size:12px;\">Mark Read</button>` : ''}
               ${isCurrentUser ? `<button class=\"delete-me-btn\" data-id=\"${snapshot.key}\" style=\"padding:4px 8px; font-size:12px;\">Delete for me</button>` : ''}
-            </div>
+            </div>` : ''}
           `;
         } else if (msg.type === "game") {
           msgDiv.innerHTML = `
@@ -3508,6 +3995,39 @@
                     Play Now
                   </button>
                 </div>
+              </div>
+            </div>
+            ${msg.reactions ? `
+              <div class="reactions">
+                ${Object.entries(msg.reactions).map(([reaction, users]) => `
+                  <div class="reaction" data-reaction="${reaction}">
+                    ${reaction} ${users.length}
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+            <div class="timestamp">${formatTime(msg.time)}</div>
+          `;
+        } else if (msg.type === "voice") {
+          msgDiv.innerHTML = `
+            <div class="message-actions">
+              <div class="message-action" data-action="react"><i class="far fa-smile"></i></div>
+              ${isCurrentUser ? `
+                <div class="message-action" data-action="delete"><i class="far fa-trash-alt"></i></div>
+                <div class="message-action" data-action="pin"><i class="fas fa-thumbtack"></i></div>
+              ` : ''}
+            </div>
+            <div class="message-user-profile">
+              <div class="message-user-avatar" data-username="${msg.username}">${msg.username.charAt(0).toUpperCase()}</div>
+              <div class="message-username" data-username="${msg.username}">${msg.username} ${msg.username === 'Yug' ? '<span class="owner-badge">OWNER</span>' : ''}</div>
+            </div>
+            <div class="voice-message">
+              <audio controls style="width: 260px; height: 40px;">
+                <source src="${msg.url}" type="audio/webm">
+                Your browser does not support the audio element.
+              </audio>
+              <div style="font-size: 12px; opacity: 0.7; margin-top: 4px;">
+                🎤 Voice message ${msg.duration ? `(${msg.duration}s)` : ''}
               </div>
             </div>
             ${msg.reactions ? `
@@ -3708,9 +4228,22 @@
         const chatId = getChatId(currentChat.id, currentChat.type);
         console.log('Deleting message:', messageId, 'from chat:', chatId);
         
-        db.ref(`messages/${currentChat.type}/${chatId}/${messageId}`).remove()
-          .then(() => {
-            showStatus(chatStatus, 'Message deleted successfully', 'success');
+        // First get the message to show who deleted it
+        db.ref(`messages/${currentChat.type}/${chatId}/${messageId}`).once('value')
+          .then((snapshot) => {
+            const message = snapshot.val();
+            if (message) {
+              // Replace message with deletion notice
+              db.ref(`messages/${currentChat.type}/${chatId}/${messageId}`).update({
+                type: 'deleted',
+                text: `${currentUser.username} deleted this message`,
+                time: Date.now(),
+                username: currentUser.username,
+                userId: currentUser.username,
+                originalMessage: message
+              });
+              showStatus(chatStatus, 'Message deleted successfully', 'success');
+            }
           })
           .catch((error) => {
             console.error('Error deleting message:', error);
@@ -3894,9 +4427,12 @@
         // Optional: basic photo filters (CSS-based export)
         const filter = document.getElementById('photo-filter-select')?.value || 'none';
         const formData = new FormData();
-        formData.append("image", selectedImage);
+        formData.append("key", "6d207e02198a847aa98d0a2a901485a5");
+        formData.append("action", "upload");
+        formData.append("source", selectedImage);
+        formData.append("format", "json");
         
-        const res = await fetch("https://api.imgbb.com/1/upload?key=2d802312c23a6e0a1586772e069f1767", {
+        const res = await fetch("https://freeimage.host/api/1/upload", {
           method: "POST",
           body: formData
         });
@@ -3907,7 +4443,7 @@
           throw new Error(data.error.message || 'Image upload failed');
         }
         
-        const imageUrl = data.data.url;
+        const imageUrl = data.image.url;
         const chatId = getChatId(currentChat.id, currentChat.type);
         
         await db.ref(`messages/${currentChat.type}/${chatId}`).push({
@@ -3938,30 +4474,60 @@
     async function handleVoiceRecord() {
       if (mediaRecorder && mediaRecorder.state === 'recording') {
         mediaRecorder.stop();
-        recordVoiceBtn.innerHTML = '<i class="fas fa-microphone"></i><span>Voice</span>';
+        recordVoiceBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+        recordVoiceBtn.title = 'Voice Message';
         return;
       }
+      
+      if (!currentChat) {
+        showStatus(chatStatus, 'Open a chat first', 'error');
+        return;
+      }
+      
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         recordedChunks = [];
-        mediaRecorder = new MediaRecorder(stream);
-        mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
-        mediaRecorder.onstop = async () => {
-          const blob = new Blob(recordedChunks, { type: 'audio/webm' });
-          const fileName = `voice_${Date.now()}.webm`;
-          const storageRef = storage.ref().child(`voice/${currentUser.username}/${fileName}`);
-          await storageRef.put(blob);
-          const url = await storageRef.getDownloadURL();
-          const chatId = getChatId(currentChat.id, currentChat.type);
-          await db.ref(`messages/${currentChat.type}/${chatId}`).push({
-            type: 'voice', url, time: Date.now(), username: currentUser.username, userId: currentUser.username
-          });
-          showStatus(chatStatus, 'Voice message sent', 'success');
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+        
+        mediaRecorder.ondataavailable = e => { 
+          if (e.data.size > 0) recordedChunks.push(e.data); 
         };
+        
+        mediaRecorder.onstop = async () => {
+          try {
+            showStatus(chatStatus, 'Sending voice message...', 'loading');
+            
+            const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+            const fileName = `voice_${Date.now()}.webm`;
+            const storageRef = storage.ref().child(`voice/${currentUser.username}/${fileName}`);
+            await storageRef.put(blob);
+            const url = await storageRef.getDownloadURL();
+            
+            const chatId = getChatId(currentChat.id, currentChat.type);
+            await db.ref(`messages/${currentChat.type}/${chatId}`).push({
+              type: 'voice', 
+              url, 
+              time: Date.now(), 
+              username: currentUser.username, 
+              userId: currentUser.username,
+              duration: Math.round(recordedChunks.length * 0.1) // Approximate duration
+            });
+            
+            showStatus(chatStatus, 'Voice message sent', 'success');
+          } catch (error) {
+            console.error('Error sending voice message:', error);
+            showStatus(chatStatus, 'Error sending voice message', 'error');
+          }
+        };
+        
         mediaRecorder.start();
-        recordVoiceBtn.innerHTML = '<i class="fas fa-stop"></i><span>Stop</span>';
+        recordVoiceBtn.innerHTML = '<i class="fas fa-stop"></i>';
+        recordVoiceBtn.title = 'Stop Recording';
+        showStatus(chatStatus, 'Recording voice message...', 'info');
+        
       } catch (e) {
-        showStatus(chatStatus, `Mic error: ${e.message}`, 'error');
+        console.error('Microphone error:', e);
+        showStatus(chatStatus, `Microphone access denied: ${e.message}`, 'error');
       }
     }
 
@@ -4366,6 +4932,9 @@
     function saveSettings() {
       const selectedBg = document.querySelector('.bg-option.active').dataset.bg;
       
+      // Save theme to localStorage
+      localStorage.setItem('selectedTheme', selectedBg);
+      
       // Apply background
       if (selectedBg === 'default') {
         document.body.style.background = 'var(--bg-dark)';
@@ -4409,10 +4978,23 @@
         document.body.style.backgroundImage = '';
       }
       
-      showStatus(settingsStatus, 'Settings saved!', 'success');
+      showStatus(settingsStatus, 'Settings saved permanently!', 'success');
       setTimeout(() => {
         settingsModal.classList.remove('active');
       }, 1500);
+    }
+
+    // Load saved theme on startup
+    function loadSavedTheme() {
+      const savedTheme = localStorage.getItem('selectedTheme');
+      if (savedTheme) {
+        const themeOption = document.querySelector(`.bg-option[data-bg="${savedTheme}"]`);
+        if (themeOption) {
+          document.querySelectorAll('.bg-option').forEach(opt => opt.classList.remove('active'));
+          themeOption.classList.add('active');
+          saveSettings(); // Apply the saved theme
+        }
+      }
     }
 
     // Handle profile picture upload
