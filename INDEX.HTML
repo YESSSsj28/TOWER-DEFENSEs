@@ -1444,11 +1444,6 @@
         <button class="modal-close" id="close-ai">&times;</button>
       </div>
       <div class="input-group">
-        <label for="ai-api-key">OpenAI API Key</label>
-        <input type="password" id="ai-api-key" placeholder="sk-..." autocomplete="off">
-        <button id="save-ai-key-btn" style="margin-top: 8px;"><i class="fas fa-key"></i> Save Key</button>
-      </div>
-      <div class="input-group">
         <label for="ai-prompt">Ask something</label>
         <textarea id="ai-prompt" rows="3" placeholder="Write a reply to the last message, summarize the chat, draft a friendly response, etc."></textarea>
       </div>
@@ -1866,10 +1861,32 @@
         localStorage.setItem('aiMemory', JSON.stringify(aiMemory));
         
         aiResponse.textContent = text;
+        
+        // If this was triggered by "yai", automatically send the response to chat
+        if (prompt === 'Hello! How can I help you today?' && currentChat) {
+          setTimeout(() => {
+            sendAIToChat(text);
+          }, 1000);
+        }
       } catch (e) {
         console.error(e);
         aiResponse.textContent = `Error: ${e.message}`;
       }
+    }
+
+    // Function to send AI response to chat
+    function sendAIToChat(aiResponse) {
+      if (!currentChat) return;
+      
+      const chatId = getChatId(currentChat.id, currentChat.type);
+      db.ref(`messages/${currentChat.type}/${chatId}`).push({
+        type: "text",
+        text: maybeEncrypt(`🤖 AI: ${aiResponse}`),
+        time: Date.now(),
+        username: 'AI Assistant',
+        userId: 'ai-assistant',
+        edited: false
+      });
     }
 
     function launchGame(game) {
@@ -1999,6 +2016,7 @@
       
       const gameData = {
         type: gameType,
+        gameId: gameId,
         status: 'waiting',
         players: [currentUser.username],
         currentPlayer: currentUser.username,
@@ -2006,22 +2024,25 @@
         createdAt: Date.now()
       };
       
-      db.ref(`games/${gameId}`).set(gameData);
-      
-      // Add game message to chat
-      db.ref(`messages/${currentChat.type}/${chatId}`).push({
-        type: 'game',
-        game: gameType,
-        gameId: gameId,
-        status: 'waiting',
-        players: [currentUser.username],
-        state: gameData,
-        username: currentUser.username,
-        userId: currentUser.username,
-        time: Date.now()
+      db.ref(`games/${gameId}`).set(gameData).then(() => {
+        // Add game message to chat
+        db.ref(`messages/${currentChat.type}/${chatId}`).push({
+          type: 'game',
+          game: gameType,
+          gameId: gameId,
+          status: 'waiting',
+          players: [currentUser.username],
+          state: gameData,
+          username: currentUser.username,
+          userId: currentUser.username,
+          time: Date.now()
+        });
+        
+        showStatus(chatStatus, `${gameType.toUpperCase()} game created! Waiting for players...`, 'success');
+        
+        // Start watching the game
+        watchGame(gameType, gameId);
       });
-      
-      showStatus(chatStatus, `${gameType.toUpperCase()} game created! Waiting for players...`, 'success');
     }
 
     function joinGame(gameType, gameId) {
@@ -2037,8 +2058,12 @@
           watchGame(gameType, gameId);
         } else if (game.status === 'waiting') {
           // Join the game
-          db.ref(`games/${gameId}/players`).push(currentUser.username);
-          watchGame(gameType, gameId);
+          const updates = {};
+          updates[`games/${gameId}/players/${game.players.length}`] = currentUser.username;
+          db.ref().update(updates).then(() => {
+            watchGame(gameType, gameId);
+            showStatus(chatStatus, `Joined ${gameType} game!`, 'success');
+          });
         } else {
           showStatus(chatStatus, 'Game already in progress', 'error');
         }
@@ -2049,6 +2074,23 @@
       db.ref(`games/${gameId}`).on('value', snapshot => {
         const game = snapshot.val();
         if (!game) return;
+        
+        console.log('Game update:', game);
+        
+        // Update game status in chat message
+        if (currentChat) {
+          const chatId = getChatId(currentChat.id, currentChat.type);
+          db.ref(`messages/${currentChat.type}/${chatId}`).orderByChild('gameId').equalTo(gameId).once('value')
+            .then(snapshot => {
+              snapshot.forEach(childSnapshot => {
+                db.ref(`messages/${currentChat.type}/${chatId}/${childSnapshot.key}`).update({
+                  status: game.status,
+                  players: game.players,
+                  state: game.gameState
+                });
+              });
+            });
+        }
         
         if (gameType === 'uno') {
           updateUNODisplay(game);
@@ -2163,43 +2205,63 @@
       const statusEl = document.getElementById('tictactoe-status');
       const boardEl = document.getElementById('tictactoe-board');
       
+      if (!statusEl || !boardEl) return;
+      
       if (game.status === 'waiting') {
         statusEl.textContent = `Waiting for players (${game.players.length}/2)`;
+        boardEl.innerHTML = '<div style="text-align: center; padding: 20px; opacity: 0.7;">Waiting for more players to join...</div>';
         return;
       }
       
-      statusEl.textContent = `Current player: ${game.gameState.currentPlayer}`;
+      // Start game if we have 2 players and status is still waiting
+      if (game.players.length >= 2 && game.status === 'waiting') {
+        db.ref(`games/${game.gameId || 'tictactoe'}`).update({
+          status: 'playing',
+          currentPlayer: game.players[0]
+        });
+        return;
+      }
       
-      boardEl.innerHTML = '';
-      game.gameState.board.forEach((cell, index) => {
-        const cellEl = document.createElement('button');
-        cellEl.textContent = cell || '';
-        cellEl.style.cssText = `
-          width: 80px;
-          height: 80px;
-          font-size: 24px;
-          background: var(--bg-card);
-          color: var(--text-primary);
-          border: none;
-          border-radius: 4px;
-          cursor: ${game.currentPlayer === currentUser.username && !cell ? 'pointer' : 'not-allowed'};
-        `;
-        cellEl.disabled = cell || game.currentPlayer !== currentUser.username || game.gameState.gameOver;
-        cellEl.onclick = () => playTicTacToeMove(gameId, index);
-        boardEl.appendChild(cellEl);
-      });
-      
-      if (game.gameState.winner) {
-        statusEl.textContent = `Winner: ${game.gameState.winner}`;
-      } else if (game.gameState.gameOver) {
-        statusEl.textContent = 'Game ended in a draw!';
+      if (game.status === 'playing') {
+        statusEl.textContent = `Current player: ${game.gameState.currentPlayer}`;
+        
+        boardEl.innerHTML = '';
+        game.gameState.board.forEach((cell, index) => {
+          const cellEl = document.createElement('button');
+          cellEl.textContent = cell || '';
+          cellEl.style.cssText = `
+            width: 80px;
+            height: 80px;
+            font-size: 24px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: none;
+            border-radius: 4px;
+            cursor: ${game.gameState.currentPlayer === currentUser.username && !cell ? 'pointer' : 'not-allowed'};
+          `;
+          cellEl.disabled = cell || game.gameState.currentPlayer !== currentUser.username || game.gameState.gameOver;
+          cellEl.onclick = () => playTicTacToeMove(game.gameId || 'tictactoe', index);
+          boardEl.appendChild(cellEl);
+        });
+        
+        if (game.gameState.winner) {
+          statusEl.textContent = `Winner: ${game.gameState.winner}`;
+        } else if (game.gameState.gameOver) {
+          statusEl.textContent = 'Game ended in a draw!';
+        }
       }
     }
 
     function playTicTacToeMove(gameId, position) {
-      db.ref(`games/${gameId}/gameState`).once('value').then(snapshot => {
-        const gameState = snapshot.val();
+      console.log('Playing move:', position, 'in game:', gameId);
+      
+      db.ref(`games/${gameId}`).once('value').then(snapshot => {
+        const game = snapshot.val();
+        if (!game || !game.gameState) return;
+        
+        const gameState = game.gameState;
         if (gameState.board[position] || gameState.gameOver) return;
+        if (game.currentPlayer !== currentUser.username) return;
         
         const newState = { ...gameState };
         newState.board[position] = newState.currentPlayer;
@@ -2227,16 +2289,17 @@
           newState.currentPlayer = newState.currentPlayer === 'X' ? 'O' : 'X';
         }
         
+        // Update game state
         db.ref(`games/${gameId}`).update({
           gameState: newState,
-          currentPlayer: newState.currentPlayer
+          currentPlayer: newState.currentPlayer,
+          status: newState.gameOver ? 'finished' : 'playing'
         });
       });
     }
 
     function playGame(gameName, gameId = null) {
       console.log('Playing game:', gameName, 'Game ID:', gameId);
-      showStatus(chatStatus, `Joining ${gameName}...`, 'success');
       
       // Open games modal and show the specific game
       gamesModal.classList.add('active');
@@ -2252,10 +2315,11 @@
         return;
       }
       
+      // For other games, show waiting status
       gameContainer.innerHTML = `
         <div style="text-align: center; padding: 20px;">
           <h3>🎮 ${gameName.toUpperCase()}</h3>
-          <p>Game is starting...</p>
+          <p>Waiting for players...</p>
           <button onclick="gamesModal.classList.remove('active')" style="padding:8px 16px; background: var(--accent); border:none; border-radius:4px; color:white; cursor:pointer;">
             Close
           </button>
@@ -2969,12 +3033,17 @@
         // Auto-trigger AI when "yai" is typed
         const text = messageInput.value.toLowerCase();
         if (text.includes('yai') && text.trim() === 'yai') {
-          // Open AI modal and set the prompt
+          // Clear the input
+          messageInput.value = '';
+          
+          // Auto-ask AI with a default prompt
+          const defaultPrompt = 'Hello! How can I help you today?';
+          aiPrompt.value = defaultPrompt;
+          
+          // Automatically trigger AI response
           setTimeout(() => {
-            aiModal.classList.add('active');
-            aiPrompt.value = 'Hello! How can I help you today?';
-            aiPrompt.focus();
-          }, 500);
+            askAI();
+          }, 100);
         }
         
         // Show typing indicator
@@ -3161,14 +3230,6 @@
 
       // AI Assistant
       if (closeAi) closeAi.addEventListener('click', () => aiModal.classList.remove('active'));
-      const savedKey = localStorage.getItem('openai_api_key');
-      if (savedKey && aiApiKeyInput) aiApiKeyInput.value = savedKey.replace(/.(?=.{4})/g, '*');
-      if (saveAiKeyBtn) saveAiKeyBtn.addEventListener('click', () => {
-        const key = aiApiKeyInput.value.trim();
-        if (!/^sk-/.test(key)) return showStatus(chatStatus, 'Enter a valid OpenAI key', 'error');
-        localStorage.setItem('openai_api_key', key);
-        showStatus(chatStatus, 'API key saved', 'success');
-      });
       if (askAiBtn) askAiBtn.addEventListener('click', askAI);
       if (insertAiResponseBtn) insertAiResponseBtn.addEventListener('click', () => {
         if (!aiResponse.textContent) return;
@@ -3989,10 +4050,15 @@
             </div>
             <div class="game-container">
               <div style="padding:8px; background: rgba(255,255,255,0.05); border-radius:8px;">
-                <b>🎮 Game: ${msg.game}</b>
+                <b>🎮 Game: ${msg.game.toUpperCase()}</b>
+                <div style="font-size:12px; opacity:0.8; margin:4px 0;">
+                  ${msg.status === 'waiting' ? `Waiting for players (${msg.players?.length || 1}/2)` : 
+                    msg.status === 'playing' ? `In progress - ${msg.state?.currentPlayer}'s turn` : 
+                    msg.status === 'finished' ? `Game finished` : 'Game created'}
+                </div>
                 <div style="margin-top:8px;">
-                  <button onclick="playGame('${msg.game}')" style="padding:4px 8px; background: var(--accent); border:none; border-radius:4px; color:white; cursor:pointer;">
-                    Play Now
+                  <button onclick="playGame('${msg.game}', '${msg.gameId || ''}')" style="padding:4px 8px; background: var(--accent); border:none; border-radius:4px; color:white; cursor:pointer;">
+                    ${msg.status === 'waiting' ? 'Join Game' : 'View Game'}
                   </button>
                 </div>
               </div>
@@ -4432,18 +4498,32 @@
         formData.append("source", selectedImage);
         formData.append("format", "json");
         
+        console.log('Uploading image to FreeImage.host...', selectedImage.name);
         const res = await fetch("https://freeimage.host/api/1/upload", {
           method: "POST",
           body: formData
         });
         
-        const data = await res.json();
+        console.log('Upload response status:', res.status);
         
-        if (!data.success) {
-          throw new Error(data.error.message || 'Image upload failed');
+        if (!res.ok) {
+          throw new Error(`Upload failed with status: ${res.status}`);
         }
         
-        const imageUrl = data.image.url;
+        const data = await res.json();
+        console.log('Upload response data:', data);
+        
+        if (!data.success) {
+          throw new Error(data.error?.message || 'Image upload failed');
+        }
+        
+        let imageUrl = data.image.url;
+        console.log('Image uploaded successfully:', imageUrl);
+        
+        if (!imageUrl) {
+          throw new Error('No image URL received from upload service');
+        }
+        
         const chatId = getChatId(currentChat.id, currentChat.type);
         
         await db.ref(`messages/${currentChat.type}/${chatId}`).push({
@@ -4463,7 +4543,51 @@
         removeImage();
       } catch (error) {
         console.error('Upload error:', error);
-        showStatus(chatStatus, `Error: ${error.message}`, 'error');
+        
+        // Try fallback upload method
+        try {
+          showStatus(chatStatus, 'Trying fallback upload...', 'loading');
+          
+          // Convert image to base64 as fallback
+          const reader = new FileReader();
+          reader.onload = async function(e) {
+            const base64Data = e.target.result.split(',')[1];
+            
+            const fallbackFormData = new FormData();
+            fallbackFormData.append("key", "6d207e02198a847aa98d0a2a901485a5");
+            fallbackFormData.append("action", "upload");
+            fallbackFormData.append("source", `data:image/jpeg;base64,${base64Data}`);
+            fallbackFormData.append("format", "json");
+            
+            const fallbackRes = await fetch("https://freeimage.host/api/1/upload", {
+              method: "POST",
+              body: fallbackFormData
+            });
+            
+            const fallbackData = await fallbackRes.json();
+            
+            if (fallbackData.success && fallbackData.image.url) {
+              const chatId = getChatId(currentChat.id, currentChat.type);
+              await db.ref(`messages/${currentChat.type}/${chatId}`).push({
+                type: "image",
+                url: fallbackData.image.url,
+                time: Date.now(),
+                username: currentUser.username,
+                userId: currentUser.username,
+                ttl: parseInt(ttlSelect?.value || '0', 10) || null
+              });
+              
+              showStatus(chatStatus, 'Image sent successfully (fallback)', 'success');
+              removeImage();
+            } else {
+              throw new Error('Fallback upload also failed');
+            }
+          };
+          reader.readAsDataURL(selectedImage);
+        } catch (fallbackError) {
+          console.error('Fallback upload error:', fallbackError);
+          showStatus(chatStatus, `Image upload failed: ${error.message}`, 'error');
+        }
       } finally {
         sendImageBtn.disabled = false;
         messageSendLock = false;
@@ -5268,6 +5392,19 @@
         userId: currentUser.username,
         edited: false
       });
+    }
+
+    // Debug function to test features
+    function debugFeatures() {
+      console.log('=== DEBUG INFO ===');
+      console.log('Current user:', currentUser);
+      console.log('Current chat:', currentChat);
+      console.log('AI Memory:', aiMemory);
+      console.log('Selected theme:', localStorage.getItem('selectedTheme'));
+      console.log('Hidden chats:', hiddenChats);
+      console.log('==================');
+      
+      showStatus(chatStatus, 'Debug info logged to console', 'info');
     }
 
     // Initialize the app
