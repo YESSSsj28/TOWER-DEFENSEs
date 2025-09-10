@@ -14,27 +14,33 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
-      /* New Palette */
-      --bg-dark: #0b1020;
-      --bg-card: #121a2b;
-      --bg-elev: rgba(255,255,255,0.04);
-      --accent: #22d3ee;
-      --accent-2: #a78bfa;
-      --accent-hover: #06b6d4;
-      --sent-bg: #0ea5e9;
-      --received-bg: #1f2a44;
-      --text-primary: #e6edf6;
-      --text-secondary: #9fb2c8;
-      --success: #10b981;
-      --error: #ef4444;
-      --warning: #f59e0b;
-      --info: #38bdf8;
-      --border-radius: 14px;
-      --transition: all 0.25s ease;
-      --backdrop: saturate(180%) blur(12px);
-      --sidebar-width: 300px;
-      --header-height: 64px;
-      --input-height: 86px;
+      /* Enhanced Color Palette */
+      --bg-dark: #0a0e1a;
+      --bg-card: #1a1f2e;
+      --bg-elev: rgba(255,255,255,0.06);
+      --accent: #00d4ff;
+      --accent-2: #b794f6;
+      --accent-hover: #00b8e6;
+      --sent-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --received-bg: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+      --text-primary: #f8fafc;
+      --text-secondary: #cbd5e1;
+      --success: #00f5a0;
+      --error: #ff6b6b;
+      --warning: #ffd93d;
+      --info: #74b9ff;
+      --border-radius: 16px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      --backdrop: saturate(180%) blur(20px);
+      --sidebar-width: 320px;
+      --header-height: 72px;
+      --input-height: 96px;
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
+      --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.15);
+      --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.2);
+      --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      --gradient-accent: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
     }
     * {
       margin: 0;
@@ -44,14 +50,32 @@
 
     body {
       font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background: radial-gradient(1200px 800px at 20% -10%, rgba(34, 211, 238, 0.12), transparent),
-                  radial-gradient(1000px 600px at 120% 10%, rgba(167, 139, 250, 0.12), transparent),
-                  var(--bg-dark);
+      background: 
+        radial-gradient(1200px 800px at 20% -10%, rgba(0, 212, 255, 0.15), transparent),
+        radial-gradient(1000px 600px at 120% 10%, rgba(183, 148, 246, 0.15), transparent),
+        radial-gradient(800px 400px at 50% 50%, rgba(116, 185, 255, 0.1), transparent),
+        var(--bg-dark);
       color: var(--text-primary);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       padding: 0;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: -1;
     }
 
     /* Layout */
@@ -64,12 +88,25 @@
     /* Sidebar */
     .sidebar {
       width: var(--sidebar-width);
-      background: rgba(11, 16, 32, 0.65);
-      border-right: 1px solid rgba(255,255,255,0.06);
+      background: rgba(26, 31, 46, 0.8);
+      border-right: 1px solid rgba(255,255,255,0.08);
       display: flex;
       flex-direction: column;
       overflow: hidden;
       backdrop-filter: var(--backdrop);
+      box-shadow: var(--shadow-lg);
+      position: relative;
+    }
+
+    .sidebar::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+      pointer-events: none;
     }
 
     .friends-list {
@@ -185,6 +222,7 @@
       font-size: 18px;
       background: linear-gradient(90deg, var(--accent), var(--accent-2));
       -webkit-background-clip: text;
+      background-clip: text;
       -webkit-text-fill-color: transparent;
     }
 
@@ -228,11 +266,44 @@
     .theme-light { background: rgba(255, 255, 255, 0.1); }
     .theme-colorful { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(167, 139, 250, 0.1)); }
 
-    .message { max-width: 72%; padding: 14px 16px; border-radius: 14px; position: relative; animation: fadeIn 0.3s ease; line-height: 1.55; word-wrap: break-word; transition: var(--transition); box-shadow: 0 6px 20px rgba(0,0,0,0.18); }
+    .message { 
+      max-width: 72%; 
+      padding: 16px 20px; 
+      border-radius: var(--border-radius); 
+      position: relative; 
+      animation: messageSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+      line-height: 1.6; 
+      word-wrap: break-word; 
+      transition: var(--transition); 
+      box-shadow: var(--shadow-md);
+      backdrop-filter: blur(10px);
+    }
 
-    .message.sent { background: linear-gradient(180deg, rgba(14,165,233,0.95), rgba(14,165,233,0.85)); align-self: flex-end; border-bottom-right-radius: 6px; color: white; }
+    .message.sent { 
+      background: var(--sent-bg); 
+      align-self: flex-end; 
+      border-bottom-right-radius: 8px; 
+      color: white; 
+      border: 1px solid rgba(255,255,255,0.1);
+    }
 
-    .message.received { background: rgba(31, 42, 68, 0.95); align-self: flex-start; border-bottom-left-radius: 6px; }
+    .message.received { 
+      background: var(--received-bg); 
+      align-self: flex-start; 
+      border-bottom-left-radius: 8px; 
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    @keyframes messageSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
 
     .message .timestamp {
       font-size: 10px;
@@ -252,6 +323,7 @@
     .owner-badge {
       background: linear-gradient(90deg, var(--accent), var(--accent-2));
       -webkit-background-clip: text;
+      background-clip: text;
       -webkit-text-fill-color: transparent;
       font-weight: bold;
       font-size: 0.8em;
@@ -349,6 +421,7 @@
     .auth-header h2 {
       background: linear-gradient(90deg, var(--accent), var(--accent-2));
       -webkit-background-clip: text;
+      background-clip: text;
       -webkit-text-fill-color: transparent;
       font-size: 24px;
       margin-bottom: 8px;
@@ -418,15 +491,47 @@
       color: var(--text-secondary);
     }
 
-    button { padding: 12px 16px; background: var(--accent); color: #0b1020; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; font-size: 15px; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 10px 24px rgba(34,211,238,0.15); }
+    button { 
+      padding: 14px 20px; 
+      background: var(--gradient-accent); 
+      color: white; 
+      border: none; 
+      border-radius: var(--border-radius); 
+      cursor: pointer; 
+      font-weight: 600; 
+      font-size: 15px; 
+      transition: var(--transition); 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      gap: 10px; 
+      box-shadow: var(--shadow-md);
+      position: relative;
+      overflow: hidden;
+    }
+
+    button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    button:hover::before {
+      left: 100%;
+    }
 
     button:hover {
-      background: var(--accent-hover);
-      transform: translateY(-2px);
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-lg);
     }
 
     button:active {
-      transform: translateY(0);
+      transform: translateY(-1px);
     }
 
     button:disabled {
@@ -569,6 +674,7 @@
       font-size: 20px;
       background: linear-gradient(90deg, var(--accent), var(--accent-2));
       -webkit-background-clip: text;
+      background-clip: text;
       -webkit-text-fill-color: transparent;
     }
 
@@ -998,9 +1104,712 @@
       50% { background-position: 100% 50%; }
       100% { background-position: 0% 50%; }
     }
+
+    /* Notification Styles */
+    .notification-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 10000;
+      max-width: 400px;
+      pointer-events: none;
+    }
+
+    .notification {
+      background: rgba(18, 26, 43, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      transform: translateX(100%);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      pointer-events: auto;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .notification.show {
+      transform: translateX(0);
+      opacity: 1;
+    }
+
+    .notification.hide {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+
+    .notification-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .notification-title {
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .notification-close {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: var(--transition);
+    }
+
+    .notification-close:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-primary);
+    }
+
+    .notification-body {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+
+    .notification-meta {
+      font-size: 11px;
+      color: var(--text-secondary);
+      opacity: 0.7;
+    }
+
+    .notification-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: white;
+    }
+
+    .notification-progress {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      background: var(--accent);
+      border-radius: 0 0 12px 12px;
+      transition: width linear;
+    }
+
+    .notification.message .notification-icon {
+      background: var(--accent);
+    }
+
+    .notification.friend-request .notification-icon {
+      background: var(--success);
+    }
+
+    .notification.group-invite .notification-icon {
+      background: var(--warning);
+    }
+
+    .notification.error .notification-icon {
+      background: var(--error);
+    }
+
+    /* Notification Settings */
+    .notification-settings {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+    }
+
+    .notification-toggle {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: none;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(34, 211, 238, 0.3);
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .notification-toggle:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 20px rgba(34, 211, 238, 0.4);
+    }
+
+    .notification-toggle.disabled {
+      background: var(--text-secondary);
+      box-shadow: none;
+    }
+
+    .notification-toggle.disabled:hover {
+      transform: none;
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      .notification-container {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+      }
+
+      .notification {
+        margin-bottom: 8px;
+      }
+
+      .notification-settings {
+        bottom: 10px;
+        right: 10px;
+      }
+
+      .notification-toggle {
+        width: 48px;
+        height: 48px;
+        font-size: 18px;
+      }
+    }
+
+    /* Enhanced Theme System */
+    .theme-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .theme-option {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px;
+      border-radius: var(--border-radius);
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .theme-option:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .theme-option.active {
+      border-color: var(--accent);
+      background: rgba(0, 212, 255, 0.1);
+    }
+
+    .theme-preview {
+      width: 60px;
+      height: 40px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .theme-default-preview {
+      background: linear-gradient(135deg, #0a0e1a 0%, #1a1f2e 100%);
+    }
+
+    .theme-ocean-preview {
+      background: linear-gradient(135deg, #0c4a6e 0%, #0284c7 50%, #0ea5e9 100%);
+    }
+
+    .theme-sunset-preview {
+      background: linear-gradient(135deg, #dc2626 0%, #ea580c 50%, #f59e0b 100%);
+    }
+
+    .theme-forest-preview {
+      background: linear-gradient(135deg, #166534 0%, #16a34a 50%, #22c55e 100%);
+    }
+
+    .theme-neon-preview {
+      background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #ec4899 100%);
+      box-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
+    }
+
+    .theme-dark-preview {
+      background: linear-gradient(135deg, #000000 0%, #1f2937 100%);
+    }
+
+    .theme-light-preview {
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    }
+
+    .theme-animated-preview {
+      background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+      background-size: 400% 400%;
+      animation: gradientShift 3s ease infinite;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Style Options */
+    .style-options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 8px;
+      transition: var(--transition);
+    }
+
+    .checkbox-label:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      display: none;
+    }
+
+    .checkmark {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--text-secondary);
+      border-radius: 4px;
+      position: relative;
+      transition: var(--transition);
+    }
+
+    .checkbox-label input[type="checkbox"]:checked + .checkmark {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .checkbox-label input[type="checkbox"]:checked + .checkmark::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    /* Enhanced Animations */
+    .fade-in {
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    .slide-up {
+      animation: slideUp 0.4s ease-out;
+    }
+
+    .bounce-in {
+      animation: bounceIn 0.6s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes bounceIn {
+      0% {
+        opacity: 0;
+        transform: scale(0.3);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.05);
+      }
+      70% {
+        transform: scale(0.9);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    /* Enhanced Friend Items */
+    .friend-item {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .friend-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+      transition: left 0.6s;
+    }
+
+    .friend-item:hover::before {
+      left: 100%;
+    }
+
+    /* Enhanced Modals */
+    .modal {
+      backdrop-filter: blur(8px);
+    }
+
+    .modal-content {
+      background: rgba(26, 31, 46, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: var(--shadow-lg);
+    }
+
+    /* Enhanced Input Fields */
+    input, textarea, select {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: var(--transition);
+    }
+
+    input:focus, textarea:focus, select:focus {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+    }
+
+    /* Compact Mode */
+    .compact-mode .message {
+      padding: 8px 12px;
+      max-width: 85%;
+    }
+
+    .compact-mode .friend-item {
+      padding: 6px 10px;
+    }
+
+    .compact-mode .sidebar {
+      width: 280px;
+    }
+
+    .compact-mode .chat-header {
+      height: 50px;
+    }
+
+    .compact-mode .input-area {
+      height: 60px;
+    }
+
+    /* Enhanced Game Styles */
+    .game-message {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--border-radius);
+      padding: 16px;
+      margin: 8px 0;
+      transition: var(--transition);
+    }
+
+    .game-message:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateY(-2px);
+    }
+
+    .game-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .game-status {
+      font-size: 12px;
+      opacity: 0.8;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 4px 8px;
+      border-radius: 12px;
+    }
+
+    .game-actions {
+      margin-top: 12px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .join-game-btn, .start-game-btn, .view-game-btn {
+      padding: 6px 12px;
+      font-size: 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: var(--transition);
+      font-weight: 500;
+    }
+
+    .join-game-btn {
+      background: var(--accent);
+      color: white;
+    }
+
+    .start-game-btn {
+      background: var(--success);
+      color: white;
+    }
+
+    .view-game-btn {
+      background: var(--info);
+      color: white;
+    }
+
+    .join-game-btn:hover, .start-game-btn:hover, .view-game-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Loading States */
+    .loading {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .loading::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+      animation: loading 1.5s infinite;
+    }
+
+    @keyframes loading {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+
+    /* Enhanced Scrollbars */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Status Messages */
+    .status {
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-top: 8px;
+      transition: var(--transition);
+    }
+
+    .status.success {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .status.error {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--error);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .status.info {
+      background: rgba(56, 189, 248, 0.2);
+      color: var(--info);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .status.loading {
+      background: rgba(245, 158, 11, 0.2);
+      color: var(--warning);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    /* Patch Notes Styling */
+    .patchnotes-container {
+      max-height: 70vh;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .version-header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding: 20px;
+      background: var(--gradient-accent);
+      border-radius: var(--border-radius);
+      color: white;
+    }
+
+    .version-header h3 {
+      margin: 0 0 8px 0;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .version-date {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .update-section {
+      margin-bottom: 25px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: var(--border-radius);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: var(--transition);
+    }
+
+    .update-section:hover {
+      background: rgba(255, 255, 255, 0.05);
+      transform: translateY(-2px);
+    }
+
+    .update-section h4 {
+      margin: 0 0 15px 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .update-section ul {
+      margin: 0;
+      padding-left: 20px;
+      list-style: none;
+    }
+
+    .update-section li {
+      margin-bottom: 8px;
+      padding: 6px 0;
+      font-size: 14px;
+      line-height: 1.5;
+      position: relative;
+      transition: var(--transition);
+    }
+
+    .update-section li:hover {
+      color: var(--accent);
+      transform: translateX(5px);
+    }
+
+    .update-section li::before {
+      content: '';
+      position: absolute;
+      left: -15px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 4px;
+      background: var(--accent);
+      border-radius: 50%;
+    }
+
+    .version-footer {
+      text-align: center;
+      margin-top: 30px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: var(--border-radius);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .version-footer p {
+      margin: 5px 0;
+      font-size: 14px;
+      opacity: 0.8;
+    }
+
+    .version-footer p:first-child {
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    /* Patch Notes Scrollbar */
+    .patchnotes-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .patchnotes-container::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 3px;
+    }
+
+    .patchnotes-container::-webkit-scrollbar-thumb {
+      background: var(--accent);
+      border-radius: 3px;
+    }
+
+    .patchnotes-container::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-hover);
+    }
   </style>
 </head>
 <body>
+  <!-- Notification Container -->
+  <div class="notification-container" id="notification-container"></div>
+  
+  <!-- Notification Settings -->
+  <div class="notification-settings">
+    <button class="notification-toggle" id="notification-toggle" title="Toggle Notifications">
+      <i class="fas fa-bell"></i>
+    </button>
+    <button class="notification-toggle" id="test-notification" title="Test Notification" style="margin-left: 8px; background: var(--success);">
+      <i class="fas fa-test-tube"></i>
+    </button>
+  </div>
+
   <!-- Auth Container -->
   <div id="auth-container">
     <div class="auth-header">
@@ -1149,6 +1958,10 @@
           <i class="fas fa-cog"></i>
           <span>Settings</span>
         </button>
+        <button class="patchnotes-btn" id="patchnotes-btn" style="width: 100%; margin-top: 8px; background: var(--gradient-accent);">
+          <i class="fas fa-rocket"></i>
+          <span>What's New</span>
+        </button>
       </div>
     </div>
 
@@ -1273,10 +2086,6 @@
             <div class="dropdown-item" data-action="games">
               <i class="fas fa-gamepad"></i>
               <span>Games</span>
-            </div>
-            <div class="dropdown-item" data-action="ai">
-              <i class="fas fa-robot"></i>
-              <span>AI Assistant</span>
             </div>
             <div class="dropdown-item" data-action="polls">
               <i class="fas fa-poll"></i>
@@ -1436,24 +2245,6 @@
     </div>
   </div>
 
-  <!-- AI Assistant Modal -->
-  <div class="modal" id="ai-modal">
-    <div class="modal-content" style="max-width: 720px;">
-      <div class="modal-header">
-        <h3>AI Assistant</h3>
-        <button class="modal-close" id="close-ai">&times;</button>
-      </div>
-      <div class="input-group">
-        <label for="ai-prompt">Ask something</label>
-        <textarea id="ai-prompt" rows="3" placeholder="Write a reply to the last message, summarize the chat, draft a friendly response, etc."></textarea>
-      </div>
-      <div style="display:flex; gap:8px; flex-wrap: wrap;">
-        <button id="ask-ai-btn"><i class="fas fa-robot"></i> Ask AI</button>
-        <button id="insert-ai-response-btn" style="background: var(--success);"><i class="fas fa-level-down-alt"></i> Insert to Message</button>
-      </div>
-      <div id="ai-response" style="margin-top:12px; padding:12px; background: rgba(255,255,255,0.06); border-radius:8px; min-height: 64px;"></div>
-    </div>
-  </div>
 
   <!-- Report Modal -->
   <div class="modal" id="report-modal">
@@ -1598,54 +2389,90 @@
         <div class="auth-tab active" id="appearance-tab">Appearance</div>
         <div class="auth-tab" id="blocked-users-tab">Blocked Users</div>
         <div class="auth-tab" id="security-tab">Security</div>
+        <div class="auth-tab" id="patchnotes-tab">Patch Notes</div>
       </div>
       
       <div id="appearance-settings">
         <div class="input-group">
-          <label>Background</label>
-          <div class="bg-grid">
-            <div class="bg-option active" data-bg="default">
-              <div style="background: #0f172a; height: 100%; background-image: radial-gradient(circle at 10% 20%, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.8) 90%);"></div>
-              <div class="bg-label">Default</div>
+          <label>Theme</label>
+          <div class="theme-grid">
+            <div class="theme-option active" data-theme="default">
+              <div class="theme-preview theme-default-preview"></div>
+              <span>Default</span>
             </div>
-            <div class="bg-option" data-bg="animated-1">
-              <div class="animated-bg-1" style="height: 100%;"></div>
-              <div class="bg-label">Animated 1</div>
+            <div class="theme-option" data-theme="ocean">
+              <div class="theme-preview theme-ocean-preview"></div>
+              <span>Ocean</span>
             </div>
-            <div class="bg-option" data-bg="animated-2">
-              <div class="animated-bg-2" style="height: 100%;"></div>
-              <div class="bg-label">Animated 2</div>
+            <div class="theme-option" data-theme="sunset">
+              <div class="theme-preview theme-sunset-preview"></div>
+              <span>Sunset</span>
             </div>
-            <div class="bg-option" data-bg="gradient-purple">
-              <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); height: 100%;"></div>
-              <div class="bg-label">Purple</div>
+            <div class="theme-option" data-theme="forest">
+              <div class="theme-preview theme-forest-preview"></div>
+              <span>Forest</span>
             </div>
-            <div class="bg-option" data-bg="gradient-blue">
-              <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); height: 100%;"></div>
-              <div class="bg-label">Blue</div>
+            <div class="theme-option" data-theme="neon">
+              <div class="theme-preview theme-neon-preview"></div>
+              <span>Neon</span>
             </div>
-            <div class="bg-option" data-bg="gradient-red">
-              <div style="background: linear-gradient(135deg, #ef4444, #b91c1c); height: 100%;"></div>
-              <div class="bg-label">Red</div>
+            <div class="theme-option" data-theme="dark">
+              <div class="theme-preview theme-dark-preview"></div>
+              <span>Dark</span>
             </div>
-            <div class="bg-option" data-bg="gradient-green">
-              <div style="background: linear-gradient(135deg, #10b981, #047857); height: 100%;"></div>
-              <div class="bg-label">Green</div>
+            <div class="theme-option" data-theme="light">
+              <div class="theme-preview theme-light-preview"></div>
+              <span>Light</span>
             </div>
-            <div class="bg-option" data-bg="gradient-orange">
-              <div style="background: linear-gradient(135deg, #f59e0b, #b45309); height: 100%;"></div>
-              <div class="bg-label">Orange</div>
-            </div>
-            <div class="bg-option" data-bg="black">
-              <div style="background: #000; height: 100%;"></div>
-              <div class="bg-label">Black</div>
-            </div>
-            <div class="bg-option" data-bg="white">
-              <div style="background: #fff; height: 100%;"></div>
-              <div class="bg-label">White</div>
+            <div class="theme-option" data-theme="animated">
+              <div class="theme-preview theme-animated-preview"></div>
+              <span>Animated</span>
             </div>
           </div>
         </div>
+        
+        <div class="input-group">
+          <label>Message Style</label>
+          <div class="style-options">
+            <label class="checkbox-label">
+              <input type="checkbox" id="message-animations" checked>
+              <span class="checkmark"></span>
+              Enable message animations
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="sound-effects" checked>
+              <span class="checkmark"></span>
+              Enable sound effects
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="typing-indicator" checked>
+              <span class="checkmark"></span>
+              Show typing indicators
+            </label>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Interface</label>
+          <div class="style-options">
+            <label class="checkbox-label">
+              <input type="checkbox" id="compact-mode">
+              <span class="checkmark"></span>
+              Compact mode
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="show-timestamps" checked>
+              <span class="checkmark"></span>
+              Show message timestamps
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="auto-scroll" checked>
+              <span class="checkmark"></span>
+              Auto-scroll to new messages
+            </label>
+          </div>
+        </div>
+
         <button id="save-settings-btn" style="margin-top: 16px;">
           <i class="fas fa-save"></i>
           <span>Save Settings</span>
@@ -1671,6 +2498,117 @@
         </div>
         <button id="save-security-btn"><i class="fas fa-shield"></i> Save Security</button>
         <div id="security-status" class="status"></div>
+      </div>
+
+      <div id="patchnotes-settings" style="display:none;">
+        <div class="patchnotes-container">
+          <div class="version-header">
+            <h3>🚀 Version 2.0 - Major Update</h3>
+            <span class="version-date">December 2024</span>
+          </div>
+          
+          <div class="update-section">
+            <h4>🎨 UI & Design Overhaul</h4>
+            <ul>
+              <li>✨ Complete visual redesign with modern aesthetics</li>
+              <li>🌈 8 beautiful new themes (Ocean, Sunset, Forest, Neon, etc.)</li>
+              <li>💫 Smooth animations and micro-interactions throughout</li>
+              <li>🎭 Glassmorphism effects and enhanced shadows</li>
+              <li>📱 Improved mobile responsiveness</li>
+              <li>🎯 Better typography and spacing</li>
+            </ul>
+          </div>
+
+          <div class="update-section">
+            <h4>🔔 Advanced Notification System</h4>
+            <ul>
+              <li>🔔 Smart in-app notifications when active</li>
+              <li>📱 Browser push notifications when away</li>
+              <li>🔊 Notification sounds with Web Audio API</li>
+              <li>👥 Friend request notifications</li>
+              <li>💬 Mention notifications (@username)</li>
+              <li>⚙️ Toggle notifications on/off</li>
+              <li>🧪 Test notification feature</li>
+            </ul>
+          </div>
+
+          <div class="update-section">
+            <h4>🎮 Fixed Multiplayer Games</h4>
+            <ul>
+              <li>🎯 Tic Tac Toe now works with 2+ players</li>
+              <li>🃏 UNO game with proper deck generation</li>
+              <li>👥 Join game functionality</li>
+              <li>▶️ Start game when players are ready</li>
+              <li>🔄 Real-time game state updates</li>
+              <li>🎨 Enhanced game UI with action buttons</li>
+            </ul>
+          </div>
+
+          <div class="update-section">
+            <h4>⚙️ Enhanced Settings</h4>
+            <ul>
+              <li>🎨 Comprehensive theme system</li>
+              <li>🔧 Message style customization</li>
+              <li>📱 Interface options (compact mode, timestamps)</li>
+              <li>💾 Persistent settings storage</li>
+              <li>🔄 Real-time settings preview</li>
+              <li>✅ Custom styled checkboxes</li>
+            </ul>
+          </div>
+
+          <div class="update-section">
+            <h4>🚀 Performance & Technical</h4>
+            <ul>
+              <li>⚡ Optimized animations and transitions</li>
+              <li>💾 Enhanced localStorage management</li>
+              <li>🔧 Better event handling</li>
+              <li>📦 Improved code organization</li>
+              <li>🎯 CSS custom properties for theming</li>
+              <li>📱 Service worker for offline support</li>
+            </ul>
+          </div>
+
+          <div class="update-section">
+            <h4>🎉 New Features</h4>
+            <ul>
+              <li>🎨 Theme preview system</li>
+              <li>🔔 Notification toggle button</li>
+              <li>🧪 Test notification feature</li>
+              <li>📱 Compact mode for smaller screens</li>
+              <li>🎭 Enhanced loading states</li>
+              <li>📜 Custom scrollbars</li>
+            </ul>
+          </div>
+
+          <div class="update-section">
+            <h4>🐛 Bug Fixes</h4>
+            <ul>
+              <li>🔧 Fixed AI functionality removal</li>
+              <li>🎮 Fixed minigame multiplayer issues</li>
+              <li>💾 Fixed settings persistence</li>
+              <li>🎨 Fixed theme switching</li>
+              <li>📱 Fixed mobile responsiveness</li>
+              <li>🔔 Fixed notification system</li>
+            </ul>
+          </div>
+
+          <div class="update-section">
+            <h4>🔮 Coming Soon</h4>
+            <ul>
+              <li>🔐 Two-factor authentication</li>
+              <li>🎵 Voice message improvements</li>
+              <li>📁 File sharing enhancements</li>
+              <li>🌍 Multi-language support</li>
+              <li>📊 Usage analytics</li>
+              <li>🎨 More theme options</li>
+            </ul>
+          </div>
+
+          <div class="version-footer">
+            <p>Thank you for using Chayt! 🎉</p>
+            <p>Your feedback helps us improve. Keep chatting! 💬</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1755,6 +2693,274 @@
   <div class="context-menu" id="context-menu"></div>
 
   <script>
+    // Notification System
+    class NotificationManager {
+      constructor() {
+        this.container = document.getElementById('notification-container');
+        this.toggle = document.getElementById('notification-toggle');
+        this.notifications = new Map();
+        this.isEnabled = localStorage.getItem('notifications-enabled') !== 'false';
+        this.pushSubscription = null;
+        
+        this.init();
+      }
+
+      async init() {
+        // Set up notification toggle
+        this.updateToggleState();
+        this.toggle.addEventListener('click', () => this.toggleNotifications());
+        
+        // Set up test notification button
+        const testBtn = document.getElementById('test-notification');
+        if (testBtn) {
+          testBtn.addEventListener('click', () => this.testNotification());
+        }
+        
+        // Register service worker
+        if ('serviceWorker' in navigator) {
+          try {
+            const registration = await navigator.serviceWorker.register('/sw.js');
+            console.log('Service Worker registered:', registration);
+            
+            // Set up push notifications
+            await this.setupPushNotifications();
+          } catch (error) {
+            console.error('Service Worker registration failed:', error);
+          }
+        }
+      }
+
+      async setupPushNotifications() {
+        if (!('Notification' in window) || !('PushManager' in window)) {
+          console.log('Push notifications not supported');
+          return;
+        }
+
+        // Request notification permission
+        if (Notification.permission === 'default') {
+          const permission = await Notification.requestPermission();
+          if (permission !== 'granted') {
+            console.log('Notification permission denied');
+            return;
+          }
+        }
+
+        // Subscribe to push notifications
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          this.pushSubscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: this.urlBase64ToUint8Array('BEl62iUYgUivxIkv69yViEuiBIa40HI0pO7OQ6VxguUtXr3QzRHPDsK1n8vU0cd2ZJk1S7qt3iLGliVsou46iM')
+          });
+          
+          console.log('Push subscription:', this.pushSubscription);
+        } catch (error) {
+          console.error('Push subscription failed:', error);
+        }
+      }
+
+      urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding)
+          .replace(/-/g, '+')
+          .replace(/_/g, '/');
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) {
+          outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+      }
+
+      toggleNotifications() {
+        this.isEnabled = !this.isEnabled;
+        localStorage.setItem('notifications-enabled', this.isEnabled.toString());
+        this.updateToggleState();
+        
+        if (this.isEnabled) {
+          this.showInAppNotification('Notifications Enabled', 'You will now receive notifications for new messages', 'success');
+        } else {
+          this.showInAppNotification('Notifications Disabled', 'You will no longer receive notifications', 'info');
+        }
+      }
+
+      updateToggleState() {
+        if (this.isEnabled) {
+          this.toggle.classList.remove('disabled');
+          this.toggle.innerHTML = '<i class="fas fa-bell"></i>';
+        } else {
+          this.toggle.classList.add('disabled');
+          this.toggle.innerHTML = '<i class="fas fa-bell-slash"></i>';
+        }
+      }
+
+      showInAppNotification(title, body, type = 'message', duration = 5000) {
+        if (!this.isEnabled) return;
+
+        // Play notification sound
+        this.playNotificationSound();
+
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.innerHTML = `
+          <div class="notification-header">
+            <div class="notification-title">
+              <div class="notification-icon">
+                <i class="fas fa-${this.getIconForType(type)}"></i>
+              </div>
+              ${title}
+            </div>
+            <button class="notification-close">&times;</button>
+          </div>
+          <div class="notification-body">${body}</div>
+          <div class="notification-meta">${new Date().toLocaleTimeString()}</div>
+          <div class="notification-progress"></div>
+        `;
+
+        // Add close functionality
+        notification.querySelector('.notification-close').addEventListener('click', () => {
+          this.hideNotification(notification);
+        });
+
+        // Add click to open functionality
+        notification.addEventListener('click', () => {
+          this.hideNotification(notification);
+          // Focus the app window
+          window.focus();
+        });
+
+        this.container.appendChild(notification);
+
+        // Animate in
+        setTimeout(() => notification.classList.add('show'), 100);
+
+        // Auto-hide after duration
+        const progressBar = notification.querySelector('.notification-progress');
+        progressBar.style.width = '100%';
+        progressBar.style.transition = `width ${duration}ms linear`;
+
+        setTimeout(() => {
+          this.hideNotification(notification);
+        }, duration);
+
+        // Store reference
+        const id = Date.now() + Math.random();
+        this.notifications.set(id, notification);
+        return id;
+      }
+
+      hideNotification(notification) {
+        notification.classList.add('hide');
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 300);
+      }
+
+      getIconForType(type) {
+        const icons = {
+          'message': 'comment',
+          'friend-request': 'user-plus',
+          'group-invite': 'users',
+          'error': 'exclamation-triangle',
+          'success': 'check-circle',
+          'info': 'info-circle'
+        };
+        return icons[type] || 'bell';
+      }
+
+      // Method to show notifications for new messages
+      showMessageNotification(sender, message, chatType, chatId) {
+        if (!this.isEnabled) return;
+
+        const title = `${sender}`;
+        const body = message.length > 50 ? message.substring(0, 50) + '...' : message;
+        
+        this.showInAppNotification(title, body, 'message', 6000);
+        
+        // Also show browser notification if permission granted and tab not focused
+        if (Notification.permission === 'granted' && document.hidden) {
+          new Notification(title, {
+            body: body,
+            icon: '/icon-192.png',
+            tag: `message-${chatId}`,
+            requireInteraction: true
+          });
+        }
+      }
+
+      showFriendRequestNotification(sender) {
+        if (!this.isEnabled) return;
+        
+        this.showInAppNotification('New Friend Request', `${sender} wants to be your friend`, 'friend-request', 8000);
+      }
+
+      showGroupInviteNotification(groupName, inviter) {
+        if (!this.isEnabled) return;
+        
+        this.showInAppNotification('Group Invitation', `${inviter} invited you to join "${groupName}"`, 'group-invite', 8000);
+      }
+
+      showGroupActivityNotification(activity, user, groupName) {
+        if (!this.isEnabled) return;
+        
+        const messages = {
+          'joined': `${user} joined "${groupName}"`,
+          'left': `${user} left "${groupName}"`,
+          'created': `${user} created "${groupName}"`
+        };
+        
+        this.showInAppNotification('Group Activity', messages[activity] || activity, 'info', 5000);
+      }
+
+      playNotificationSound() {
+        try {
+          // Create a simple notification sound using Web Audio API
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+          oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+          
+          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+          
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 0.2);
+        } catch (error) {
+          console.log('Could not play notification sound:', error);
+        }
+      }
+
+      testNotification() {
+        this.showInAppNotification(
+          'Test Notification', 
+          'This is a test notification to verify the system is working properly!', 
+          'info', 
+          5000
+        );
+      }
+    }
+
+    // Initialize notification manager
+    const notificationManager = new NotificationManager();
+
+    // Handle page visibility changes for better notification behavior
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        // Page is hidden, notifications will be shown as browser notifications
+        console.log('Page hidden - browser notifications will be used');
+      } else {
+        // Page is visible, focus on in-app notifications
+        console.log('Page visible - in-app notifications will be used');
+      }
+    });
+
     // Missing functions that were in CSS section
     function scheduleMessage() {
       const when = new Date(scheduleTimeInput?.value).getTime();
@@ -1809,85 +3015,6 @@
       });
     }
 
-    // AI Memory System
-    let aiMemory = JSON.parse(localStorage.getItem('aiMemory') || '{}');
-    
-    async function askAI() {
-      const key = "e7456d10d09865a39f2c7aebf2540368cc74962f12195cb3f1383dce541ad3c9";
-      if (!key) { aiResponse.textContent = 'AI key not configured.'; return; }
-      
-      const prompt = (aiPrompt?.value || '').trim();
-      if (!prompt) { aiResponse.textContent = 'Type a prompt.'; return; }
-      
-      aiResponse.textContent = 'Thinking...';
-      
-      try {
-        // Get conversation history for current chat
-        const chatId = currentChat ? getChatId(currentChat.id, currentChat.type) : 'general';
-        const conversationHistory = aiMemory[chatId] || [];
-        
-        // Add current prompt to history
-        conversationHistory.push({ role: 'user', content: prompt });
-        
-        // Keep only last 10 messages for context
-        if (conversationHistory.length > 10) {
-          conversationHistory.splice(0, conversationHistory.length - 10);
-        }
-        
-        const res = await fetch('https://api.together.xyz/v1/chat/completions', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json', 
-            'Authorization': `Bearer ${key}` 
-          },
-          body: JSON.stringify({
-            model: 'meta-llama/Llama-2-70b-chat-hf',
-            messages: [
-              { role: 'system', content: 'You are a helpful AI assistant integrated into a chat application. You have memory of previous conversations and can help with various tasks. Be friendly and concise.' },
-              ...conversationHistory
-            ],
-            temperature: 0.7,
-            max_tokens: 500
-          })
-        });
-        
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        const text = data.choices?.[0]?.message?.content?.trim() || 'No response';
-        
-        // Add AI response to history
-        conversationHistory.push({ role: 'assistant', content: text });
-        aiMemory[chatId] = conversationHistory;
-        localStorage.setItem('aiMemory', JSON.stringify(aiMemory));
-        
-        aiResponse.textContent = text;
-        
-        // If this was triggered by "yai", automatically send the response to chat
-        if (prompt === 'Hello! How can I help you today?' && currentChat) {
-          setTimeout(() => {
-            sendAIToChat(text);
-          }, 1000);
-        }
-      } catch (e) {
-        console.error(e);
-        aiResponse.textContent = `Error: ${e.message}`;
-      }
-    }
-
-    // Function to send AI response to chat
-    function sendAIToChat(aiResponse) {
-      if (!currentChat) return;
-      
-      const chatId = getChatId(currentChat.id, currentChat.type);
-      db.ref(`messages/${currentChat.type}/${chatId}`).push({
-        type: "text",
-        text: maybeEncrypt(`🤖 AI: ${aiResponse}`),
-        time: Date.now(),
-        username: 'AI Assistant',
-        userId: 'ai-assistant',
-        edited: false
-      });
-    }
 
     function launchGame(game) {
       if (!currentChat) {
@@ -1897,17 +3024,40 @@
       
       const chatId = getChatId(currentChat.id, currentChat.type);
       const gameId = `${game}_${Date.now()}`;
+      
+      // Initialize game state based on game type
+      let gameState = {};
+      switch(game) {
+        case 'tictactoe':
+          gameState = {
+            board: ['', '', '', '', '', '', '', '', ''],
+            currentPlayer: 'X',
+            winner: null,
+            gameOver: false
+          };
+          break;
+        case 'uno':
+          gameState = {
+            deck: generateUNODeck(),
+            currentCard: null,
+            players: {},
+            currentPlayer: 0,
+            direction: 1,
+            gameOver: false
+          };
+          break;
+        default:
+          gameState = {};
+      }
+      
       const payload = { 
         type: 'game', 
         game, 
         gameId,
         status: 'waiting',
         players: [currentUser.username],
-        state: { 
-          createdAt: Date.now(),
-          currentPlayer: currentUser.username,
-          gameData: {}
-        }, 
+        gameState: gameState,
+        createdAt: Date.now(),
         username: currentUser.username, 
         userId: currentUser.username, 
         time: Date.now() 
@@ -1915,15 +3065,163 @@
       
       console.log('Launching game:', game, 'in chat:', chatId);
       
-      db.ref(`messages/${currentChat.type}/${chatId}`).push(payload)
-        .then(() => {
+      // Create game in database
+      db.ref(`games/${gameId}`).set(payload).then(() => {
+        // Add game message to chat
+        db.ref(`messages/${currentChat.type}/${chatId}`).push({
+          type: 'game',
+          game: game,
+          gameId: gameId,
+          status: 'waiting',
+          players: [currentUser.username],
+          time: Date.now(),
+          username: currentUser.username,
+          userId: currentUser.username
+        }).then(() => {
           showStatus(chatStatus, `Game "${game}" launched! Waiting for players...`, 'success');
           gamesModal.classList.remove('active');
-        })
-        .catch((error) => {
-          console.error('Error launching game:', error);
-          showStatus(chatStatus, 'Error launching game', 'error');
+          
+          // Show game interface
+          showGameInterface(game, gameId);
         });
+      }).catch((error) => {
+        console.error('Error launching game:', error);
+        showStatus(chatStatus, 'Error launching game', 'error');
+      });
+    }
+
+    function generateUNODeck() {
+      const colors = ['red', 'blue', 'green', 'yellow'];
+      const numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+      const specials = ['skip', 'reverse', 'draw2'];
+      let deck = [];
+      
+      // Add number cards
+      colors.forEach(color => {
+        numbers.forEach(number => {
+          deck.push({ color, number, type: 'number' });
+          if (number > 0) deck.push({ color, number, type: 'number' }); // Two of each except 0
+        });
+      });
+      
+      // Add special cards
+      colors.forEach(color => {
+        specials.forEach(special => {
+          deck.push({ color, special, type: 'special' });
+          deck.push({ color, special, type: 'special' }); // Two of each
+        });
+      });
+      
+      // Add wild cards
+      for (let i = 0; i < 4; i++) {
+        deck.push({ color: 'wild', special: 'wild', type: 'wild' });
+        deck.push({ color: 'wild', special: 'wild4', type: 'wild' });
+      }
+      
+      // Shuffle deck
+      return deck.sort(() => Math.random() - 0.5);
+    }
+
+    function showGameInterface(game, gameId) {
+      const gameContainer = document.getElementById('game-container');
+      if (!gameContainer) return;
+      
+      if (game === 'tictactoe') {
+        renderTicTacToe(gameId);
+      } else if (game === 'uno') {
+        renderUNO(gameId);
+      }
+    }
+
+    function joinGame(gameType, gameId) {
+      if (!currentUser) {
+        showStatus(chatStatus, 'Please log in to join games', 'error');
+        return;
+      }
+
+      db.ref(`games/${gameId}`).once('value').then(snapshot => {
+        const game = snapshot.val();
+        if (!game) {
+          showStatus(chatStatus, 'Game not found', 'error');
+          return;
+        }
+
+        if (game.players.includes(currentUser.username)) {
+          showStatus(chatStatus, 'You are already in this game', 'info');
+          return;
+        }
+
+        if (game.players.length >= (gameType === 'uno' ? 8 : 2)) {
+          showStatus(chatStatus, 'Game is full', 'error');
+          return;
+        }
+
+        // Add player to game
+        const updatedPlayers = [...game.players, currentUser.username];
+        db.ref(`games/${gameId}/players`).set(updatedPlayers).then(() => {
+          showStatus(chatStatus, `Joined ${gameType} game!`, 'success');
+          
+          // Update the game message in chat
+          const chatId = getChatId(currentChat.id, currentChat.type);
+          db.ref(`messages/${currentChat.type}/${chatId}`).orderByChild('gameId').equalTo(gameId).once('value').then(msgSnapshot => {
+            msgSnapshot.forEach(msg => {
+              db.ref(`messages/${currentChat.type}/${chatId}/${msg.key}/players`).set(updatedPlayers);
+            });
+          });
+        });
+      });
+    }
+
+    function startGame(gameType, gameId) {
+      if (!currentUser) {
+        showStatus(chatStatus, 'Please log in to start games', 'error');
+        return;
+      }
+
+      db.ref(`games/${gameId}`).once('value').then(snapshot => {
+        const game = snapshot.val();
+        if (!game) {
+          showStatus(chatStatus, 'Game not found', 'error');
+          return;
+        }
+
+        if (!game.players.includes(currentUser.username)) {
+          showStatus(chatStatus, 'You are not in this game', 'error');
+          return;
+        }
+
+        if (game.players.length < 2) {
+          showStatus(chatStatus, 'Need at least 2 players to start', 'error');
+          return;
+        }
+
+        // Start the game
+        const updates = {
+          status: 'playing',
+          gameState: {
+            ...game.gameState,
+            currentPlayer: game.players[0],
+            gameStarted: true
+          }
+        };
+
+        db.ref(`games/${gameId}`).update(updates).then(() => {
+          showStatus(chatStatus, `${gameType} game started!`, 'success');
+          
+          // Update the game message in chat
+          const chatId = getChatId(currentChat.id, currentChat.type);
+          db.ref(`messages/${currentChat.type}/${chatId}`).orderByChild('gameId').equalTo(gameId).once('value').then(msgSnapshot => {
+            msgSnapshot.forEach(msg => {
+              db.ref(`messages/${currentChat.type}/${chatId}/${msg.key}`).update({
+                status: 'playing'
+              });
+            });
+          });
+
+          // Show game interface
+          showGameInterface(gameType, gameId);
+        });
+      });
     }
 
     function renderGameMessage(msg) {
@@ -1931,20 +3229,31 @@
       const players = msg.players || [];
       const playerCount = players.length;
       const maxPlayers = msg.game === 'uno' ? 8 : 2;
+      const isPlayer = players.includes(currentUser.username);
       
       let statusText = '';
       if (status === 'waiting') {
         statusText = `Waiting for players (${playerCount}/${maxPlayers})`;
       } else if (status === 'playing') {
-        statusText = `In progress - ${msg.state?.currentPlayer}'s turn`;
+        statusText = `In progress - ${msg.gameState?.currentPlayer || 'Unknown'}'s turn`;
       } else if (status === 'finished') {
-        statusText = `Game finished - ${msg.state?.winner || 'No winner'} won`;
+        statusText = `Game finished - ${msg.gameState?.winner || 'No winner'} won`;
       }
       
-      return `<div style="padding:8px; background: rgba(255,255,255,0.05); border-radius:8px; cursor:pointer;" onclick="playGame('${msg.game || ''}', '${msg.gameId || ''}')">
+      let actionButtons = '';
+      if (status === 'waiting' && playerCount < maxPlayers && !isPlayer) {
+        actionButtons = `<button class="join-game-btn" onclick="joinGame('${msg.game}', '${msg.gameId}')" style="margin-top: 8px; padding: 4px 8px; font-size: 12px; background: var(--accent); border: none; border-radius: 4px; color: white; cursor: pointer;">Join Game</button>`;
+      } else if (isPlayer && status === 'waiting' && playerCount >= 2) {
+        actionButtons = `<button class="start-game-btn" onclick="startGame('${msg.game}', '${msg.gameId}')" style="margin-top: 8px; padding: 4px 8px; font-size: 12px; background: var(--success); border: none; border-radius: 4px; color: white; cursor: pointer;">Start Game</button>`;
+      } else if (isPlayer && status === 'playing') {
+        actionButtons = `<button class="view-game-btn" onclick="playGame('${msg.game}', '${msg.gameId}')" style="margin-top: 8px; padding: 4px 8px; font-size: 12px; background: var(--info); border: none; border-radius: 4px; color: white; cursor: pointer;">View Game</button>`;
+      }
+      
+      return `<div style="padding:12px; background: rgba(255,255,255,0.05); border-radius:8px; border: 1px solid rgba(255,255,255,0.1);">
         <div><b>🎮 ${msg.game.toUpperCase()}</b></div>
-        <div style="font-size:12px; opacity:0.8;">${statusText}</div>
+        <div style="font-size:12px; opacity:0.8; margin: 4px 0;">${statusText}</div>
         <div style="font-size:11px; opacity:0.6;">Players: ${players.join(', ')}</div>
+        ${actionButtons}
       </div>`;
     }
 
@@ -2697,7 +4006,6 @@
     const pollsBtn = document.getElementById('polls-btn');
     const drawBtn = document.getElementById('draw-btn');
     const whiteboardBtn = document.getElementById('whiteboard-btn');
-    const aiAssistantBtn = document.getElementById('ai-assistant-btn');
     const emojiGifModal = document.getElementById('emoji-gif-modal');
     const closeEmojiGif = document.getElementById('close-emoji-gif');
     const gifSearch = document.getElementById('gif-search');
@@ -2706,14 +4014,6 @@
     const gamesModal = document.getElementById('games-modal');
     const closeGames = document.getElementById('close-games');
     const gameContainer = document.getElementById('game-container');
-    const aiModal = document.getElementById('ai-modal');
-    const closeAi = document.getElementById('close-ai');
-    const aiApiKeyInput = document.getElementById('ai-api-key');
-    const saveAiKeyBtn = document.getElementById('save-ai-key-btn');
-    const aiPrompt = document.getElementById('ai-prompt');
-    const askAiBtn = document.getElementById('ask-ai-btn');
-    const insertAiResponseBtn = document.getElementById('insert-ai-response-btn');
-    const aiResponse = document.getElementById('ai-response');
     const pollsModalEl = document.getElementById('polls-modal');
     const closePolls = document.getElementById('close-polls');
     const pollQuestion = document.getElementById('poll-question');
@@ -2935,8 +4235,8 @@
         const savedTheme = localStorage.getItem('chatTheme') || 'default';
         applyChatTheme(savedTheme);
         
-        // Load saved theme
-        loadSavedTheme();
+        // Load saved settings
+        loadSavedSettings();
       });
     }
 
@@ -2973,17 +4273,27 @@
       appearanceTab.addEventListener('click', () => {
         appearanceTab.classList.add('active');
         blockedUsersTab.classList.remove('active');
+        if (securityTab) securityTab.classList.remove('active');
+        document.getElementById('patchnotes-tab').classList.remove('active');
         appearanceSettings.style.display = 'block';
         blockedUsersSettings.style.display = 'none';
+        if (document.getElementById('security-settings')) {
+          document.getElementById('security-settings').style.display = 'none';
+        }
+        document.getElementById('patchnotes-settings').style.display = 'none';
       });
 
       blockedUsersTab.addEventListener('click', () => {
         blockedUsersTab.classList.add('active');
         appearanceTab.classList.remove('active');
-        if (typeof securityTab !== 'undefined') securityTab.classList.remove('active');
+        if (securityTab) securityTab.classList.remove('active');
+        document.getElementById('patchnotes-tab').classList.remove('active');
         blockedUsersSettings.style.display = 'block';
         appearanceSettings.style.display = 'none';
-        const sec = document.getElementById('security-settings'); if (sec) sec.style.display='none';
+        if (document.getElementById('security-settings')) {
+          document.getElementById('security-settings').style.display = 'none';
+        }
+        document.getElementById('patchnotes-settings').style.display = 'none';
         loadBlockedUsers();
       });
       // Security tab wiring if present
@@ -2992,9 +4302,28 @@
           securityTab.classList.add('active');
           appearanceTab.classList.remove('active');
           blockedUsersTab.classList.remove('active');
+          document.getElementById('patchnotes-tab').classList.remove('active');
           document.getElementById('security-settings').style.display = 'block';
           appearanceSettings.style.display = 'none';
           blockedUsersSettings.style.display = 'none';
+          document.getElementById('patchnotes-settings').style.display = 'none';
+        });
+      }
+
+      // Patch Notes tab
+      const patchnotesTab = document.getElementById('patchnotes-tab');
+      if (patchnotesTab) {
+        patchnotesTab.addEventListener('click', () => {
+          patchnotesTab.classList.add('active');
+          appearanceTab.classList.remove('active');
+          blockedUsersTab.classList.remove('active');
+          if (securityTab) securityTab.classList.remove('active');
+          document.getElementById('patchnotes-settings').style.display = 'block';
+          appearanceSettings.style.display = 'none';
+          blockedUsersSettings.style.display = 'none';
+          if (document.getElementById('security-settings')) {
+            document.getElementById('security-settings').style.display = 'none';
+          }
         });
       }
 
@@ -3030,21 +4359,6 @@
           messageDrafts[currentChat.id] = messageInput.value;
         }
         
-        // Auto-trigger AI when "yai" is typed
-        const text = messageInput.value.toLowerCase();
-        if (text.includes('yai') && text.trim() === 'yai') {
-          // Clear the input
-          messageInput.value = '';
-          
-          // Auto-ask AI with a default prompt
-          const defaultPrompt = 'Hello! How can I help you today?';
-          aiPrompt.value = defaultPrompt;
-          
-          // Automatically trigger AI response
-          setTimeout(() => {
-            askAI();
-          }, 100);
-        }
         
         // Show typing indicator
         if (currentChat && currentChat.type === 'friend') {
@@ -3107,9 +4421,28 @@
       closeSettings.addEventListener('click', () => {
         settingsModal.classList.remove('active');
       });
+
+      // Patch Notes button
+      const patchnotesBtn = document.getElementById('patchnotes-btn');
+      if (patchnotesBtn) {
+        patchnotesBtn.addEventListener('click', () => {
+          settingsModal.classList.add('active');
+          document.getElementById('patchnotes-tab').click();
+        });
+      }
       saveSettingsBtn.addEventListener('click', saveSettings);
       const saveSecurityBtnEl = document.getElementById('save-security-btn');
       if (saveSecurityBtnEl) saveSecurityBtnEl.addEventListener('click', saveSecurity);
+
+      // Theme selection
+      document.querySelectorAll('.theme-option').forEach(option => {
+        option.addEventListener('click', () => {
+          document.querySelectorAll('.theme-option').forEach(opt => opt.classList.remove('active'));
+          option.classList.add('active');
+          const theme = option.dataset.theme;
+          applyTheme(theme);
+        });
+      });
 
       // Profile buttons
       profileEditBtn.addEventListener('click', () => {
@@ -3213,7 +4546,6 @@
             case 'polls': pollsModalEl.classList.add('active'); break;
             case 'draw': drawModalEl.classList.add('active'); break;
             case 'whiteboard': whiteboardModalEl.classList.add('active'); break;
-            case 'ai': aiModal.classList.add('active'); break;
           }
         });
       });
@@ -3228,15 +4560,6 @@
       if (closeGames) closeGames.addEventListener('click', () => gamesModal.classList.remove('active'));
       document.querySelectorAll('.game-launch').forEach(btn => btn.addEventListener('click', () => launchGame(btn.dataset.game)));
 
-      // AI Assistant
-      if (closeAi) closeAi.addEventListener('click', () => aiModal.classList.remove('active'));
-      if (askAiBtn) askAiBtn.addEventListener('click', askAI);
-      if (insertAiResponseBtn) insertAiResponseBtn.addEventListener('click', () => {
-        if (!aiResponse.textContent) return;
-        messageInput.value = (messageInput.value ? messageInput.value + '\n' : '') + aiResponse.textContent;
-        aiModal.classList.remove('active');
-        messageInput.focus();
-      });
 
       // Polls
       if (pollsBtn) pollsBtn.addEventListener('click', () => pollsModalEl.classList.add('active'));
@@ -3544,14 +4867,25 @@
           const isFirstTime = !localStorage.getItem(`welcome_${currentUser.username}`);
           if (isFirstTime) {
             localStorage.setItem(`welcome_${currentUser.username}`, 'true');
-            showStatus(chatStatus, 'Check out the features: Games, AI Assistant, Voice Messages, and more!', 'info');
+            showStatus(chatStatus, 'Check out the features: Games, Voice Messages, and more!', 'info');
           }
           
           // Set up real-time friend request listener
           db.ref(`users/${currentUser.username}/friendRequests`).on('value', (snapshot) => {
             const requests = snapshot.val() || [];
+            const previousCount = pendingRequests.length;
             pendingRequests = requests;
             updateRequestBadge();
+            
+            // Show notification for new friend requests
+            if (requests.length > previousCount) {
+              const newRequests = requests.slice(previousCount);
+              newRequests.forEach(request => {
+                if (request.from && request.from !== currentUser.username) {
+                  notificationManager.showFriendRequestNotification(request.from);
+                }
+              });
+            }
           });
 
           // Set up real-time friends list listener
@@ -4139,6 +5473,29 @@
         
         messagesContainer.appendChild(msgDiv);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        
+        // Show notification for new messages (not from current user and not in current chat)
+        if (!isCurrentUser && (!currentChat || getChatId(currentChat.id, currentChat.type) !== id)) {
+          const messageText = msg.type === 'text' ? maybeDecrypt(msg.text || '') : 
+                            msg.type === 'image' ? '📷 Image' :
+                            msg.type === 'voice' ? '🎤 Voice message' :
+                            msg.type === 'game' ? `🎮 ${msg.game} game` :
+                            'New message';
+          
+          // Check if user is mentioned in the message
+          const isMentioned = msg.type === 'text' && messageText.toLowerCase().includes(`@${currentUser.username.toLowerCase()}`);
+          
+          if (isMentioned) {
+            notificationManager.showInAppNotification(
+              `@${currentUser.username} mentioned you!`, 
+              `${msg.username}: ${messageText}`, 
+              'message', 
+              8000
+            );
+          } else {
+            notificationManager.showMessageNotification(msg.username, messageText, type, id);
+          }
+        }
         
         // Add click event to profile elements
         document.querySelectorAll(`[data-username="${msg.username}"]`).forEach(el => {
@@ -5052,60 +6409,149 @@
       }
     }
 
-    // Save settings
+    // Enhanced Settings System
     function saveSettings() {
-      const selectedBg = document.querySelector('.bg-option.active').dataset.bg;
+      const selectedTheme = document.querySelector('.theme-option.active')?.dataset.theme || 'default';
       
-      // Save theme to localStorage
-      localStorage.setItem('selectedTheme', selectedBg);
+      // Save theme and settings to localStorage
+      const settings = {
+        theme: selectedTheme,
+        messageAnimations: document.getElementById('message-animations')?.checked ?? true,
+        soundEffects: document.getElementById('sound-effects')?.checked ?? true,
+        typingIndicator: document.getElementById('typing-indicator')?.checked ?? true,
+        compactMode: document.getElementById('compact-mode')?.checked ?? false,
+        showTimestamps: document.getElementById('show-timestamps')?.checked ?? true,
+        autoScroll: document.getElementById('auto-scroll')?.checked ?? true
+      };
       
-      // Apply background
-      if (selectedBg === 'default') {
-        document.body.style.background = 'var(--bg-dark)';
-        document.body.style.backgroundImage = 'radial-gradient(circle at 10% 20%, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.8) 90%)';
-        document.body.className = '';
-      } else if (selectedBg === 'animated-1') {
-        document.body.className = 'animated-bg-1';
-        document.body.style.background = '';
-        document.body.style.backgroundImage = '';
-      } else if (selectedBg === 'animated-2') {
-        document.body.className = 'animated-bg-2';
-        document.body.style.background = '';
-        document.body.style.backgroundImage = '';
-      } else if (selectedBg === 'gradient-purple') {
-        document.body.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)';
-        document.body.className = '';
-        document.body.style.backgroundImage = '';
-      } else if (selectedBg === 'gradient-blue') {
-        document.body.style.background = 'linear-gradient(135deg, #3b82f6, #1d4ed8)';
-        document.body.className = '';
-        document.body.style.backgroundImage = '';
-      } else if (selectedBg === 'gradient-red') {
-        document.body.style.background = 'linear-gradient(135deg, #ef4444, #b91c1c)';
-        document.body.className = '';
-        document.body.style.backgroundImage = '';
-      } else if (selectedBg === 'gradient-green') {
-        document.body.style.background = 'linear-gradient(135deg, #10b981, #047857)';
-        document.body.className = '';
-        document.body.style.backgroundImage = '';
-      } else if (selectedBg === 'gradient-orange') {
-        document.body.style.background = 'linear-gradient(135deg, #f59e0b, #b45309)';
-        document.body.className = '';
-        document.body.style.backgroundImage = '';
-      } else if (selectedBg === 'black') {
-        document.body.style.background = '#000';
-        document.body.className = '';
-        document.body.style.backgroundImage = '';
-      } else if (selectedBg === 'white') {
-        document.body.style.background = '#fff';
-        document.body.className = '';
-        document.body.style.backgroundImage = '';
-      }
+      localStorage.setItem('appSettings', JSON.stringify(settings));
+      localStorage.setItem('selectedTheme', selectedTheme);
+      
+      // Apply theme
+      applyTheme(selectedTheme);
+      
+      // Apply other settings
+      applySettings(settings);
       
       showStatus(settingsStatus, 'Settings saved permanently!', 'success');
       setTimeout(() => {
         settingsModal.classList.remove('active');
       }, 1500);
+    }
+
+    function applyTheme(theme) {
+      // Remove existing theme classes
+      document.body.className = document.body.className.replace(/theme-\w+/g, '');
+      
+      // Apply new theme
+      document.body.classList.add(`theme-${theme}`);
+      
+      // Apply theme-specific styles
+      const root = document.documentElement;
+      
+      switch(theme) {
+        case 'ocean':
+          root.style.setProperty('--bg-dark', '#0c4a6e');
+          root.style.setProperty('--bg-card', '#0284c7');
+          root.style.setProperty('--accent', '#0ea5e9');
+          root.style.setProperty('--sent-bg', 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%)');
+          break;
+        case 'sunset':
+          root.style.setProperty('--bg-dark', '#dc2626');
+          root.style.setProperty('--bg-card', '#ea580c');
+          root.style.setProperty('--accent', '#f59e0b');
+          root.style.setProperty('--sent-bg', 'linear-gradient(135deg, #ea580c 0%, #f59e0b 100%)');
+          break;
+        case 'forest':
+          root.style.setProperty('--bg-dark', '#166534');
+          root.style.setProperty('--bg-card', '#16a34a');
+          root.style.setProperty('--accent', '#22c55e');
+          root.style.setProperty('--sent-bg', 'linear-gradient(135deg, #16a34a 0%, #22c55e 100%)');
+          break;
+        case 'neon':
+          root.style.setProperty('--bg-dark', '#7c3aed');
+          root.style.setProperty('--bg-card', '#a855f7');
+          root.style.setProperty('--accent', '#ec4899');
+          root.style.setProperty('--sent-bg', 'linear-gradient(135deg, #a855f7 0%, #ec4899 100%)');
+          break;
+        case 'dark':
+          root.style.setProperty('--bg-dark', '#000000');
+          root.style.setProperty('--bg-card', '#1f2937');
+          root.style.setProperty('--accent', '#6b7280');
+          root.style.setProperty('--sent-bg', 'linear-gradient(135deg, #1f2937 0%, #374151 100%)');
+          break;
+        case 'light':
+          root.style.setProperty('--bg-dark', '#f8fafc');
+          root.style.setProperty('--bg-card', '#e2e8f0');
+          root.style.setProperty('--accent', '#3b82f6');
+          root.style.setProperty('--text-primary', '#1e293b');
+          root.style.setProperty('--text-secondary', '#64748b');
+          root.style.setProperty('--sent-bg', 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)');
+          break;
+        case 'animated':
+          root.style.setProperty('--bg-dark', '#ee7752');
+          root.style.setProperty('--bg-card', '#e73c7e');
+          root.style.setProperty('--accent', '#23a6d5');
+          root.style.setProperty('--sent-bg', 'linear-gradient(135deg, #e73c7e 0%, #23a6d5 100%)');
+          break;
+        default:
+          // Reset to default values
+          root.style.setProperty('--bg-dark', '#0a0e1a');
+          root.style.setProperty('--bg-card', '#1a1f2e');
+          root.style.setProperty('--accent', '#00d4ff');
+          root.style.setProperty('--text-primary', '#f8fafc');
+          root.style.setProperty('--text-secondary', '#cbd5e1');
+          root.style.setProperty('--sent-bg', 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)');
+      }
+    }
+
+    function applySettings(settings) {
+      // Apply message animations
+      const messagesContainer = document.getElementById('messages');
+      if (settings.messageAnimations) {
+        messagesContainer.classList.add('animated');
+      } else {
+        messagesContainer.classList.remove('animated');
+      }
+      
+      // Apply compact mode
+      if (settings.compactMode) {
+        document.body.classList.add('compact-mode');
+      } else {
+        document.body.classList.remove('compact-mode');
+      }
+      
+      // Apply timestamps visibility
+      const timestamps = document.querySelectorAll('.timestamp');
+      timestamps.forEach(ts => {
+        ts.style.display = settings.showTimestamps ? 'block' : 'none';
+      });
+    }
+
+    function loadSavedSettings() {
+      const savedSettings = localStorage.getItem('appSettings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        
+        // Restore theme
+        const themeOption = document.querySelector(`[data-theme="${settings.theme}"]`);
+        if (themeOption) {
+          document.querySelectorAll('.theme-option').forEach(opt => opt.classList.remove('active'));
+          themeOption.classList.add('active');
+          applyTheme(settings.theme);
+        }
+        
+        // Restore checkboxes
+        Object.keys(settings).forEach(key => {
+          const element = document.getElementById(key);
+          if (element && element.type === 'checkbox') {
+            element.checked = settings[key];
+          }
+        });
+        
+        // Apply settings
+        applySettings(settings);
+      }
     }
 
     // Load saved theme on startup
