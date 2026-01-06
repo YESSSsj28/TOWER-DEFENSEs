@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
@@ -34,11 +34,46 @@
               'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
               'bounce-slight': 'bounce 1s infinite',
               'fadeIn': 'fadeIn 0.35s ease-out forwards',
+              'slideUp': 'slideUp 0.4s ease-out forwards',
+              'slideDown': 'slideDown 0.4s ease-out forwards',
+              'scaleIn': 'scaleIn 0.3s ease-out forwards',
+              'glow': 'glow 2s ease-in-out infinite',
+              'shimmer': 'shimmer 2s linear infinite',
+              'float': 'float 3s ease-in-out infinite',
+              'gradient': 'gradient 8s ease infinite',
             },
             keyframes: {
               fadeIn: {
                 '0%': { opacity: '0', transform: 'translateY(10px)' },
                 '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
+              slideUp: {
+                '0%': { opacity: '0', transform: 'translateY(20px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
+              slideDown: {
+                '0%': { opacity: '0', transform: 'translateY(-20px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
+              scaleIn: {
+                '0%': { opacity: '0', transform: 'scale(0.9)' },
+                '100%': { opacity: '1', transform: 'scale(1)' },
+              },
+              glow: {
+                '0%, 100%': { boxShadow: '0 0 5px rgba(139, 92, 246, 0.5)' },
+                '50%': { boxShadow: '0 0 20px rgba(139, 92, 246, 0.8), 0 0 30px rgba(139, 92, 246, 0.4)' },
+              },
+              shimmer: {
+                '0%': { backgroundPosition: '-1000px 0' },
+                '100%': { backgroundPosition: '1000px 0' },
+              },
+              float: {
+                '0%, 100%': { transform: 'translateY(0px)' },
+                '50%': { transform: 'translateY(-10px)' },
+              },
+              gradient: {
+                '0%, 100%': { backgroundPosition: '0% 50%' },
+                '50%': { backgroundPosition: '100% 50%' },
               }
             }
           },
@@ -64,6 +99,41 @@
       .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
       .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.3); border-radius: 3px; }
       .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(139, 92, 246, 0.5); }
+      
+      /* Enhanced Animations */
+      .animate-slide-up { animation: slideUp 0.4s ease-out forwards; }
+      .animate-slide-down { animation: slideDown 0.4s ease-out forwards; }
+      .animate-scale-in { animation: scaleIn 0.3s ease-out forwards; }
+      .animate-glow { animation: glow 2s ease-in-out infinite; }
+      .animate-shimmer {
+        background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent);
+        background-size: 1000px 100%;
+        animation: shimmer 2s linear infinite;
+      }
+      .animate-float { animation: float 3s ease-in-out infinite; }
+      .animate-gradient {
+        background-size: 200% 200%;
+        animation: gradient 8s ease infinite;
+      }
+      
+      /* Smooth transitions */
+      * { transition: all 0.2s ease; }
+      button, input, textarea, select { transition: all 0.2s ease; }
+      
+      /* Hover effects */
+      .hover-lift:hover { transform: translateY(-2px); }
+      .hover-glow:hover { box-shadow: 0 0 20px rgba(139, 92, 246, 0.4); }
+      
+      /* Message animations */
+      .message-enter { opacity: 0; transform: translateY(10px) scale(0.95); }
+      .message-enter-active { opacity: 1; transform: translateY(0) scale(1); transition: all 0.3s ease-out; }
+      
+      /* Loading pulse */
+      @keyframes pulse-ring {
+        0% { transform: scale(0.8); opacity: 1; }
+        100% { transform: scale(1.2); opacity: 0; }
+      }
+      .pulse-ring { animation: pulse-ring 1.5s ease-out infinite; }
     </style>
 
     <!-- Babel -->
@@ -85,7 +155,7 @@
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
-      const API_KEY = "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"; // <-- put your key here
+      const API_KEY = "sk-navy-4c2SVhL1xaHtjymJo2MpVtwWLN6C3dw_m8GI3Z9fd3Y";
 
       import React, { useState, useEffect, useRef, useCallback } from 'react';
       import { createRoot } from 'react-dom/client';
@@ -93,17 +163,125 @@
         Bot, User, AlertCircle, Send, Loader2, Baby, ListOrdered,
         Image as ImageIcon, GraduationCap, BookOpen, PenTool,
         Sparkles, Check, RefreshCw, Trash2, Paperclip, X, BrainCircuit,
-        Settings as SettingsIcon, Plus
+        Settings as SettingsIcon, Plus, Wand2, Search, Zap, ArrowUpRight
       } from 'lucide-react';
       import ReactMarkdown from 'react-markdown';
       import { v4 as uuidv4 } from 'uuid';
 
-      // ========= OPENROUTER CONFIG =========
-      const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-      const DEFAULT_MODEL = "mistralai/mistral-tiny";
+      // ========= NAVY API CONFIG =========
+      const NAVY_API_URL = "https://api.navy/v1/chat/completions";
+      const NAVY_IMAGE_URL = "https://api.navy/v1/images/generations";
+      const DEFAULT_MODEL = "gpt-4o"; // yai 1.1
+      const ADVANCED_MODEL = "gpt-5.2"; // yai 2.2
+      const SEARCH_MODEL = "gpt-5-search-api"; // Only search model
       const STORAGE_KEY_CONV = "yai_conversations_v2";
       const STORAGE_KEY_THEME = "yai_theme_v1";
       const STORAGE_KEY_PROJECTS = "yai_projects_v1";
+      const STORAGE_KEY_CORS_PROXY = "yai_cors_proxy_v1";
+      const STORAGE_KEY_LAST_MODEL = "yai_last_model_v1";
+      
+      // CORS Proxy - only use if you get CORS errors
+      const CORS_PROXY_URL = "https://corsproxy.io/?";
+
+      // ========= SMART MODEL SELECTION =========
+      const detectSearchIntent = (text) => {
+        if (!text) return null;
+        const lowerText = text.toLowerCase();
+        
+        // Search indicators
+        const searchKeywords = ['search', 'find', 'look up', 'what is', 'who is', 'when did', 'where is', 'current', 'latest', 'recent', 'news', 'information about', 'tell me about'];
+        const hasSearchIntent = searchKeywords.some(kw => lowerText.includes(kw));
+        
+        if (hasSearchIntent) return 'search';
+        return null;
+      };
+
+      const detectContentType = (text, image = null) => {
+        if (!text && !image) return 'general';
+        
+        const lowerText = (text || '').toLowerCase();
+        
+        // Check for "switch" command
+        if (lowerText.includes('switch')) {
+          return 'switch';
+        }
+        
+        // Coding detection
+        const codeKeywords = ['code', 'function', 'variable', 'python', 'javascript', 'java', 'html', 'css', 'react', 'api', 'debug', 'error', 'syntax', 'programming', 'algorithm', 'loop', 'array', 'object', 'class', 'import', 'export', 'const', 'let', 'var', 'def', 'return', 'console', 'print', 'if', 'else', 'for', 'while'];
+        const hasCodeKeywords = codeKeywords.some(keyword => lowerText.includes(keyword));
+        const hasCodeBlocks = lowerText.includes('```') || lowerText.includes('function(') || lowerText.includes('def ') || lowerText.includes('class ');
+        
+        if (hasCodeKeywords || hasCodeBlocks) {
+          return 'coding';
+        }
+        
+        // Math detection
+        const mathKeywords = ['solve', 'equation', 'calculate', 'formula', 'algebra', 'geometry', 'calculus', 'derivative', 'integral', 'matrix', 'theorem', 'proof', 'graph', 'plot'];
+        const hasMathSymbols = /[∫∑∏√∞±×÷≤≥≠≈]/.test(text) || /\d+\s*[+\-×÷=]\s*\d+/.test(text);
+        if (mathKeywords.some(kw => lowerText.includes(kw)) || hasMathSymbols) {
+          return 'math';
+        }
+        
+        // Science detection
+        const scienceKeywords = ['experiment', 'hypothesis', 'molecule', 'atom', 'reaction', 'physics', 'chemistry', 'biology', 'lab', 'scientific'];
+        if (scienceKeywords.some(kw => lowerText.includes(kw))) {
+          return 'science';
+        }
+        
+        // Image analysis
+        if (image) {
+          return 'vision';
+        }
+        
+        // Complex reasoning detection - triggers switch to yai 2.2
+        const complexKeywords = ['explain', 'analyze', 'compare', 'contrast', 'evaluate', 'discuss', 'why', 'how', 'what if', 'complex', 'detailed', 'comprehensive', 'thorough', 'in-depth'];
+        const isLongAndComplex = complexKeywords.some(kw => lowerText.includes(kw)) && text.length > 100;
+        const hasComplexStructure = /(?:first|second|third|finally|conclusion|summary|analysis)/i.test(text) && text.length > 150;
+        
+        if (isLongAndComplex || hasComplexStructure) {
+          return 'reasoning';
+        }
+        
+        return 'general';
+      };
+
+      const selectModel = (contentType, grade, searchMode = null) => {
+        // Search mode takes priority
+        if (searchMode === 'search') {
+          return SEARCH_MODEL;
+        }
+        
+        // For "switch" command or complex reasoning, use advanced model
+        if (contentType === 'switch' || contentType === 'reasoning') {
+          return ADVANCED_MODEL;
+        }
+        
+        // For advanced grade levels, use advanced model
+        switch (contentType) {
+          case 'coding':
+            return grade >= 11 ? ADVANCED_MODEL : DEFAULT_MODEL;
+          case 'math':
+            return grade >= 11 ? ADVANCED_MODEL : DEFAULT_MODEL;
+          case 'science':
+            return grade >= 11 ? ADVANCED_MODEL : DEFAULT_MODEL;
+          case 'vision':
+            return DEFAULT_MODEL; // Vision-capable
+          case 'general':
+          default:
+            return grade >= 11 ? ADVANCED_MODEL : DEFAULT_MODEL;
+        }
+      };
+
+      const getModelName = (model) => {
+        if (model === ADVANCED_MODEL || model === 'gpt-5.2') return 'yai 2.2';
+        if (model === DEFAULT_MODEL || model === 'gpt-4o') return 'yai 1.1';
+        if (model === SEARCH_MODEL) return 'yai 2.2 (Search)';
+        return 'yai 1.1';
+      };
+
+      const isAdvancedModel = (model) => {
+        return model === ADVANCED_MODEL || model === SEARCH_MODEL || model === 'gpt-5.2';
+      };
 
       const defaultTheme = {
         name: "Default",
@@ -117,57 +295,138 @@
         return msg.includes('429') || status === 429 || msg.includes('Quota exceeded');
       };
 
-      // Build OpenRouter messages with memory
-      const buildMessagesWithHistory = (system, history, userText) => {
+      // Build Navy API messages with memory and image support
+      const buildMessagesWithHistory = (system, history, userText, userImage = null) => {
         const msgs = [];
         if (system) msgs.push({ role: "system", content: system });
         if (history && history.length) {
           const recent = history.slice(-12);
           for (const m of recent) {
-            if (!m.content) continue;
-            if (m.role === 'user') msgs.push({ role: 'user', content: m.content });
-            else if (m.role === 'model') msgs.push({ role: 'assistant', content: m.content });
+            if (!m.content && !m.image) continue;
+            if (m.role === 'user') {
+              if (m.image) {
+                // User message with image
+                const content = [];
+                if (m.content) content.push({ type: "text", text: m.content });
+                content.push({ type: "image_url", image_url: { url: m.image } });
+                msgs.push({ role: 'user', content });
+              } else {
+                // User message without image
+                msgs.push({ role: 'user', content: m.content });
+              }
+            } else if (m.role === 'model') {
+              msgs.push({ role: 'assistant', content: m.content });
+            }
           }
         }
-        if (userText) msgs.push({ role: "user", content: userText });
+        if (userText || userImage) {
+          if (userImage) {
+            // Current user message with image
+            const content = [];
+            if (userText) content.push({ type: "text", text: userText });
+            content.push({ type: "image_url", image_url: { url: userImage } });
+            msgs.push({ role: "user", content });
+          } else {
+            // Current user message without image
+            msgs.push({ role: "user", content: userText });
+          }
+        }
         return msgs;
       };
 
-      const callOpenRouter = async ({ system, user, model = DEFAULT_MODEL, history = [] }) => {
-        const messages = buildMessagesWithHistory(system, history, user);
-        const res = await fetch(OPENROUTER_URL, {
+      const callNavyAPI = async ({ system, user, model = null, history = [], image = null, autoSelectModel = true, grade = 10, searchMode = null, onModelSwitch = null }) => {
+        // Smart model selection based on content
+        let selectedModel = model || DEFAULT_MODEL;
+        let detectedSearchMode = searchMode;
+        
+        if (autoSelectModel) {
+          // Detect search intent first
+          if (!detectedSearchMode) {
+            detectedSearchMode = detectSearchIntent(user);
+          }
+          const contentType = detectContentType(user, image);
+          selectedModel = selectModel(contentType, grade, detectedSearchMode);
+        }
+        
+        // Check for model switch and alert user
+        let lastModel = null;
+        try {
+          lastModel = localStorage.getItem(STORAGE_KEY_LAST_MODEL);
+        } catch {}
+        
+        if (lastModel && lastModel !== selectedModel && isAdvancedModel(selectedModel) && !isAdvancedModel(lastModel)) {
+          // Switching to advanced model - alert user
+          if (onModelSwitch) {
+            onModelSwitch(selectedModel, getModelName(selectedModel));
+          } else {
+            // Fallback alert
+            const modelName = getModelName(selectedModel);
+            alert(`Switching to ${modelName}. This may take longer but will provide more detailed and comprehensive responses.`);
+          }
+        }
+        
+        // Save current model
+        try {
+          localStorage.setItem(STORAGE_KEY_LAST_MODEL, selectedModel);
+        } catch {}
+        
+        const messages = buildMessagesWithHistory(system, history, user, image);
+        
+        // Check if CORS proxy is enabled
+        let useCorsProxy = false;
+        try {
+          useCorsProxy = localStorage.getItem(STORAGE_KEY_CORS_PROXY) === 'true';
+        } catch {}
+        
+        const apiUrl = useCorsProxy ? `${CORS_PROXY_URL}${encodeURIComponent(NAVY_API_URL)}` : NAVY_API_URL;
+        
+        const res = await fetch(apiUrl, {
           method: "POST",
           headers: {
             "Authorization": "Bearer " + API_KEY,
-            "Content-Type": "application/json",
-            "HTTP-Referer": "http://localhost"
+            "Content-Type": "application/json"
           },
-          body: JSON.stringify({ model, messages })
+          body: JSON.stringify({ model: selectedModel, messages })
         });
         if (!res.ok) {
           const text = await res.text();
-          throw new Error("OpenRouter error: " + text);
+          throw new Error("Navy API error: " + text);
         }
         const data = await res.json();
-        return data.choices?.[0]?.message?.content || "";
+        return { content: data.choices?.[0]?.message?.content || "", model: selectedModel };
       };
 
       // ========= SYSTEM INSTRUCTIONS =========
-      const getSystemInstruction = (grade, style, mode = 'homework') => {
+      const getSystemInstruction = (grade, style, mode = 'homework', model = DEFAULT_MODEL) => {
+        const modelName = getModelName(model);
+        const isAdvanced = isAdvancedModel(model);
+        
         if (mode === 'essay') {
           return `
-You are "YAI", a friendly writing helper for a Grade ${grade} student.
+You are "YAI ${modelName}", a friendly writing helper for a Grade ${grade} student.
 You can help with school writing and personal topics, but always keep it safe and respectful.
 Encourage learning and honesty. Do NOT help cheat on tests or big graded assignments.
-Use Markdown formatting.`;
+
+CRITICAL: When writing essays or text for the student, you MUST write in a completely natural, human-like style that:
+- Uses varied sentence structures (mix short and long sentences naturally)
+- Includes occasional conversational elements and natural flow
+- Avoids overly perfect grammar or formulaic patterns
+- Uses the student's own vocabulary level and writing quirks from their style profile
+- Writes as if a real student wrote it, with natural imperfections and authentic voice
+- Never sounds robotic, overly polished, or AI-generated
+- Incorporates the student's personal writing style seamlessly
+
+The goal is to help them write better while maintaining their authentic voice. Use Markdown formatting.`;
         }
 
-        let base = `You are "YAI", a personalized AI helper for a Grade ${grade} student.
+        let base = `You are "YAI ${modelName}", a personalized AI helper for a Grade ${grade} student.
 If the user directly asks "who made you" / "who created you" / "who built you",
 respond EXACTLY: "I was made by YAI's team."
-If the user directly asks "what model are you" / "what ai are you",
-respond EXACTLY: "I am YAI, your personal study assistant."
+If the user directly asks "what model are you" / "what ai are you" / "who are you" / "what version are you",
+respond EXACTLY: "I am ${modelName}, your personal study assistant."
 Do NOT bring this up unless they ask.
+
+${isAdvanced ? 'You are the advanced version with enhanced reasoning and comprehensive analysis capabilities. Provide detailed, thorough responses when appropriate.' : ''}
 
 You can talk about ANY safe topic: school, hobbies, games, questions about life, etc.
 Always explain things in a way a Grade ${grade} student can follow.
@@ -198,14 +457,22 @@ STYLE: VISUAL.
       const analyzeWritingStyle = async (samples) => {
         const system = `
 You are YAI, a writing coach.
-You will analyze a student's writing and create a short "Writing Style Profile".
-This profile should help future answers sound closer to the student's natural style,
-but must NOT try to bypass AI detectors or imitate mistakes on purpose.
-Focus on tone, sentence length, level of formality, and vocabulary.`;
-        const user = `Here is the student's writing. Summarize their style in 5–8 bullet points:
+You will analyze a student's writing and create a detailed "Writing Style Profile".
+This profile must capture:
+- Sentence structure patterns (simple vs complex, average length)
+- Vocabulary level and word choices
+- Tone and formality level
+- Punctuation habits and style quirks
+- Common phrases or expressions they use
+- Paragraph structure and flow
+- Any unique writing characteristics
+
+Create a comprehensive profile that will help generate text that sounds authentically like this student wrote it themselves.`;
+        const user = `Here is the student's writing. Create a detailed style profile:
 
 "${samples}"`;
-        return await callOpenRouter({ system, user, history: [] });
+        const result = await callNavyAPI({ system, user, history: [] });
+        return result.content || result;
       };
 
       const generateQuizData = async (topic, grade, weakAreas = null) => {
@@ -234,7 +501,8 @@ INSTRUCTIONS:
   }
 ]
 `;
-        let text = await callOpenRouter({ system, user, history: [] });
+        let result = await callNavyAPI({ system, user, history: [] });
+        let text = result.content || result;
         text = text.trim();
         if (text.startsWith("```")) {
           text = text.replace(/^```json/i, '')
@@ -261,7 +529,8 @@ They missed questions at indexes (0-based): [${wrongIndexes.join(', ')}].
 2. Mention the main topics they should review.
 3. Encourage them with 1–2 positive sentences.
 Use Markdown and keep it short.`;
-        return await callOpenRouter({ system, user, history: [] });
+        const result = await callNavyAPI({ system, user, history: [] });
+        return result.content || result;
       };
 
       const generateQuestionHint = async (questionObj, grade) => {
@@ -274,7 +543,8 @@ Here is a multiple-choice question:
 ${JSON.stringify(questionObj, null, 2)}
 
 Give ONE short hint that helps the student think, but do NOT say which option is correct and do not reveal the exact answer.`;
-        return await callOpenRouter({ system, user, history: [] });
+        const result = await callNavyAPI({ system, user, history: [] });
+        return result.content || result;
       };
 
       const generateThemeFromDescription = async (description) => {
@@ -289,7 +559,8 @@ Return ONLY JSON like:
 }
 Colors should be dark-theme friendly.`;
         const user = `Theme description from the student: "${description}"`;
-        let text = await callOpenRouter({ system, user, history: [] });
+        let result = await callNavyAPI({ system, user, history: [] });
+        let text = result.content || result;
         text = text.trim();
         if (text.startsWith("```")) {
           text = text.replace(/^```json/i, '')
@@ -324,25 +595,122 @@ Create a project plan in Markdown with these sections:
 5. **Tips** - short tips to stay on track.
 
 Keep it friendly and not too long.`;
-        return await callOpenRouter({ system, user, history: [] });
+        const result = await callNavyAPI({ system, user, history: [] });
+        return result.content || result;
+      };
+
+      const generateImage = async (prompt, model = "gpt-image-1.5", size = "1024x1024", imageUrl = null, duration = null) => {
+        const body = { model, prompt, size };
+        
+        if (imageUrl) {
+          body.image = imageUrl;
+        }
+        
+        if (model.includes('sora') && duration) {
+          const dur = Number(duration);
+          if ([4, 8, 12].includes(dur)) {
+            body.seconds = dur;
+          } else {
+            console.warn(`Duration ${dur} not supported. Using 4 seconds as default.`);
+            body.seconds = 4;
+          }
+        }
+        
+        console.log('Sending to API:', JSON.stringify(body, null, 2));
+        
+        let useCorsProxy = false;
+        try {
+          useCorsProxy = localStorage.getItem(STORAGE_KEY_CORS_PROXY) === 'true';
+        } catch {}
+        
+        const apiUrl = useCorsProxy ? `${CORS_PROXY_URL}${encodeURIComponent(NAVY_IMAGE_URL)}` : NAVY_IMAGE_URL;
+        
+        const fetchOptions = {
+          method: "POST",
+          headers: {
+            "Authorization": "Bearer " + API_KEY,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(body)
+        };
+        
+        if (useCorsProxy) {
+          console.log('Using CORS proxy:', apiUrl);
+        }
+        
+        const res = await fetch(apiUrl, fetchOptions);
+        
+        const responseText = await res.text();
+        console.log('API Response Status:', res.status);
+        console.log('API Response Text:', responseText);
+        
+        if (!res.ok) {
+          let errorMessage = "Generation error";
+          try {
+            const errorData = JSON.parse(responseText);
+            errorMessage = errorData.error?.message || errorData.message || responseText || "Unknown error";
+          } catch {
+            errorMessage = responseText || `HTTP ${res.status}: ${res.statusText}`;
+          }
+          console.error('API Error Details:', errorMessage);
+          throw new Error(errorMessage);
+        }
+        
+        let data;
+        try {
+          data = JSON.parse(responseText);
+        } catch (e) {
+          console.error('Failed to parse response:', responseText);
+          throw new Error("Invalid response from API");
+        }
+        
+        console.log('API Response Data:', data);
+        
+        if (data.data && Array.isArray(data.data) && data.data.length > 0) {
+          return data.data[0].url || data.data[0].video_url || "";
+        }
+        if (data.url) {
+          return data.url;
+        }
+        if (data.video_url) {
+          return data.video_url;
+        }
+        
+        throw new Error("No video/image URL in response");
       };
 
       // ========= UI COMPONENTS =========
       const MessageBubble = ({ message }) => {
         const isUser = message.role === 'user';
         const isError = message.isError;
+        const isAlert = message.isAlert;
+
+        if (isAlert) {
+          return (
+            <div className="flex w-full mb-2 justify-center animate-slide-up">
+              <div className="px-4 py-2 bg-emerald-900/30 border border-emerald-700/50 rounded-lg text-sm text-emerald-300 max-w-md text-center">
+                {message.content}
+              </div>
+            </div>
+          );
+        }
 
         return (
-          <div className={`flex w-full mb-4 ${isUser ? 'justify-end' : 'justify-start'} animate-fadeIn`}>
+          <div className={`flex w-full mb-4 ${isUser ? 'justify-end' : 'justify-start'} animate-slide-up`}>
             <div className={`flex max-w-[85%] md:max-w-[75%] gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
-              <div className={`flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center overflow-hidden ${
-                isUser ? 'bg-brand-600' : isError ? 'bg-red-500' : 'bg-gray-700'
+              <div className={`flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center overflow-hidden animate-scale-in ${
+                isUser ? 'bg-brand-600 animate-glow' : isError ? 'bg-red-500' : 'bg-gray-700 animate-float'
               }`}>
                 {isUser ? <User size={16} className="text-white" /> :
                  isError ? <AlertCircle size={16} className="text-white" /> :
                  <Bot size={16} className="text-brand-300" />}
               </div>
               <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
+                {message.image && (
+                  <div className="mb-2 rounded-lg overflow-hidden border border-gray-700 max-w-sm animate-scale-in hover-lift">
+                    <img src={message.image} alt="User upload" className="max-w-full h-auto rounded-lg" />
+                  </div>
+                )}
                 <div
                   className={`px-4 py-3 rounded-2xl shadow-sm text-sm md:text-base leading-relaxed overflow-hidden ${
                     isUser
@@ -383,7 +751,7 @@ Keep it friendly and not too long.`;
                           },
                         }}
                       >
-                        {message.content}
+                        {message.content || ''}
                       </ReactMarkdown>
                     </div>
                   )}
@@ -397,11 +765,16 @@ Keep it friendly and not too long.`;
         );
       };
 
-      const ChatInput = ({ onSend, disabled, showStyles = true, placeholder, selectedStyle, onStyleChange }) => {
+      const ChatInput = ({ onSend, disabled, showStyles = true, placeholder, selectedStyle, onStyleChange, searchMode = null, onSearchModeChange = null }) => {
         const [text, setText] = useState('');
         const [selectedImage, setSelectedImage] = useState(null);
+        const [currentSearchMode, setCurrentSearchMode] = useState(searchMode);
         const textareaRef = useRef(null);
         const fileInputRef = useRef(null);
+        
+        useEffect(() => {
+          setCurrentSearchMode(searchMode);
+        }, [searchMode]);
 
         const adjustHeight = () => {
           const textarea = textareaRef.current;
@@ -415,7 +788,7 @@ Keep it friendly and not too long.`;
 
         const handleSubmit = () => {
           if ((text.trim() || selectedImage) && !disabled) {
-            onSend(text.trim(), selectedImage);
+            onSend(text.trim(), selectedImage, currentSearchMode);
             setText('');
             setSelectedImage(null);
             if (textareaRef.current) textareaRef.current.style.height = 'auto';
@@ -445,39 +818,69 @@ Keep it friendly and not too long.`;
           { id: 'visual', label: 'Visual', icon: <ImageIcon size={16} />, desc: 'Imagery & diagrams' },
         ];
 
+        const searchModes = [
+          { id: null, label: 'Auto', icon: <Zap size={14} />, desc: 'Smart mode' },
+          { id: 'search', label: 'Search', icon: <Search size={14} />, desc: 'Web search' },
+        ];
+
+        const handleSearchModeChange = (mode) => {
+          setCurrentSearchMode(mode);
+          if (onSearchModeChange) onSearchModeChange(mode);
+        };
+
         return (
           <div className="w-full bg-[#020617] border-t border-gray-800 p-4 pb-6">
             <div className="max-w-4xl mx-auto space-y-3">
               {showStyles && (
-                <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
-                  {styles.map((style) => (
-                    <button
-                      key={style.id}
-                      onClick={() => onStyleChange(style.id)}
-                      disabled={disabled}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all border ${
-                        selectedStyle === style.id
-                          ? 'bg-brand-600 border-brand-500 text-white shadow-md shadow-brand-900/20'
-                          : 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-750 hover:border-gray-600'
-                      }`}
-                    >
-                      {style.icon}
-                      <span className="leading-none">{style.label}</span>
-                    </button>
-                  ))}
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                    {styles.map((style) => (
+                      <button
+                        key={style.id}
+                        onClick={() => onStyleChange(style.id)}
+                        disabled={disabled}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all border ${
+                          selectedStyle === style.id
+                            ? 'bg-brand-600 border-brand-500 text-white shadow-md shadow-brand-900/20'
+                            : 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-750 hover:border-gray-600'
+                        }`}
+                      >
+                        {style.icon}
+                        <span className="leading-none">{style.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
+                    {searchModes.map((mode) => (
+                      <button
+                        key={mode.id || 'auto'}
+                        onClick={() => handleSearchModeChange(mode.id)}
+                        disabled={disabled}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                          currentSearchMode === mode.id
+                            ? 'bg-emerald-600 border-emerald-500 text-white shadow-md shadow-emerald-900/20'
+                            : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:bg-gray-750 hover:border-gray-600'
+                        }`}
+                        title={mode.desc}
+                      >
+                        {mode.icon}
+                        <span className="leading-none">{mode.label}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
 
               {selectedImage && (
-                <div className="relative inline-block mb-2 animate-fadeIn">
+                <div className="relative inline-block mb-2 animate-scale-in hover-lift">
                   <img
                     src={selectedImage}
                     alt="Preview"
-                    className="h-20 w-20 object-cover rounded-lg border border-gray-600"
+                    className="h-20 w-20 object-cover rounded-lg border border-gray-600 shadow-lg hover:shadow-xl transition-all"
                   />
                   <button
                     onClick={() => { setSelectedImage(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
-                    className="absolute -top-2 -right-2 bg-gray-700 text-white rounded-full p-1 hover:bg-red-500 transition-colors shadow-sm"
+                    className="absolute -top-2 -right-2 bg-gray-700 text-white rounded-full p-1 hover:bg-red-500 transition-all shadow-lg hover:scale-110 animate-glow"
                   >
                     <X size={12} />
                   </button>
@@ -495,10 +898,10 @@ Keep it friendly and not too long.`;
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={disabled}
-                  className="p-2 rounded-xl text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition-colors"
+                  className="p-2 rounded-xl text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition-all hover-lift hover-glow"
                   title="(Optional) attach image"
                 >
-                  <Paperclip size={18} />
+                  <Paperclip size={18} className="animate-float" />
                 </button>
 
                 <textarea
@@ -517,11 +920,11 @@ Keep it friendly and not too long.`;
                   disabled={(!text.trim() && !selectedImage) || disabled}
                   className={`p-3 rounded-xl flex-shrink-0 transition-all duration-200 ${
                     (text.trim() || selectedImage) && !disabled
-                      ? 'bg-brand-600 text-white hover:bg-brand-500 shadow-lg hover:scale-105 active:scale-95'
+                      ? 'bg-brand-600 text-white hover:bg-brand-500 shadow-lg hover:scale-110 active:scale-95 hover-glow animate-gradient'
                       : 'bg-gray-700 text-gray-500 cursor-not-allowed'
                   }`}
                 >
-                  {disabled ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
+                  {disabled ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} className="animate-float" />}
                 </button>
               </div>
             </div>
@@ -530,13 +933,14 @@ Keep it friendly and not too long.`;
       };
 
       const TypingIndicator = () => (
-        <div className="flex w-full mb-4 justify-start">
+        <div className="flex w-full mb-4 justify-start animate-slide-up">
           <div className="flex max-w-[85%] md:max-w-[75%] gap-3 flex-row">
-            <div className="flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center bg-emerald-600 animate-pulse">
-              <div className="h-2 w-2 bg-white rounded-full" />
+            <div className="flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center bg-emerald-600 animate-glow relative">
+              <div className="absolute inset-0 rounded-full bg-emerald-600 pulse-ring"></div>
+              <div className="h-2 w-2 bg-white rounded-full relative z-10 animate-pulse" />
             </div>
             <div className="flex items-center">
-              <span className="text-sm text-gray-400 italic">Thinking...</span>
+              <span className="text-sm text-gray-400 italic animate-shimmer">Thinking...</span>
             </div>
           </div>
         </div>
@@ -612,8 +1016,8 @@ Keep it friendly and not too long.`;
                       : 'text-gray-400 hover:bg-gray-900 hover:text-gray-100'
                   }`}
                 >
-                  <ImageIcon size={14} />
-                  <span>Image Helper</span>
+                  <Wand2 size={14} />
+                  <span>Media Creator</span>
                 </button>
                 <button
                   onClick={() => onViewChange('projects')}
@@ -733,7 +1137,9 @@ Keep it friendly and not too long.`;
           });
         }, [messages]);
 
-        const handleSendMessage = useCallback(async (text, image) => {
+        const [searchMode, setSearchMode] = useState(null);
+
+        const handleSendMessage = useCallback(async (text, image, manualSearchMode = null) => {
           if (!text.trim() && !image) return;
 
           const userMessage = {
@@ -754,7 +1160,13 @@ Keep it friendly and not too long.`;
               ? "(Explain step-by-step using numbered steps.)"
               : "(Explain in a visual way with comparisons and simple text diagrams.)";
 
-          const system = getSystemInstruction(grade, style, 'homework');
+          // Use manual search mode if provided, otherwise auto-detect
+          const finalSearchMode = manualSearchMode !== null ? manualSearchMode : detectSearchIntent(text);
+          
+          // Get initial model estimate for system instruction
+          const contentType = detectContentType(text, image);
+          const estimatedModel = selectModel(contentType, grade, finalSearchMode);
+          const system = getSystemInstruction(grade, style, 'homework', estimatedModel);
           const userPrompt = `${styleInstruction}\n\n${text}`;
 
           const placeholderMessage = {
@@ -767,12 +1179,43 @@ Keep it friendly and not too long.`;
           const modelId = placeholderMessage.id;
           setMessages(prev => [...prev, placeholderMessage]);
 
+          // Model switching alert handler
+          let modelSwitched = false;
+          const handleModelSwitch = (newModel, modelName) => {
+            if (!modelSwitched) {
+              modelSwitched = true;
+              // Show alert in UI
+              const alertMsg = {
+                id: uuidv4(),
+                role: 'model',
+                content: `🔄 **Switching to ${modelName}**\n\nThis may take longer but will provide more detailed and comprehensive responses.`,
+                timestamp: Date.now(),
+                isAlert: true,
+              };
+              setMessages(prev => [...prev, alertMsg]);
+              setTimeout(() => {
+                setMessages(prev => prev.filter(msg => msg.id !== alertMsg.id));
+              }, 5000);
+            }
+          };
+
           try {
-            const reply = await callOpenRouter({
+            const result = await callNavyAPI({
               system,
               user: userPrompt,
-              history: [...messages, userMessage]
+              history: [...messages, userMessage],
+              image: image,
+              autoSelectModel: true,
+              grade: grade,
+              searchMode: finalSearchMode,
+              onModelSwitch: handleModelSwitch
             });
+            const reply = result.content || result;
+            const usedModel = result.model || estimatedModel;
+            
+            // Update system instruction with actual model used
+            const actualSystem = getSystemInstruction(grade, style, 'homework', usedModel);
+            
             setMessages(prev =>
               prev.map(msg =>
                 msg.id === modelId
@@ -795,7 +1238,7 @@ Keep it friendly and not too long.`;
           } finally {
             setIsProcessing(false);
           }
-        }, [style, grade, messages]);
+        }, [style, grade, messages, searchMode]);
 
         const handleClear = () => {
           if (!confirm('Start a brand new chat?')) return;
@@ -813,7 +1256,7 @@ Keep it friendly and not too long.`;
             <div className="absolute top-3 right-3 z-20">
               <button
                 onClick={handleClear}
-                className="p-2 bg-gray-800/80 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-full transition-all border border-gray-700"
+                className="p-2 bg-gray-800/80 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-full transition-all border border-gray-700 hover-lift hover-glow animate-scale-in"
               >
                 <Trash2 size={16} />
               </button>
@@ -833,10 +1276,12 @@ Keep it friendly and not too long.`;
               </div>
             </div>
             <ChatInput
-              onSend={(text, img) => handleSendMessage(text, img)}
+              onSend={(text, img, searchMode) => handleSendMessage(text, img, searchMode)}
               disabled={isProcessing}
               selectedStyle={style}
               onStyleChange={setStyle}
+              searchMode={searchMode}
+              onSearchModeChange={setSearchMode}
             />
           </div>
         );
@@ -916,9 +1361,12 @@ Keep it friendly and not too long.`;
           setMessages(prev => [...prev, userMessage]);
           setIsProcessing(true);
 
-          const system = getSystemInstruction(grade, 'simple', 'essay') +
-            `\n\nHere is the student's writing style profile:\n${styleProfile}`;
-          const user = `Write or improve what the student is asking for. Keep it in their general style, but still clear and appropriate for school.\n\nStudent request: ${text}`;
+          // Estimate model for system instruction
+          const contentType = detectContentType(text, null);
+          const estimatedModel = selectModel(contentType, grade, null);
+          const system = getSystemInstruction(grade, 'simple', 'essay', estimatedModel) +
+            `\n\nHere is the student's writing style profile:\n${styleProfile}\n\nRemember: Write in a completely natural, human-like way that matches their style. Use varied sentence structures, natural flow, and their vocabulary level. Make it sound like they wrote it themselves.`;
+          const user = `Write or improve what the student is asking for. Match their writing style EXACTLY - use their sentence patterns, vocabulary, tone, and natural writing quirks. Make it sound authentically like they wrote it.\n\nStudent request: ${text}`;
 
           const placeholder = {
             id: uuidv4(),
@@ -930,12 +1378,35 @@ Keep it friendly and not too long.`;
           const modelId = placeholder.id;
           setMessages(prev => [...prev, placeholder]);
 
+          // Model switching alert handler
+          let modelSwitched = false;
+          const handleModelSwitch = (newModel, modelName) => {
+            if (!modelSwitched) {
+              modelSwitched = true;
+              const alertMsg = {
+                id: uuidv4(),
+                role: 'model',
+                content: `🔄 **Switching to ${modelName}**\n\nThis may take longer but will provide more detailed and comprehensive responses.`,
+                timestamp: Date.now(),
+                isAlert: true,
+              };
+              setMessages(prev => [...prev, alertMsg]);
+              setTimeout(() => {
+                setMessages(prev => prev.filter(msg => msg.id !== alertMsg.id));
+              }, 5000);
+            }
+          };
+
           try {
-            const reply = await callOpenRouter({
+            const result = await callNavyAPI({
               system,
               user,
-              history: [...messages, userMessage]
+              history: [...messages, userMessage],
+              autoSelectModel: true,
+              grade: grade,
+              onModelSwitch: handleModelSwitch
             });
+            const reply = result.content || result;
             setMessages(prev =>
               prev.map(msg =>
                 msg.id === modelId
@@ -962,7 +1433,7 @@ Keep it friendly and not too long.`;
 
         if (step === 'input') {
           return (
-            <div className="max-w-3xl mx-auto p-6 md:p-12 flex flex-col h-full overflow-y-auto animate-fadeIn">
+            <div className="max-w-3xl mx-auto p-6 md:p-12 flex flex-col h-full overflow-y-auto animate-slide-up">
               <div className="text-center mb-8">
                 <div className="inline-flex items-center justify-center p-3 bg-purple-600 rounded-2xl mb-4 shadow-lg shadow-purple-900/40">
                   <PenTool className="text-white h-8 w-8" />
@@ -989,13 +1460,13 @@ Keep it friendly and not too long.`;
               <button
                 onClick={handleAnalyze}
                 disabled={isAnalyzing || samples.length < 20}
-                className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg transition-all flex items-center justify-center gap-2 ${
+                className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg transition-all flex items-center justify-center gap-2 animate-gradient ${
                   isAnalyzing || samples.length < 20
                     ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white transform hover:scale-[1.01]'
+                    : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white hover-lift hover-glow'
                 }`}
               >
-                {isAnalyzing ? <RefreshCw className="animate-spin" /> : "Analyze My Style"}
+                {isAnalyzing ? <RefreshCw className="animate-spin" /> : <><Sparkles className="animate-float" /> Analyze My Style</>}
               </button>
             </div>
           );
@@ -1132,7 +1603,7 @@ Keep it friendly and not too long.`;
 
         if (step === 'input') {
           return (
-            <div className="max-w-2xl mx-auto p-6 md:p-12 animate-fadeIn">
+            <div className="max-w-2xl mx-auto p-6 md:p-12 animate-slide-up">
               <div className="text-center mb-8">
                 <div className="inline-flex items-center justify-center p-3 bg-indigo-600 rounded-2xl mb-4 shadow-lg shadow-indigo-900/40">
                   <BrainCircuit className="text-white h-8 w-8" />
@@ -1153,9 +1624,12 @@ Keep it friendly and not too long.`;
               <button
                 onClick={() => handleGenerate(inputTopic)}
                 disabled={!inputTopic.trim()}
-                className="w-full py-4 rounded-xl font-bold text-lg bg-brand-600 hover:bg-brand-500 text-white shadow-lg transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-4 rounded-xl font-bold text-lg bg-brand-600 hover:bg-brand-500 text-white shadow-lg transition-all hover-lift hover-glow animate-gradient disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Generate Quiz
+                <span className="flex items-center justify-center gap-2">
+                  <BrainCircuit className="animate-float" />
+                  Generate Quiz
+                </span>
               </button>
             </div>
           );
@@ -1165,18 +1639,19 @@ Keep it friendly and not too long.`;
           return (
             <div className="flex flex-col items-center justify-center h-full animate-fadeIn">
               <div className="relative">
-                <BrainCircuit size={64} className="text-brand-500 animate-pulse" />
-                <div className="absolute inset-0 bg-brand-500/20 blur-xl rounded-full animate-pulse-slow"></div>
+                <BrainCircuit size={64} className="text-brand-500 animate-pulse animate-float" />
+                <div className="absolute inset-0 bg-brand-500/20 blur-xl rounded-full pulse-ring"></div>
+                <div className="absolute inset-0 bg-brand-500/10 blur-2xl rounded-full animate-pulse-slow"></div>
               </div>
-              <p className="mt-6 text-xl font-bold text-gray-200 animate-bounce-slight">Building your Quiz...</p>
-              <p className="text-sm text-gray-500 mt-2">Creating questions & answer choices</p>
+              <p className="mt-6 text-xl font-bold text-gray-200 animate-shimmer">Building your Quiz...</p>
+              <p className="text-sm text-gray-500 mt-2 animate-fadeIn">Creating questions & answer choices</p>
             </div>
           );
         }
 
         if (step === 'results') {
           return (
-            <div className="max-w-xl mx-auto p-6 md:p-10 flex flex-col h-full overflow-y-auto custom-scrollbar animate-fadeIn">
+            <div className="max-w-xl mx-auto p-6 md:p-10 flex flex-col h-full overflow-y-auto custom-scrollbar animate-scale-in">
               <h2 className="text-3xl font-bold text-white mb-2 text-center">Quiz Complete!</h2>
               <div className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-indigo-400 my-4 text-center">
                 {score}/{quizData.length}
@@ -1229,7 +1704,7 @@ Keep it friendly and not too long.`;
 
         const question = quizData[currentIndex];
         return (
-          <div className="max-w-2xl mx-auto p-4 md:p-8 flex flex-col h-full justify-center animate-fadeIn">
+          <div className="max-w-2xl mx-auto p-4 md:p-8 flex flex-col h-full justify-center animate-slide-up">
             <div className="mb-4 flex justify-between items-center text-gray-500 text-sm font-medium">
               <span>Question {currentIndex + 1} of {quizData.length}</span>
               <span className="bg-gray-800 px-3 py-1 rounded-full">Score: {score}</span>
@@ -1304,7 +1779,7 @@ Keep it friendly and not too long.`;
                 <p className="text-gray-300 text-sm">{question.explanation}</p>
                 <button
                   onClick={nextQuestion}
-                  className="mt-4 w-full py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg font-bold"
+                  className="mt-4 w-full py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg font-bold transition-all hover-lift hover-glow animate-scale-in"
                 >
                   {currentIndex < quizData.length - 1 ? 'Next Question' : 'Finish Quiz'}
                 </button>
@@ -1314,112 +1789,317 @@ Keep it friendly and not too long.`;
         );
       };
 
-      // ========= IMAGE HELPER =========
-      const ImageAnalyzer = ({ grade }) => {
-        const [imageData, setImageData] = useState(null);
-        const [description, setDescription] = useState('');
-        const [analysis, setAnalysis] = useState('');
-        const [isAnalyzing, setIsAnalyzing] = useState(false);
-        const [isQuizLoading, setIsQuizLoading] = useState(false);
-        const [quizText, setQuizText] = useState('');
+      // ========= MEDIA CREATOR (Images & Videos) =========
+      const ImageCreator = ({ grade }) => {
+        const [mode, setMode] = useState('image'); // 'image' or 'video'
+        const [prompt, setPrompt] = useState('');
+        const [generatedMedia, setGeneratedMedia] = useState(null);
+        const [isGenerating, setIsGenerating] = useState(false);
+        const [model, setModel] = useState('gpt-image-1.5');
+        const [size, setSize] = useState('1024x1024');
+        const [error, setError] = useState('');
+        const [uploadedImage, setUploadedImage] = useState(null);
+        const [videoDuration, setVideoDuration] = useState(4);
+        const [useCustomDuration, setUseCustomDuration] = useState(false);
+        const [customDuration, setCustomDuration] = useState(30);
+        const [videoSegments, setVideoSegments] = useState([]);
+        const [isGeneratingSegments, setIsGeneratingSegments] = useState(false);
+        const [segmentProgress, setSegmentProgress] = useState({ current: 0, total: 0 });
         const fileInputRef = useRef(null);
+
+        const imageModels = [
+          { id: 'gpt-image-1.5', name: 'GPT Image 1.5 (Recommended)' },
+        ];
+
+        const videoModels = [
+          { id: 'sora-2', name: 'Sora 2 (Video Generation)' },
+        ];
+
+        const imageSizes = [
+          { id: '512x512', name: '512x512' },
+          { id: '1024x1024', name: '1024x1024' },
+          { id: '1024x1792', name: '1024x1792 (Portrait)' },
+          { id: '1792x1024', name: '1792x1024 (Landscape)' },
+        ];
+
+        const videoSizes = [
+          { id: '1024x1024', name: '1024x1024 (Square)' },
+          { id: '1024x576', name: '1024x576 (16:9)' },
+          { id: '576x1024', name: '576x1024 (9:16)' },
+        ];
+
+        const models = mode === 'video' ? videoModels : imageModels;
+        const sizes = mode === 'video' ? videoSizes : imageSizes;
+
+        useEffect(() => {
+          if (mode === 'video') {
+            setModel('sora-2');
+            setSize('1024x1024');
+          } else {
+            setModel('gpt-image-1.5');
+            setSize('1024x1024');
+          }
+          setGeneratedMedia(null);
+        }, [mode]);
 
         const handleFileChange = (e) => {
           const file = e.target.files[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onloadend = () => setImageData(reader.result);
-          reader.readAsDataURL(file);
-        };
-
-        const handleAnalyze = async () => {
-          if (!description.trim()) return;
-          setIsAnalyzing(true);
-          setAnalysis('');
-          try {
-            const system = `
-You are an "Image Helper" assistant for a Grade ${grade} student.
-IMPORTANT: You CANNOT actually see the image, you ONLY know what the student describes.
-Use their description to:
-1. Explain what might be in the image.
-2. Help them understand it (if it's a diagram, graph, homework screenshot, etc.).
-3. If it looks like homework, help them reason it out instead of just giving the answer.
-Use short Markdown.`;
-            const user = `The student uploaded an image and described it like this:\n\n"${description}".\n\nHelp them understand this image.`;
-            const reply = await callOpenRouter({ system, user, history: [] });
-            setAnalysis(reply);
-          } catch (e) {
-            console.error("Image analyze error:", e);
-            setAnalysis("Sorry, I couldn't analyze that description right now.");
-          } finally {
-            setIsAnalyzing(false);
+          if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => setUploadedImage(reader.result);
+            reader.readAsDataURL(file);
           }
         };
 
-        const handleQuizFromImage = async () => {
-          if (!description.trim()) return;
-          setIsQuizLoading(true);
-          setQuizText('');
+        const calculateSegments = (totalSeconds) => {
+          const segments = [];
+          let remaining = totalSeconds;
+          
+          while (remaining > 0) {
+            if (remaining >= 12) {
+              segments.push(12);
+              remaining -= 12;
+            } else if (remaining >= 8) {
+              segments.push(8);
+              remaining -= 8;
+            } else if (remaining >= 4) {
+              segments.push(4);
+              remaining -= 4;
+            } else {
+              segments.push(4);
+              remaining = 0;
+            }
+          }
+          
+          return segments;
+        };
+
+        const handleGenerate = async () => {
+          if (!prompt.trim()) return;
+          
+          if (mode === 'video' && useCustomDuration && customDuration > 12) {
+            await handleGenerateLongVideo();
+            return;
+          }
+          
+          setIsGenerating(true);
+          setError('');
+          setGeneratedMedia(null);
+          setVideoSegments([]);
           try {
-            const data = await generateQuizData(
-              `Make questions based on this image description: ${description}`,
-              grade
+            const mediaUrl = await generateImage(
+              prompt, 
+              model, 
+              size, 
+              uploadedImage, 
+              mode === 'video' ? videoDuration : null
             );
-            const formatted = data
-              .map((q, i) => {
-                const letter = ['A', 'B', 'C', 'D'];
-                return `**Q${i + 1}. ${q.question}**\n${q.options.map((opt, idx) => `${letter[idx]}. ${opt}`).join('\n')}`;
-              })
-              .join('\n\n');
-            setQuizText(formatted);
+            setGeneratedMedia(mediaUrl);
           } catch (e) {
-            console.error("Image quiz error:", e);
-            setQuizText("Couldn't build a quiz from that description right now.");
+            console.error("Generation error:", e);
+            const errorMsg = e.message || e.toString();
+            if (errorMsg.includes('error') || errorMsg.includes('Error')) {
+              setError(`Error: ${errorMsg}. Check console for details.`);
+            } else {
+              setError(`Couldn't generate the ${mode}: ${errorMsg}. Try again or adjust your prompt.`);
+            }
           } finally {
-            setIsQuizLoading(false);
+            setIsGenerating(false);
           }
+        };
+
+        const handleGenerateLongVideo = async () => {
+          setIsGeneratingSegments(true);
+          setError('');
+          setGeneratedMedia(null);
+          setVideoSegments([]);
+          
+          try {
+            const segments = calculateSegments(customDuration);
+            setSegmentProgress({ current: 0, total: segments.length });
+            
+            const segmentUrls = [];
+            
+            for (let i = 0; i < segments.length; i++) {
+              setSegmentProgress({ current: i + 1, total: segments.length });
+              
+              const segmentPrompt = segments.length > 1 
+                ? `${prompt} (segment ${i + 1} of ${segments.length}, continue the scene naturally)`
+                : prompt;
+              
+              const segmentUrl = await generateImage(
+                segmentPrompt,
+                model,
+                size,
+                uploadedImage,
+                segments[i]
+              );
+              
+              segmentUrls.push({
+                url: segmentUrl,
+                duration: segments[i],
+                index: i + 1
+              });
+              
+              if (i < segments.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+              }
+            }
+            
+            setVideoSegments(segmentUrls);
+            
+            try {
+              const combinedUrl = await combineVideoSegments(segmentUrls);
+              setGeneratedMedia(combinedUrl);
+            } catch (combineError) {
+              console.warn("Could not combine videos automatically:", combineError);
+            }
+            
+          } catch (e) {
+            console.error("Long video generation error:", e);
+            const errorMsg = e.message || e.toString();
+            setError(`Couldn't generate all segments: ${errorMsg}. ${videoSegments.length > 0 ? 'Some segments were generated - check downloads below.' : 'Check console for details.'}`);
+          } finally {
+            setIsGeneratingSegments(false);
+            setSegmentProgress({ current: 0, total: 0 });
+          }
+        };
+
+        const combineVideoSegments = async (segments) => {
+          return new Promise((resolve, reject) => {
+            try {
+              const videoElements = segments.map(seg => {
+                const video = document.createElement('video');
+                video.src = seg.url;
+                video.crossOrigin = 'anonymous';
+                return video;
+              });
+
+              Promise.all(videoElements.map(video => {
+                return new Promise((res, rej) => {
+                  video.onloadedmetadata = () => res();
+                  video.onerror = rej;
+                  video.load();
+                });
+              })).then(() => {
+                const totalDuration = videoElements.reduce((sum, v) => sum + v.duration, 0);
+                
+                const canvas = document.createElement('canvas');
+                canvas.width = videoElements[0].videoWidth;
+                canvas.height = videoElements[0].videoHeight;
+                const ctx = canvas.getContext('2d');
+                
+                const stream = canvas.captureStream(30);
+                const recorder = new MediaRecorder(stream, {
+                  mimeType: 'video/webm;codecs=vp9'
+                });
+                
+                const chunks = [];
+                recorder.ondataavailable = (e) => chunks.push(e.data);
+                recorder.onstop = () => {
+                  const blob = new Blob(chunks, { type: 'video/webm' });
+                  const url = URL.createObjectURL(blob);
+                  resolve(url);
+                };
+                
+                recorder.start();
+                
+                let currentSegment = 0;
+                const playNext = () => {
+                  if (currentSegment >= videoElements.length) {
+                    recorder.stop();
+                    return;
+                  }
+                  
+                  const video = videoElements[currentSegment];
+                  video.currentTime = 0;
+                  
+                  const drawFrame = () => {
+                    if (video.ended || video.paused) {
+                      currentSegment++;
+                      playNext();
+                      return;
+                    }
+                    
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    requestAnimationFrame(drawFrame);
+                  };
+                  
+                  video.play();
+                  drawFrame();
+                };
+                
+                playNext();
+              }).catch(reject);
+            } catch (error) {
+              reject(error);
+            }
+          });
         };
 
         return (
-          <div className="max-w-4xl mx-auto p-6 md:p-10 flex flex-col gap-6 h-full overflow-y-auto custom-scrollbar animate-fadeIn">
+          <div className="max-w-4xl mx-auto p-6 md:p-10 flex flex-col gap-6 h-full overflow-y-auto custom-scrollbar animate-slide-up">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-100 flex items-center gap-2">
-                  <ImageIcon className="text-brand-400" /> Image Helper
+                  <Wand2 className="text-brand-400 animate-float" /> Media Creator
                 </h2>
                 <p className="text-sm text-gray-400">
-                  Upload a screenshot or picture, describe it, and YAI will help explain it or turn it into practice.
-                  (For now, YAI uses your description, not the actual pixels.)
+                  Create stunning images or videos with AI. Describe what you want and watch it come to life!
                 </p>
               </div>
             </div>
 
-            <div className="grid md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)] gap-6">
+            <div className="flex gap-2 bg-gray-900/50 p-1 rounded-xl border border-gray-800">
+              <button
+                onClick={() => setMode('image')}
+                className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                  mode === 'image'
+                    ? 'bg-brand-600 text-white shadow-lg animate-glow'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+                }`}
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <ImageIcon size={16} />
+                  Images
+                </span>
+              </button>
+              <button
+                onClick={() => setMode('video')}
+                className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                  mode === 'video'
+                    ? 'bg-brand-600 text-white shadow-lg animate-glow'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+                }`}
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <Wand2 size={16} />
+                  Videos
+                </span>
+              </button>
+            </div>
+
+            <div className="grid md:grid-cols-[minmax(0,1.2fr)_minmax(0,1.8fr)] gap-6">
               <div className="bg-gray-900/90 border border-gray-800 rounded-2xl p-5 shadow-xl">
                 <div className="flex flex-col gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Image (optional)
+                      {mode === 'video' ? 'Video' : 'Image'} Prompt
                     </label>
-                    <div
-                      className="border-2 border-dashed border-gray-700 rounded-xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-brand-500/70 hover:bg-gray-900 transition-all"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      {imageData ? (
-                        <img
-                          src={imageData}
-                          alt="Preview"
-                          className="max-h-40 rounded-lg border border-gray-700 object-contain"
-                        />
-                      ) : (
-                        <>
-                          <ImageIcon className="text-gray-500" />
-                          <p className="text-xs text-gray-500">
-                            Click to select an image (screenshot, homework photo, diagram...)
-                          </p>
-                        </>
-                      )}
-                    </div>
+                    <textarea
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
+                      placeholder={mode === 'video' 
+                        ? 'Example: "A scenic futuristic city at sunset, flying cars, neon lights, cinematic"'
+                        : 'Example: "A scenic futuristic city at sunset, detailed, 4k"'}
+                      className="w-full h-32 bg-gray-950 border border-gray-800 rounded-xl p-3 text-sm text-gray-200 focus:ring-2 focus:ring-brand-500/50 outline-none resize-none custom-scrollbar"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Reference Image (Optional)
+                    </label>
                     <input
                       type="file"
                       ref={fileInputRef}
@@ -1427,77 +2107,270 @@ Use short Markdown.`;
                       accept="image/*"
                       onChange={handleFileChange}
                     />
+                    <div
+                      className="border-2 border-dashed border-gray-700 rounded-xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-brand-500/70 hover:bg-gray-900 transition-all min-h-[100px]"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      {uploadedImage ? (
+                        <div className="relative w-full">
+                          <img
+                            src={uploadedImage}
+                            alt="Upload preview"
+                            className="max-h-32 rounded-lg border border-gray-700 mx-auto"
+                          />
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setUploadedImage(null);
+                              if (fileInputRef.current) fileInputRef.current.value = '';
+                            }}
+                            className="absolute top-0 right-0 bg-gray-700 text-white rounded-full p-1 hover:bg-red-500 transition-all shadow-lg hover:scale-110"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <Paperclip className="text-gray-500" size={20} />
+                          <p className="text-xs text-gray-500 text-center">
+                            Click to upload a reference image
+                          </p>
+                        </>
+                      )}
+                    </div>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Describe the image or paste the problem text
+                      Model
                     </label>
-                    <textarea
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder='Example: "A screenshot of a graph going up, x-axis is time in seconds, y-axis is speed..."'
-                      className="w-full h-40 bg-gray-950 border border-gray-800 rounded-xl p-3 text-sm text-gray-200 focus:ring-2 focus:ring-brand-500/50 outline-none resize-none custom-scrollbar"
-                    />
+                    <select
+                      value={model}
+                      onChange={(e) => setModel(e.target.value)}
+                      className="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-200 focus:ring-2 focus:ring-brand-500/50 outline-none"
+                    >
+                      {models.map(m => (
+                        <option key={m.id} value={m.id}>{m.name}</option>
+                      ))}
+                    </select>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <button
-                      onClick={handleAnalyze}
-                      disabled={!description.trim() || isAnalyzing}
-                      className="flex-1 py-2.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Size
+                    </label>
+                    <select
+                      value={size}
+                      onChange={(e) => setSize(e.target.value)}
+                      className="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-200 focus:ring-2 focus:ring-brand-500/50 outline-none"
                     >
-                      {isAnalyzing ? <Loader2 size={16} className="animate-spin" /> : <Bot size={16} />}
-                      {isAnalyzing ? "Analyzing..." : "Analyze Image Description"}
-                    </button>
-                    <button
-                      onClick={handleQuizFromImage}
-                      disabled={!description.trim() || isQuizLoading}
-                      className="flex-1 py-2.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-100 text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isQuizLoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                      {isQuizLoading ? "Building Quiz..." : "Make Quiz From This"}
-                    </button>
+                      {sizes.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
                   </div>
+
+                  {mode === 'video' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Video Duration
+                      </label>
+                      
+                      <div className="flex gap-2 mb-3 bg-gray-900/50 p-1 rounded-lg">
+                        <button
+                          type="button"
+                          onClick={() => setUseCustomDuration(false)}
+                          className={`flex-1 py-1.5 px-3 rounded text-xs font-medium transition-all ${
+                            !useCustomDuration
+                              ? 'bg-brand-600 text-white'
+                              : 'text-gray-400 hover:text-gray-200'
+                          }`}
+                        >
+                          Standard (4-12s)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setUseCustomDuration(true)}
+                          className={`flex-1 py-1.5 px-3 rounded text-xs font-medium transition-all ${
+                            useCustomDuration
+                              ? 'bg-brand-600 text-white'
+                              : 'text-gray-400 hover:text-gray-200'
+                          }`}
+                        >
+                          Custom (30s+)
+                        </button>
+                      </div>
+
+                      {!useCustomDuration ? (
+                        <>
+                          <div className="flex gap-2">
+                            {[4, 8, 12].map((sec) => (
+                              <button
+                                key={sec}
+                                type="button"
+                                onClick={() => setVideoDuration(sec)}
+                                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                                  videoDuration === sec
+                                    ? 'bg-brand-600 text-white shadow-lg animate-glow'
+                                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover-glow'
+                                }`}
+                              >
+                                {sec}s
+                              </button>
+                            ))}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-2">
+                            Sora-2 only supports 4, 8, or 12 second videos
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="number"
+                              min="13"
+                              max="120"
+                              value={customDuration}
+                              onChange={(e) => setCustomDuration(Number(e.target.value))}
+                              className="flex-1 bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-200 focus:ring-2 focus:ring-brand-500/50 outline-none"
+                              placeholder="30"
+                            />
+                            <span className="text-sm text-gray-300">seconds</span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-2">
+                            Will generate multiple segments and combine them automatically
+                          </p>
+                          {customDuration > 0 && (
+                            <div className="mt-2 p-2 bg-gray-950 rounded-lg text-xs text-gray-400">
+                              <p>Will create: {calculateSegments(customDuration).map((s, i) => `${s}s${i < calculateSegments(customDuration).length - 1 ? ' + ' : ''}`).join('')} = {calculateSegments(customDuration).reduce((a, b) => a + b, 0)}s total</p>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleGenerate}
+                    disabled={!prompt.trim() || isGenerating || isGeneratingSegments}
+                    className="w-full py-3 rounded-lg bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover-lift hover-glow animate-gradient shadow-lg"
+                  >
+                    {(isGenerating || isGeneratingSegments) ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        <span className="animate-shimmer">
+                          {isGeneratingSegments 
+                            ? `Generating segment ${segmentProgress.current}/${segmentProgress.total}...`
+                            : `Generating ${mode}...`}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 size={16} className="animate-float" />
+                        Generate {mode === 'video' ? (useCustomDuration ? `${customDuration}s Video` : 'Video') : 'Image'}
+                      </>
+                    )}
+                  </button>
+
+                  {error && (
+                    <div className="bg-red-900/30 border border-red-800 rounded-lg p-3 text-sm text-red-200">
+                      {error}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="bg-gray-900/90 border border-gray-800 rounded-2xl p-5 shadow-xl min-h-[160px]">
-                  <h3 className="text-sm font-semibold text-gray-200 mb-2 flex items-center gap-2">
-                    <Bot size={14} className="text-brand-400" />
-                    AI Explanation
-                  </h3>
-                  <div className="text-sm text-gray-200">
-                    {analysis ? (
-                      <ReactMarkdown className="markdown-body text-sm">
-                        {analysis}
-                      </ReactMarkdown>
-                    ) : (
-                      <p className="text-gray-500 text-xs">
-                        After you describe the image and click "Analyze", your explanation will show up here.
+              <div className="bg-gray-900/90 border border-gray-800 rounded-2xl p-5 shadow-xl">
+                <h3 className="text-sm font-semibold text-gray-200 mb-3 flex items-center gap-2">
+                  {mode === 'video' ? (
+                    <Wand2 size={14} className="text-brand-400 animate-float" />
+                  ) : (
+                    <ImageIcon size={14} className="text-brand-400" />
+                  )}
+                  Generated {mode === 'video' ? 'Video' : 'Image'}
+                </h3>
+                <div className="flex items-center justify-center min-h-[400px] bg-gray-950 rounded-xl border border-gray-800 animate-scale-in">
+                  {isGenerating ? (
+                    <div className="flex flex-col items-center gap-3 animate-slide-up">
+                      <div className="relative">
+                        <Loader2 size={32} className="animate-spin text-brand-400" />
+                        <div className="absolute inset-0 rounded-full bg-brand-400/20 pulse-ring"></div>
+                      </div>
+                      <p className="text-sm text-gray-400 animate-shimmer">
+                        {mode === 'video' 
+                          ? `Creating your ${videoDuration}s video with Sora 2...` 
+                          : 'Creating your image with GPT Image 1.5...'}
                       </p>
-                    )}
-                  </div>
+                    </div>
+                  ) : generatedMedia ? (
+                    mode === 'video' ? (
+                      <video
+                        src={generatedMedia}
+                        controls
+                        className="max-w-full max-h-[600px] rounded-lg border border-gray-700 animate-scale-in hover-lift shadow-xl transition-all"
+                        autoPlay
+                        loop
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    ) : (
+                      <img
+                        src={generatedMedia}
+                        alt="Generated"
+                        className="max-w-full max-h-[600px] rounded-lg border border-gray-700 animate-scale-in hover-lift shadow-xl transition-all"
+                      />
+                    )
+                  ) : (
+                    <p className="text-sm text-gray-500 text-center animate-fadeIn">
+                      Your generated {mode} will appear here.
+                    </p>
+                  )}
                 </div>
+                {generatedMedia && (
+                  <div className="mt-3 flex gap-2 animate-slide-up">
+                    <a
+                      href={generatedMedia}
+                      download={mode === 'video' ? 'generated-video.webm' : 'generated-image.png'}
+                      className="flex-1 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 text-sm font-medium text-center transition-all hover-lift hover-glow"
+                    >
+                      Download {mode === 'video' && useCustomDuration ? 'Combined' : ''}
+                    </a>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(generatedMedia);
+                        alert(`${mode === 'video' ? 'Video' : 'Image'} URL copied to clipboard!`);
+                      }}
+                      className="flex-1 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 text-sm font-medium transition-all hover-lift hover-glow"
+                    >
+                      Copy URL
+                    </button>
+                  </div>
+                )}
 
-                <div className="bg-gray-900/90 border border-gray-800 rounded-2xl p-5 shadow-xl min-h-[160px]">
-                  <h3 className="text-sm font-semibold text-gray-200 mb-2 flex items-center gap-2">
-                    <BrainCircuit size={14} className="text-indigo-400" />
-                    Quiz Based On This
-                  </h3>
-                  <div className="text-sm text-gray-200">
-                    {quizText ? (
-                      <ReactMarkdown className="markdown-body text-sm">
-                        {quizText}
-                      </ReactMarkdown>
-                    ) : (
-                      <p className="text-gray-500 text-xs">
-                        Click "Make Quiz From This" to generate practice questions from your description.
-                      </p>
-                    )}
+                {videoSegments.length > 0 && (
+                  <div className="mt-4 animate-slide-up">
+                    <h4 className="text-sm font-semibold text-gray-300 mb-2">Video Segments ({videoSegments.length})</h4>
+                    <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
+                      {videoSegments.map((seg, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-2 bg-gray-950 rounded-lg border border-gray-800">
+                          <span className="text-xs text-gray-400">Segment {seg.index} ({seg.duration}s)</span>
+                          <div className="flex gap-2">
+                            <a
+                              href={seg.url}
+                              download={`segment-${seg.index}.mp4`}
+                              className="px-2 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs rounded transition-all hover-lift"
+                            >
+                              Download
+                            </a>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      {generatedMedia ? 'Combined video available above, or download segments individually.' : 'Download segments and combine them using video editing software.'}
+                    </p>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -1557,7 +2430,7 @@ Use short Markdown.`;
         };
 
         return (
-          <div className="max-w-5xl mx-auto p-6 md:p-10 flex flex-col gap-6 h-full overflow-y-auto custom-scrollbar animate-fadeIn">
+          <div className="max-w-5xl mx-auto p-6 md:p-10 flex flex-col gap-6 h-full overflow-y-auto custom-scrollbar animate-slide-up">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div>
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-100 flex items-center gap-2">
@@ -1603,9 +2476,9 @@ Use short Markdown.`;
                   <button
                     onClick={handleCreatePlan}
                     disabled={!title.trim() || !description.trim() || isGenerating}
-                    className="w-full py-2.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full py-2.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover-lift hover-glow animate-gradient"
                   >
-                    {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                    {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} className="animate-float" />}
                     {isGenerating ? "Planning your project..." : "Generate Project Plan"}
                   </button>
                 </div>
@@ -1677,9 +2550,24 @@ Use short Markdown.`;
       // ========= SETTINGS =========
       const SettingsView = ({ theme, onGenerateTheme, isGeneratingTheme }) => {
         const [description, setDescription] = useState('');
+        const [useCorsProxy, setUseCorsProxy] = useState(false);
+
+        useEffect(() => {
+          try {
+            const saved = localStorage.getItem(STORAGE_KEY_CORS_PROXY);
+            setUseCorsProxy(saved === 'true');
+          } catch {}
+        }, []);
+
+        const handleCorsProxyToggle = (enabled) => {
+          setUseCorsProxy(enabled);
+          try {
+            localStorage.setItem(STORAGE_KEY_CORS_PROXY, enabled ? 'true' : 'false');
+          } catch {}
+        };
 
         return (
-          <div className="max-w-3xl mx-auto p-6 md:p-10 space-y-8 h-full overflow-y-auto custom-scrollbar animate-fadeIn">
+          <div className="max-w-3xl mx-auto p-6 md:p-10 space-y-8 h-full overflow-y-auto custom-scrollbar animate-slide-up">
             <div>
               <h2 className="text-2xl font-bold text-gray-100 mb-2 flex items-center gap-2">
                 <SettingsIcon size={18} /> Settings
@@ -1722,15 +2610,43 @@ Use short Markdown.`;
               <button
                 onClick={() => onGenerateTheme(description)}
                 disabled={!description.trim() || isGeneratingTheme}
-                className="px-4 py-2 rounded-lg text-sm font-semibold bg-brand-600 hover:bg-brand-500 text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2 rounded-lg text-sm font-semibold bg-brand-600 hover:bg-brand-500 text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-all hover-lift hover-glow animate-gradient"
               >
-                {isGeneratingTheme ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} />}
+                {isGeneratingTheme ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} className="animate-float" />}
                 {isGeneratingTheme ? "Asking AI for theme..." : "Generate Theme with AI"}
               </button>
 
               <p className="text-xs text-gray-500">
                 Current theme: <span className="text-gray-200 font-semibold">{theme.name}</span>
               </p>
+            </div>
+
+            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 shadow-xl space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-semibold text-gray-100 flex items-center gap-2">
+                    <AlertCircle size={16} className="text-orange-400" />
+                    CORS Proxy (Advanced)
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Enable this if you get CORS errors when generating images/videos. Only use if needed.
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={useCorsProxy}
+                    onChange={(e) => handleCorsProxyToggle(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-brand-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
+                </label>
+              </div>
+              {useCorsProxy && (
+                <div className="bg-orange-900/20 border border-orange-800 rounded-lg p-3 text-xs text-orange-200">
+                  ⚠️ CORS proxy is enabled. This routes requests through a third-party service. Use only if necessary.
+                </div>
+              )}
             </div>
 
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 shadow-xl">
@@ -1924,7 +2840,7 @@ Use short Markdown.`;
                 />
               )}
               {currentView === 'quiz' && <QuizMode grade={grade} />}
-              {currentView === 'image' && <ImageAnalyzer grade={grade} />}
+              {currentView === 'image' && <ImageCreator grade={grade} />}
               {currentView === 'projects' && (
                 <ProjectPlanner
                   grade={grade}
@@ -1948,5 +2864,4 @@ Use short Markdown.`;
       root.render(<App />);
     </script>
   </body>
-</html> 
-
+</html>
