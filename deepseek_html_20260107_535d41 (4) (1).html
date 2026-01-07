@@ -1,0 +1,1324 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Block.io – Territory Capture Game</title>
+<style>
+  html,body{margin:0;height:100%;background:#05060a;color:#e6e6e6;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
+  canvas{display:block}
+  #hudLeft{position:fixed;left:12px;top:12px;z-index:10;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:rgba(14,16,24,.72);border:1px solid rgba(255,255,255,.10);backdrop-filter: blur(6px);font-size:13px}
+  .dot{width:12px;height:12px;border-radius:50%}
+  #rankBadge{padding:2px 8px;border-radius:8px;background:#ffd54a;color:#111;font-weight:900;font-size:12px;letter-spacing:.2px}
+  #hudRight{position:fixed;right:12px;top:12px;z-index:10;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:rgba(14,16,24,.72);border:1px solid rgba(255,255,255,.10);backdrop-filter: blur(6px);font-weight:900;font-size:18px;letter-spacing:.5px}
+  #leaderboard{position:fixed;right:12px;top:68px;z-index:10;width:240px;max-width: calc(100vw - 24px);padding:10px 12px;border-radius:14px;background:rgba(14,16,24,.62);border:1px solid rgba(255,255,255,.10);backdrop-filter: blur(6px)}
+  #leaderboard h3{margin:0 0 8px 0;font-size:13px;opacity:.9;letter-spacing:.3px}
+  .lbRow{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-top:1px solid rgba(255,255,255,.06)}
+  .lbRow:first-of-type{border-top:none}
+  .lbName{display:flex;align-items:center;gap:8px;min-width:0}
+  .lbName span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+  .lbPct{font-weight:900;font-size:13px;opacity:.95}
+  #miniHint{position:fixed;left:12px;bottom:12px;z-index:10;padding:8px 12px;border-radius:999px;background:rgba(14,16,24,.60);border:1px solid rgba(255,255,255,.10);backdrop-filter: blur(6px);font-size:13px;opacity:.90}
+  #overlayCenter{position:fixed;inset:0;z-index:11;display:flex;align-items:center;justify-content:center;pointer-events:none;font-weight:900;font-size:110px;letter-spacing:3px;text-shadow:0 14px 60px rgba(0,0,0,.85)}
+  #minimap{position:fixed;right:12px;bottom:12px;z-index:10;width:150px;height:150px;border-radius:50%;background:#0a0c14;border:2px solid rgba(255,255,255,.25)}
+  .floatGain{position:fixed;z-index:12;pointer-events:none;color:#ffd54a;font-weight:900;font-size:18px;text-shadow: 0 10px 40px rgba(0,0,0,0.80);animation: gainRise 1.2s ease-out forwards}
+  @keyframes gainRise{0%{transform:translateY(0) scale(1);opacity:1}70%{transform:translateY(-30px) scale(1.06);opacity:.9}100%{transform:translateY(-48px) scale(1.08);opacity:0}}
+  #lobbyScreen{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, #1a0f0a 0%, #0a0500 100%);backdrop-filter: blur(12px)}
+  #lobbyCard{width:min(520px,92vw);border-radius:24px;padding:40px 32px;background:linear-gradient(145deg, rgba(26,15,10,0.95) 0%, rgba(10,5,0,0.98) 100%);border:2px solid rgba(255,159,42,0.3);box-shadow:0 20px 60px rgba(0,0,0,0.5), inset 0 0 40px rgba(255,159,42,0.1);text-align:center}
+  #lobbyCard h2{margin:0 0 32px 0;font-size:36px;letter-spacing:1px;background:linear-gradient(135deg, #ff9f2a 0%, #ff6b00 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:900}
+  #nameInput{width:100%;padding:16px 20px;border-radius:14px;background:rgba(0,0,0,0.6);color:#ff9f2a;border:2px solid rgba(255,159,42,0.4);font-size:18px;font-weight:700;margin-bottom:20px;text-align:center;transition:all 0.3s}
+  #nameInput:focus{outline:none;border-color:#ff9f2a;box-shadow:0 0 20px rgba(255,159,42,0.3);background:rgba(0,0,0,0.8)}
+  #nameInput::placeholder{color:rgba(255,159,42,0.5)}
+  #playBtn{width:100%;padding:16px 24px;border-radius:14px;background:linear-gradient(135deg, #ff9f2a 0%, #ff6b00 100%);color:#000;border:none;font-size:18px;font-weight:900;letter-spacing:1px;cursor:pointer;transition:all 0.3s;box-shadow:0 8px 24px rgba(255,159,42,0.4)}
+  #playBtn:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(255,159,42,0.6)}
+  #playBtn:active{transform:translateY(0)}
+  #playBtn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+  #queueSelectScreen{display:none}
+  #queueSelectScreen.show{display:block}
+  .queueOptions{display:flex;flex-direction:column;gap:16px;margin-top:24px}
+  .queueOption{padding:24px;border-radius:16px;background:rgba(0,0,0,0.4);border:2px solid rgba(255,159,42,0.3);cursor:pointer;transition:all 0.3s;text-align:left}
+  .queueOption:hover{border-color:#ff9f2a;background:rgba(0,0,0,0.6);transform:translateX(4px);box-shadow:0 8px 24px rgba(255,159,42,0.2)}
+  .queueOption h3{margin:0 0 8px 0;font-size:22px;color:#ff9f2a;font-weight:900}
+  .queueOption p{margin:0;font-size:14px;color:rgba(255,159,42,0.8);line-height:1.5}
+  .queueOption.selected{border-color:#ff9f2a;background:rgba(255,159,42,0.15);box-shadow:0 0 30px rgba(255,159,42,0.4)}
+  #matchStatus{margin:20px 0;font-size:16px;color:rgba(255,159,42,0.9);font-weight:600}
+  #matchTimer{font-size:32px;font-weight:900;color:#ff9f2a;margin:12px 0;text-shadow:0 0 20px rgba(255,159,42,0.6)}
+  #matchInfo{margin:16px 0;font-size:14px;color:rgba(255,159,42,0.7);font-weight:500}
+  #playersWaiting{display:flex;flex-direction:column;gap:10px;margin:20px 0;max-height:200px;overflow-y:auto}
+  .waitingPlayer{padding:12px 16px;background:rgba(255,159,42,0.1);border:1px solid rgba(255,159,42,0.3);border-radius:10px;font-size:15px;color:#ff9f2a;font-weight:600}
+  #endScreen{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.75);backdrop-filter: blur(8px)}
+  #endCard{width:min(560px,92vw);border-radius:18px;padding:16px 16px 14px 16px;background:rgba(15,18,28,.88);border:1px solid rgba(255,255,255,.12);animation: endCardPop 0.5s ease-out}
+  @keyframes endCardPop{0%{transform:scale(0.8);opacity:0}100%{transform:scale(1);opacity:1}}
+  #endCard h2{margin:0 0 10px 0;font-size:22px;letter-spacing:.2px}
+  .endRow{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-top:1px solid rgba(255,255,255,.07)}
+  .endRow:first-of-type{border-top:none}
+  #restartBtn{margin-top:12px;width:100%;cursor:pointer;padding:11px 12px;border-radius:12px;background:#10131a;color:#e6e6e6;border:1px solid rgba(255,255,255,.16);font-weight:900;letter-spacing:.3px;transition:all 0.2s}
+  #restartBtn:hover{background:#1a1d2a;transform:scale(1.02)}
+  .killAnimation{position:fixed;z-index:15;pointer-events:none;font-weight:900;font-size:48px;text-shadow:0 0 20px rgba(255,0,0,0.8),0 0 40px rgba(255,0,0,0.6);color:#ff4444;animation: killPop 1.5s ease-out forwards}
+  @keyframes killPop{0%{transform:translate(-50%,-50%) scale(0.5);opacity:0}20%{transform:translate(-50%,-50%) scale(1.2);opacity:1}100%{transform:translate(-50%,-50%) scale(1) translateY(-100px);opacity:0}}
+  .winAnimation{position:fixed;inset:0;z-index:25;pointer-events:none;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:120px;text-shadow:0 0 30px rgba(255,215,74,0.9),0 0 60px rgba(255,215,74,0.7);color:#ffd54a;animation: winFlash 2s ease-out forwards}
+  @keyframes winFlash{0%{transform:scale(0.3);opacity:0}15%{transform:scale(1.1);opacity:1}30%{transform:scale(1);opacity:1}100%{transform:scale(1.2);opacity:0}
+</style>
+</head>
+<body>
+
+<div id="hudLeft">
+  <div class="dot" id="meDot"></div>
+  <div>You</div>
+  <div id="rankBadge">#1</div>
+  <div style="opacity:.75">W↑ S↓ A← D→ • R reset</div>
+</div>
+
+<div id="hudRight"><span id="timerText">1:00</span></div>
+
+<div id="leaderboard">
+  <h3>Leaderboard</h3>
+  <div id="lbRows"></div>
+</div>
+
+<div id="miniHint">
+  Loop outside your color → come home to capture • Cut trails to kill • Minimap shows the whole map
+</div>
+
+<div id="overlayCenter"></div>
+
+<div id="lobbyScreen">
+  <div id="lobbyCard">
+    <h2>BLOCK.IO</h2>
+    <div id="nameScreen">
+      <input type="text" id="nameInput" placeholder="Enter your name" maxlength="20" />
+      <button id="playBtn">PLAY</button>
+    </div>
+    <div id="queueSelectScreen">
+      <h3 style="margin:0 0 8px 0;font-size:24px;color:#ff9f2a;font-weight:900">Select Queue</h3>
+      <p style="margin:0 0 24px 0;color:rgba(255,159,42,0.7);font-size:14px">Choose how you want to play</p>
+      <div class="queueOptions">
+        <div class="queueOption" data-queue="bots">
+          <h3>🤖 Queue with Bots</h3>
+          <p>Start immediately against AI opponents. Perfect for quick matches and practice.</p>
+        </div>
+        <div class="queueOption" data-queue="players">
+          <h3>👥 Queue with Players</h3>
+          <p>Match with real players online. Wait up to 30 seconds, then bots will fill remaining slots.</p>
+        </div>
+      </div>
+    </div>
+    <div id="matchStatus" style="display:none"></div>
+    <div id="matchTimer" style="display:none"></div>
+    <div id="matchInfo" style="display:none"></div>
+    <div id="playersWaiting" style="display:none"></div>
+  </div>
+</div>
+
+<div id="endScreen">
+  <div id="endCard">
+    <h2 id="endTitle">Game Over</h2>
+    <div id="endRows"></div>
+    <button id="restartBtn">Play again</button>
+  </div>
+</div>
+
+<canvas id="minimap"></canvas>
+<canvas id="c"></canvas>
+
+<script type="module">
+// Firebase imports
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { 
+  getDatabase, 
+  ref, 
+  set, 
+  push, 
+  update, 
+  onValue, 
+  get, 
+  remove,
+  off,
+  onDisconnect
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyDaIV1CXhgYnWv-xqhVeoHErWvjUp5KmPk",
+  authDomain: "clicker-8a05c.firebaseapp.com",
+  databaseURL: "https://clicker-8a05c-default-rtdb.firebaseio.com/",
+  projectId: "clicker-8a05c",
+  storageBucket: "clicker-8a05c.firebasestorage.app",
+  messagingSenderId: "548668344739",
+  appId: "1:548668344739:web:6ceb6b6268d712d5e93216"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// Test Firebase connection
+set(ref(db, "test/" + Date.now()), { test: true }).catch(() => {
+  console.log("Firebase connected");
+});
+
+// ================ GLOBAL VARIABLES ================
+let players = [];
+let playerName = "Player";
+let matchmakingState = "lobby";
+let matchmakingTimer = 30;
+let myPlayerId = null;
+let matchmakingInterval = null;
+let lobbyListener = null;
+let matchRef = null;
+let matchId = null;
+let isHost = false;
+let state = "countdown";
+let matchTimeLeft = 45;
+let countdownValue = 3;
+let countdownAccum = 0;
+let timerAccum = 0;
+let lastUpdateTime = 0;
+let lastSentPosition = { x: 0, y: 0, vx: 0, vy: 0 };
+
+// Game Constants
+const WORLD = {
+  radius: 600,
+  playerR: 11,
+  speed: 240,
+  trailSampleDist: 18,
+  trailKillDist: 10,
+  headToHeadDist: 18,
+  matchSeconds: 45
+};
+
+const HEX = {
+  size: 26,
+  alpha: 0.08,
+  highlightAlpha: 0.18,
+  nearRadius: 320,
+  showSpeedThreshold: 0.6
+};
+
+// Available colors
+const AVAILABLE_COLORS = [
+  { fill:"#3aa0ff", glow:"#88c7ff" },
+  { fill:"#ff9f2a", glow:"#ffd18d" },
+  { fill:"#ff4fb1", glow:"#ffb3da" },
+  { fill:"#4fff4f", glow:"#a3ffa3" },
+  { fill:"#9f4fff", glow:"#c9a3ff" },
+  { fill:"#4fffff", glow:"#a3ffff" }
+];
+
+// ================ UI ELEMENTS ================
+const meDot = document.getElementById("meDot");
+const rankBadge = document.getElementById("rankBadge");
+const timerText = document.getElementById("timerText");
+const overlay = document.getElementById("overlayCenter");
+const lbRowsEl = document.getElementById("lbRows");
+const endScreen = document.getElementById("endScreen");
+const endTitle = document.getElementById("endTitle");
+const endRowsEl = document.getElementById("endRows");
+const restartBtn = document.getElementById("restartBtn");
+const lobbyScreen = document.getElementById("lobbyScreen");
+const nameInput = document.getElementById("nameInput");
+const playBtn = document.getElementById("playBtn");
+const nameScreen = document.getElementById("nameScreen");
+const queueSelectScreen = document.getElementById("queueSelectScreen");
+const matchStatus = document.getElementById("matchStatus");
+const matchTimer = document.getElementById("matchTimer");
+const matchInfo = document.getElementById("matchInfo");
+const playersWaiting = document.getElementById("playersWaiting");
+const queueOptions = document.querySelectorAll(".queueOption");
+
+// Initialize meDot color
+meDot.style.background = AVAILABLE_COLORS[0].fill;
+
+// ================ LOBBY EVENT HANDLERS ================
+playBtn.addEventListener("click", () => {
+  console.log("PLAY button clicked");
+  const name = nameInput.value.trim();
+  if (name.length === 0) {
+    nameInput.style.borderColor = "#ff4444";
+    setTimeout(() => nameInput.style.borderColor = "rgba(255,159,42,0.4)", 1000);
+    return;
+  }
+  playerName = name;
+  console.log("Player name set to:", playerName);
+  
+  // Hide name screen, show queue selection
+  nameScreen.style.display = "none";
+  queueSelectScreen.classList.add("show");
+  console.log("Queue selection screen shown");
+});
+
+queueOptions.forEach(option => {
+  option.addEventListener("click", () => {
+    console.log("Queue option clicked:", option.dataset.queue);
+    queueOptions.forEach(opt => opt.classList.remove("selected"));
+    option.classList.add("selected");
+    const selectedQueue = option.dataset.queue;
+    
+    setTimeout(() => {
+      if (selectedQueue === "bots") {
+        console.log("Starting bots game...");
+        startGameWithBots();
+      } else {
+        console.log("Starting player matchmaking...");
+        startMatchmaking();
+      }
+    }, 300);
+  });
+});
+
+nameInput.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") {
+    playBtn.click();
+  }
+});
+
+// ================ CANVAS SETUP ================
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+const mini = document.getElementById("minimap");
+const mctx = mini.getContext("2d");
+
+function resize(){
+  const dpr = Math.max(1, Math.min(2, devicePixelRatio || 1));
+  canvas.width = Math.floor(innerWidth * dpr);
+  canvas.height = Math.floor(innerHeight * dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  const miniSize = 150;
+  mini.width = miniSize * dpr;
+  mini.height = miniSize * dpr;
+  mctx.setTransform(dpr,0,0,dpr,0,0);
+}
+addEventListener("resize", resize);
+resize();
+
+// ================ UTILS ================
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp = (a,b,t)=>a+(b-a)*t;
+const rand = (a,b)=>a+Math.random()*(b-a);
+const choose = (arr)=>arr[(Math.random()*arr.length)|0];
+const formatTime = (s)=>`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
+
+// ================ PLAYER FUNCTIONS ================
+function makePlayer(id, name, isBot, firebaseId = null, isMe = false, colorIndex = null){
+  const colors = AVAILABLE_COLORS;
+  const idx = colorIndex !== null ? colorIndex : (id % colors.length);
+  return {
+    id, name, isBot, firebaseId, isMe,
+    colorIndex: idx,
+    alive: true,
+    x:0, y:0,
+    vx:0, vy:-1,
+    lastX:0, lastY:0,
+    homeX:0, homeY:0,
+    trailActive:false,
+    trail:[],
+    lastInsideOwn:true,
+    scoreArea: 0,
+    botMode:"build",
+    botTimer:0,
+    lastUpdate: 0,
+    lastDirectionChange: 0
+  };
+}
+
+function getPlayerColor(player){
+  return AVAILABLE_COLORS[player.colorIndex] || AVAILABLE_COLORS[0];
+}
+
+// ================ CONTROLS ================
+const DIRS = {
+  w:{x:0,y:-1},
+  s:{x:0,y: 1},
+  a:{x:-1,y:0},
+  d:{x: 1,y:0}
+};
+
+addEventListener("keydown", (e) => {
+  const k = e.key.toLowerCase();
+  if (k === "r"){ hardReset(); return; }
+  if (state === "ended") return;
+  if (DIRS[k]){
+    if (players.length > 0) {
+      players[0].vx = DIRS[k].x;
+      players[0].vy = DIRS[k].y;
+    }
+  }
+});
+
+// ================ MOVEMENT ================
+function moveWithBoundarySlide(p, dt){
+  const nx = p.x + p.vx * WORLD.speed * dt;
+  const ny = p.y + p.vy * WORLD.speed * dt;
+  const dist = Math.hypot(nx, ny);
+  const maxR = WORLD.radius - WORLD.playerR;
+
+  if (dist <= maxR){
+    p.x = nx; p.y = ny;
+    return;
+  }
+
+  const ang = Math.atan2(ny, nx);
+  p.x = Math.cos(ang) * maxR;
+  p.y = Math.sin(ang) * maxR;
+
+  const nxn = Math.cos(ang), nyn = Math.sin(ang);
+  const tx1 = -nyn, ty1 = nxn;
+  const tx2 =  nyn, ty2 = -nxn;
+
+  const vL = Math.hypot(p.vx,p.vy) || 1;
+  const vx = p.vx / vL, vy = p.vy / vL;
+
+  const dot1 = vx*tx1 + vy*ty1;
+  const dot2 = vx*tx2 + vy*ty2;
+
+  if (dot1 >= dot2){ p.vx = tx1; p.vy = ty1; }
+  else { p.vx = tx2; p.vy = ty2; }
+}
+
+// ================ TRAIL & CAPTURE ================
+function addTrailPointIfNeeded(p){
+  if (!p.trailActive) return;
+  const last = p.trail[p.trail.length-1];
+  if (!last){ p.trail.push({x:p.x,y:p.y}); return; }
+  if (Math.hypot(p.x-last.x,p.y-last.y) >= WORLD.trailSampleDist){
+    p.trail.push({x:p.x,y:p.y});
+  }
+}
+
+function spawnFloatGain(text, wx, wy){
+  const sx = (wx - cam.x) * cam.zoom + innerWidth/2;
+  const sy = (wy - cam.y) * cam.zoom + innerHeight/2;
+  const div = document.createElement("div");
+  div.className = "floatGain";
+  div.textContent = text;
+  div.style.left = `${sx}px`;
+  div.style.top  = `${sy}px`;
+  document.body.appendChild(div);
+  setTimeout(()=>div.remove(), 1200);
+}
+
+// ================ COLLISIONS ================
+function distPointToSegment(px, py, x1, y1, x2, y2){
+  const vx = x2-x1, vy = y2-y1;
+  const wx = px-x1, wy = py-y1;
+  const c1 = vx*wx + vy*wy;
+  if (c1 <= 0) return Math.hypot(px-x1, py-y1);
+  const c2 = vx*vx + vy*vy;
+  if (c2 <= c1) return Math.hypot(px-x2, py-y2);
+  const t = c1 / c2;
+  const bx = x1 + t*vx, by = y1 + t*vy;
+  return Math.hypot(px-bx, py-by);
+}
+
+function killPlayer(p){
+  p.alive = false;
+  p.trailActive = false;
+  p.trail = [];
+  
+  if (p.firebaseId && matchId && !p.isBot) {
+    const playerRef = ref(db, `matches/${matchId}/players/${p.firebaseId}`);
+    update(playerRef, { alive: false }).catch(() => {});
+  }
+  
+  if (!p.isMe) {
+    const sx = (p.x - cam.x) * cam.zoom + innerWidth/2;
+    const sy = (p.y - cam.y) * cam.zoom + innerHeight/2;
+    const div = document.createElement("div");
+    div.className = "killAnimation";
+    div.textContent = "ELIMINATED";
+    div.style.left = `${sx}px`;
+    div.style.top = `${sy}px`;
+    document.body.appendChild(div);
+    setTimeout(()=>div.remove(), 1500);
+  }
+}
+
+function checkOwnTrailCollision(p){
+  if (!p.trailActive || p.trail.length < 2) return false;
+  const thr = WORLD.trailKillDist;
+  const skipLast = Math.min(3, p.trail.length - 1);
+  for (let i = 0; i < p.trail.length - skipLast - 1; i++) {
+    const p1 = p.trail[i];
+    const p2 = p.trail[i + 1];
+    const d = distPointToSegment(p.x, p.y, p1.x, p1.y, p2.x, p2.y);
+    if (d <= thr) return true;
+  }
+  return false;
+}
+
+function checkTrailKills(){
+  for (const a of players){
+    if (!a.alive) continue;
+    for (const b of players){
+      if (!b.alive) continue;
+      if (a.id === b.id) continue;
+      if (!b.trailActive || b.trail.length < 2) continue;
+      const thr = WORLD.trailKillDist;
+      for (let i=0;i<b.trail.length-1;i++){
+        const p1=b.trail[i], p2=b.trail[i+1];
+        const d = distPointToSegment(a.x,a.y,p1.x,p1.y,p2.x,p2.y);
+        if (d <= thr){
+          killPlayer(b);
+          return;
+        }
+      }
+    }
+  }
+}
+
+function checkHeadToHead(){
+  for (let i=0;i<players.length;i++){
+    const a=players[i]; if(!a.alive) continue;
+    for (let j=i+1;j<players.length;j++){
+      const b=players[j]; if(!b.alive) continue;
+      if (Math.hypot(a.x-b.x,a.y-b.y) <= WORLD.headToHeadDist){
+        killPlayer(a); killPlayer(b);
+        return;
+      }
+    }
+  }
+}
+
+// ================ HARDER BOT AI ================
+function botStep(p, dt){
+  if (!p.alive) return;
+  
+  const now = Date.now();
+  
+  // Boundary avoidance
+  if (Math.hypot(p.x, p.y) > WORLD.radius - 50){
+    const angle = Math.atan2(-p.y, -p.x);
+    p.vx = Math.cos(angle);
+    p.vy = Math.sin(angle);
+    p.lastDirectionChange = now;
+    return;
+  }
+  
+  // Change direction more frequently for harder bots
+  if (now - p.lastDirectionChange > rand(100, 400)) {
+    p.lastDirectionChange = now;
+    
+    // 40% chance to chase enemies
+    if (Math.random() < 0.4) {
+      let closestEnemy = null;
+      let minDist = Infinity;
+      for (const other of players) {
+        if (other.id === p.id || !other.alive) continue;
+        const dist = Math.hypot(p.x - other.x, p.y - other.y);
+        if (dist < minDist) {
+          minDist = dist;
+          closestEnemy = other;
+        }
+      }
+      if (closestEnemy) {
+        const dx = closestEnemy.x - p.x;
+        const dy = closestEnemy.y - p.y;
+        const dist = Math.hypot(dx, dy) || 1;
+        p.vx = dx / dist;
+        p.vy = dy / dist;
+      }
+    }
+    // 30% random movement
+    else if (Math.random() < 0.3) {
+      const angle = Math.random() * Math.PI * 2;
+      p.vx = Math.cos(angle);
+      p.vy = Math.sin(angle);
+    }
+    // 30% return home if trailing
+    else if (p.trailActive && p.trail.length > 15) {
+      const dx = p.homeX - p.x;
+      const dy = p.homeY - p.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      p.vx = dx / dist;
+      p.vy = dy / dist;
+    }
+  }
+}
+
+// ================ MASK TERRITORY SYSTEM ================
+const MASK = { size: 1024 };
+const masks = [];
+
+function initMasks(){
+  while (masks.length < AVAILABLE_COLORS.length) {
+    const c = document.createElement("canvas");
+    c.width = MASK.size;
+    c.height = MASK.size;
+    const g = c.getContext("2d");
+    masks.push({ c, g });
+  }
+}
+
+function worldToMask(wx, wy){
+  const S = MASK.size;
+  const R = WORLD.radius;
+  const x = (wx / (2*R) + 0.5) * S;
+  const y = (wy / (2*R) + 0.5) * S;
+  return { x, y };
+}
+
+function clearMasks(){
+  for (const M of masks){
+    M.g.setTransform(1,0,0,1,0,0);
+    M.g.clearRect(0,0,MASK.size,MASK.size);
+  }
+}
+
+function seedTerritory(pid, wx, wy, rWorld){
+  if (pid >= masks.length) return;
+  const {g} = masks[pid];
+  const p = worldToMask(wx, wy);
+  const r = (rWorld / (2*WORLD.radius)) * MASK.size;
+  g.save();
+  g.globalCompositeOperation = "source-over";
+  g.globalAlpha = 1;
+  g.fillStyle = AVAILABLE_COLORS[pid].fill;
+  g.beginPath();
+  g.arc(p.x, p.y, r, 0, Math.PI*2);
+  g.fill();
+  g.restore();
+}
+
+function maskHas(pid, wx, wy){
+  if (pid >= masks.length) return false;
+  const {g} = masks[pid];
+  const p = worldToMask(wx, wy);
+  if (p.x < 0 || p.y < 0 || p.x >= MASK.size || p.y >= MASK.size) return false;
+  const d = g.getImageData(p.x|0, p.y|0, 1, 1).data;
+  return d[3] > 10;
+}
+
+// ================ CAMERA ================
+const cam = { x:0, y:0, zoom:1.15, targetZoom:1.15 };
+
+// ================ RENDERING ================
+function renderBackground(){
+  const w=innerWidth,h=innerHeight;
+  const g=ctx.createRadialGradient(w/2,h/2,80,w/2,h/2,Math.min(w,h)*0.75);
+  g.addColorStop(0,"#070914"); g.addColorStop(1,"#04050a");
+  ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+}
+
+function renderTerritoryFromMasks(){
+  const S = MASK.size;
+  const R = WORLD.radius;
+  for (let i=0;i<Math.min(masks.length, players.length);i++){
+    ctx.drawImage(masks[i].c, 0,0,S,S, -R,-R, 2*R, 2*R);
+  }
+}
+
+function renderArena(){
+  ctx.strokeStyle="rgba(200,200,220,0.25)";
+  ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(0,0,WORLD.radius,0,Math.PI*2); ctx.stroke();
+}
+
+function renderTrails(){
+  for (const p of players){
+    if (!p.alive) continue;
+    if (!p.trailActive || p.trail.length<2) continue;
+    const color = getPlayerColor(p);
+    ctx.strokeStyle = color.glow;
+    ctx.lineWidth = 10;
+    ctx.lineJoin="round"; ctx.lineCap="round";
+    ctx.shadowColor = color.glow;
+    ctx.shadowBlur = 24;
+    ctx.beginPath();
+    ctx.moveTo(p.trail[0].x,p.trail[0].y);
+    for (let i=1;i<p.trail.length;i++) ctx.lineTo(p.trail[i].x,p.trail[i].y);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+}
+
+function renderPlayers(){
+  for (const p of players){
+    if (!p.alive) continue;
+    const color = getPlayerColor(p);
+    ctx.shadowColor = color.glow;
+    ctx.shadowBlur = 18;
+    ctx.fillStyle = color.fill;
+    ctx.beginPath(); ctx.arc(p.x,p.y,WORLD.playerR,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+}
+
+function renderMinimap(){
+  const size = 150;
+  const R = size/2;
+  mctx.setTransform(1,0,0,1,0,0);
+  mctx.clearRect(0,0,size,size);
+  mctx.save();
+  mctx.translate(R,R);
+  mctx.beginPath();
+  mctx.arc(0,0,R-2,0,Math.PI*2);
+  mctx.clip();
+  const S = MASK.size;
+  const worldR = WORLD.radius;
+  for (let i=0;i<Math.min(masks.length, players.length);i++){
+    mctx.drawImage(masks[i].c, 0,0,S,S, -R, -R, 2*R, 2*R);
+  }
+  mctx.strokeStyle="rgba(255,255,255,0.35)";
+  mctx.lineWidth=2;
+  mctx.beginPath();
+  mctx.arc(0,0,R-2,0,Math.PI*2);
+  mctx.stroke();
+  const scale = R / worldR;
+  for (const p of players){
+    if (!p.alive) continue;
+    const color = getPlayerColor(p);
+    mctx.fillStyle = color.fill;
+    mctx.beginPath();
+    mctx.arc(p.x*scale, p.y*scale, p.isMe ? 4 : 3, 0, Math.PI*2);
+    mctx.fill();
+  }
+  mctx.restore();
+}
+
+function render(){
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,innerWidth,innerHeight);
+  renderBackground();
+  const me = players.find(p => p.isMe);
+  if (me) {
+    cam.x = lerp(cam.x, me.x, 0.10);
+    cam.y = lerp(cam.y, me.y, 0.10);
+    cam.zoom = lerp(cam.zoom, cam.targetZoom, 0.08);
+  }
+  ctx.save();
+  ctx.translate(innerWidth/2, innerHeight/2);
+  ctx.scale(cam.zoom, cam.zoom);
+  ctx.translate(-cam.x, -cam.y);
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(0,0,WORLD.radius,0,Math.PI*2);
+  ctx.clip();
+  renderTerritoryFromMasks();
+  renderTrails();
+  ctx.restore();
+  renderArena();
+  renderPlayers();
+  ctx.restore();
+  renderMinimap();
+}
+
+// ================ LEADERBOARD ================
+function updateLeaderboard(){
+  const arenaArea = Math.PI*WORLD.radius*WORLD.radius;
+  const rows = players.map(p => ({
+    p,
+    pct: arenaArea>0 ? (p.scoreArea/arenaArea)*100 : 0
+  })).sort((a,b)=>b.pct-a.pct);
+  const myRank = rows.findIndex(r => r.p.isMe)+1;
+  rankBadge.textContent = `#${myRank}`;
+  lbRowsEl.innerHTML="";
+  for (const r of rows){
+    const color = getPlayerColor(r.p);
+    const div=document.createElement("div");
+    div.className="lbRow";
+    div.innerHTML = `
+      <div class="lbName">
+        <span class="dot" style="width:10px;height:10px;background:${color.fill}"></span>
+        <span>${r.p.name}${r.p.alive ? "" : " (dead)"}</span>
+      </div>
+      <div class="lbPct">${r.pct.toFixed(1)}%</div>
+    `;
+    lbRowsEl.appendChild(div);
+  }
+}
+
+// ================ MATCHMAKING FUNCTIONS ================
+function startGameWithBots(){
+  console.log("START GAME WITH BOTS - Function called");
+  
+  // Stop any existing matchmaking
+  if (matchmakingInterval) {
+    clearInterval(matchmakingInterval);
+    matchmakingInterval = null;
+  }
+  
+  // Clean up Firebase if needed
+  if (myPlayerId) {
+    remove(ref(db, `lobbies/active/${myPlayerId}`)).catch(() => {});
+  }
+  
+  // Hide lobby
+  lobbyScreen.style.display = "none";
+  matchmakingState = "playing";
+  console.log("Lobby hidden, matchmaking state: playing");
+  
+  // Create players with random colors
+  players = [
+    makePlayer(0, playerName, false, "player_0", true, 0),
+    makePlayer(1, "Bot Alpha", true, "bot_1", false, 1),
+    makePlayer(2, "Bot Beta", true, "bot_2", false, 2),
+  ];
+  
+  // Update meDot color
+  meDot.style.background = getPlayerColor(players[0]).fill;
+  console.log("Players created:", players.map(p => p.name));
+  
+  // Initialize masks
+  initMasks();
+  
+  // Start game
+  setTimeout(() => {
+    console.log("Calling hardReset for bots game");
+    hardReset();
+  }, 100);
+}
+
+function startMatchmaking(){
+  console.log("START MATCHMAKING - Function called");
+  
+  matchmakingState = "matching";
+  matchmakingTimer = 30;
+  playersWaiting.innerHTML = "";
+  
+  // Show matchmaking UI
+  queueSelectScreen.style.display = "none";
+  matchStatus.style.display = "block";
+  matchTimer.style.display = "block";
+  playersWaiting.style.display = "block";
+  matchInfo.style.display = "block";
+  
+  matchStatus.textContent = "Searching for players...";
+  matchTimer.textContent = "30s";
+  matchInfo.textContent = "Waiting for players...";
+  
+  console.log("Matchmaking UI shown");
+  
+  // Clean up old entries
+  const cleanupRef = ref(db, "lobbies/active");
+  get(cleanupRef).then((snapshot) => {
+    const lobbies = snapshot.val();
+    if (lobbies) {
+      const now = Date.now();
+      for (const key in lobbies) {
+        const entry = lobbies[key];
+        if (entry && entry.timestamp && now - entry.timestamp > 60000) {
+          remove(ref(db, `lobbies/active/${key}`)).catch(() => {});
+        }
+      }
+    }
+  });
+  
+  // Add self to lobby
+  const lobbyRef = ref(db, "lobbies/active");
+  const myRef = push(lobbyRef);
+  myPlayerId = myRef.key;
+  set(myRef, {
+    name: playerName,
+    timestamp: Date.now(),
+    timeLeft: 30,
+    status: "waiting"
+  }).then(() => {
+    console.log("Added to lobby with ID:", myPlayerId);
+  });
+  
+  onDisconnect(myRef).remove();
+  
+  // Listen for other players
+  lobbyListener = onValue(lobbyRef, (snapshot) => {
+    if (matchmakingState !== "matching") return;
+    
+    const lobbies = snapshot.val();
+    const waitingPlayers = [];
+    let lowestTime = 30;
+    
+    if (lobbies) {
+      const now = Date.now();
+      for (const key in lobbies) {
+        const entry = lobbies[key];
+        if (entry && entry.name) {
+          const entryTime = entry.timestamp || 0;
+          if (now - entryTime < 60000) {
+            if (key === myPlayerId) {
+              if (entry.timeLeft && entry.timeLeft < lowestTime) {
+                lowestTime = entry.timeLeft;
+              }
+            } else {
+              waitingPlayers.push({ 
+                id: key, 
+                name: entry.name,
+                timeLeft: entry.timeLeft || 30
+              });
+              if (entry.timeLeft && entry.timeLeft < lowestTime) {
+                lowestTime = entry.timeLeft;
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    matchmakingTimer = lowestTime;
+    updateWaitingPlayersUI(waitingPlayers, lowestTime);
+    
+    // Start match if we have enough players
+    if (waitingPlayers.length >= 2) {
+      console.log("Found enough players, creating match...");
+      createMatchWithPlayers(waitingPlayers);
+    }
+  });
+  
+  // Start matchmaking timer
+  matchmakingInterval = setInterval(() => {
+    matchmakingTimer--;
+    matchTimer.textContent = `${matchmakingTimer}s`;
+    
+    // Update my time in Firebase
+    if (myPlayerId) {
+      update(ref(db, `lobbies/active/${myPlayerId}`), {
+        timeLeft: matchmakingTimer
+      }).catch(() => {});
+    }
+    
+    if (matchmakingTimer <= 0) {
+      console.log("Matchmaking timer expired");
+      clearInterval(matchmakingInterval);
+      matchmakingInterval = null;
+      
+      if (lobbyListener) {
+        off(lobbyRef);
+        lobbyListener = null;
+      }
+      
+      // Check if we have any players
+      get(lobbyRef).then((snapshot) => {
+        const lobbies = snapshot.val();
+        const otherPlayers = [];
+        
+        if (lobbies) {
+          const now = Date.now();
+          for (const key in lobbies) {
+            if (key === myPlayerId) continue;
+            const entry = lobbies[key];
+            if (entry && entry.name && entry.timestamp && now - entry.timestamp < 60000) {
+              otherPlayers.push({ id: key, name: entry.name });
+            }
+          }
+        }
+        
+        if (otherPlayers.length > 0) {
+          createMatchWithPlayers(otherPlayers);
+        } else {
+          console.log("No players found, starting with bots");
+          startGameWithBots();
+        }
+      });
+    }
+  }, 1000);
+}
+
+function updateWaitingPlayersUI(waitingPlayers, currentTime){
+  playersWaiting.innerHTML = "";
+  waitingPlayers.forEach(p => {
+    const div = document.createElement("div");
+    div.className = "waitingPlayer";
+    div.textContent = `${p.name} (${p.timeLeft}s)`;
+    playersWaiting.appendChild(div);
+  });
+  
+  const totalPlayers = waitingPlayers.length + 1;
+  const botsNeeded = Math.max(0, 3 - totalPlayers);
+  
+  matchStatus.textContent = `${totalPlayers} player${totalPlayers !== 1 ? 's' : ''} in queue...`;
+  matchInfo.textContent = `Players: ${totalPlayers} • Bots: ${botsNeeded} • Time: ${currentTime}s`;
+}
+
+function createMatchWithPlayers(waitingPlayers){
+  if (matchmakingState !== "matching") return;
+  console.log("CREATE MATCH WITH PLAYERS - Function called with", waitingPlayers.length, "players");
+  
+  // Stop timer and listener
+  if (matchmakingInterval) {
+    clearInterval(matchmakingInterval);
+    matchmakingInterval = null;
+  }
+  
+  if (lobbyListener) {
+    off(ref(db, "lobbies/active"));
+    lobbyListener = null;
+  }
+  
+  // Create match in Firebase
+  matchId = `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  isHost = true;
+  matchRef = ref(db, `matches/${matchId}`);
+  
+  // Assign colors
+  const colorAssignments = {};
+  const usedColors = new Set();
+  
+  // My color
+  const myColorIndex = Math.floor(Math.random() * AVAILABLE_COLORS.length);
+  colorAssignments[myPlayerId] = myColorIndex;
+  usedColors.add(myColorIndex);
+  
+  // Other players
+  let playerList = [{ id: myPlayerId, name: playerName, isBot: false }];
+  for (const wp of waitingPlayers.slice(0, 2)) {
+    playerList.push({ id: wp.id, name: wp.name, isBot: false });
+    let colorIdx;
+    do {
+      colorIdx = Math.floor(Math.random() * AVAILABLE_COLORS.length);
+    } while (usedColors.has(colorIdx) && usedColors.size < AVAILABLE_COLORS.length);
+    usedColors.add(colorIdx);
+    colorAssignments[wp.id] = colorIdx;
+  }
+  
+  // Add bots if needed
+  const botNames = ["Bot Alpha", "Bot Beta", "Bot Gamma"];
+  while (playerList.length < 3) {
+    const botId = `bot_${Date.now()}_${playerList.length}`;
+    playerList.push({ id: botId, name: botNames[playerList.length - 1] || `Bot ${playerList.length}`, isBot: true });
+    let colorIdx;
+    do {
+      colorIdx = Math.floor(Math.random() * AVAILABLE_COLORS.length);
+    } while (usedColors.has(colorIdx) && usedColors.size < AVAILABLE_COLORS.length);
+    usedColors.add(colorIdx);
+    colorAssignments[botId] = colorIdx;
+  }
+  
+  // Create match data
+  const matchData = {
+    hostId: myPlayerId,
+    players: {},
+    createdAt: Date.now(),
+    gameState: "starting",
+    countdown: 3
+  };
+  
+  // Add players to match data
+  let playerIdx = 0;
+  for (const p of playerList) {
+    matchData.players[p.id] = {
+      id: p.id,
+      name: p.name,
+      isBot: p.isBot,
+      colorIndex: colorAssignments[p.id],
+      position: { x: 0, y: 0 },
+      velocity: { x: 0, y: -1 },
+      alive: true,
+      score: 0,
+      lastUpdate: Date.now()
+    };
+    playerIdx++;
+  }
+  
+  set(matchRef, matchData).then(() => {
+    console.log("Match created in Firebase:", matchId);
+    
+    // Create local player objects
+    players = [];
+    let localIdx = 0;
+    for (const p of playerList) {
+      players.push(makePlayer(
+        localIdx,
+        p.name,
+        p.isBot,
+        p.id,
+        p.id === myPlayerId,
+        colorAssignments[p.id]
+      ));
+      localIdx++;
+    }
+    
+    // Update myDot color
+    const myPlayer = players.find(p => p.isMe);
+    if (myPlayer) {
+      meDot.style.background = getPlayerColor(myPlayer).fill;
+    }
+    
+    // Initialize masks
+    initMasks();
+    
+    // Clean up lobby entries
+    const cleanupPromises = [];
+    cleanupPromises.push(remove(ref(db, `lobbies/active/${myPlayerId}`)).catch(() => {}));
+    for (const wp of waitingPlayers) {
+      cleanupPromises.push(remove(ref(db, `lobbies/active/${wp.id}`)).catch(() => {}));
+    }
+    
+    Promise.all(cleanupPromises).then(() => {
+      console.log("Lobby cleaned up, starting game...");
+      lobbyScreen.style.display = "none";
+      matchmakingState = "playing";
+      
+      // Start game
+      setTimeout(() => {
+        hardReset();
+      }, 500);
+    });
+  });
+}
+
+// ================ HARD RESET ================
+function hardReset(){
+  console.log("HARD RESET - Starting game");
+  endScreen.style.display = "none";
+  
+  // Spawn positions
+  const spawns = [
+    {x: 0,   y: 0},
+    {x:-200, y:-120},
+    {x: 240, y: 140}
+  ];
+  
+  for (let i=0;i<players.length;i++){
+    const p=players[i];
+    p.alive=true;
+    p.x=spawns[i].x; p.y=spawns[i].y;
+    p.vx=0; p.vy=-1;
+    p.lastX=p.x; p.lastY=p.y;
+    p.homeX=p.x; p.homeY=p.y;
+    p.trailActive=false; p.trail=[];
+    p.lastInsideOwn=true;
+    p.scoreArea=0;
+    p.botMode="build";
+    p.botTimer=rand(0.18,0.45);
+    p.lastDirectionChange = Date.now();
+  }
+  
+  // Reset camera
+  const me = players.find(p => p.isMe);
+  if (me) {
+    cam.x=me.x; cam.y=me.y;
+    cam.zoom=1.15; cam.targetZoom=1.15;
+  }
+  
+  // Clear and seed territory
+  clearMasks();
+  for (let i=0;i<players.length;i++){
+    seedTerritory(i, players[i].homeX, players[i].homeY, 70);
+    players[i].scoreArea += Math.PI*70*70;
+  }
+  
+  // Reset game state
+  state="countdown";
+  countdownValue=3;
+  countdownAccum=0;
+  overlay.textContent="3";
+  matchTimeLeft=WORLD.matchSeconds;
+  timerAccum=0;
+  timerText.textContent = formatTime(matchTimeLeft);
+  
+  updateLeaderboard();
+  console.log("Game started successfully with", players.length, "players");
+}
+
+// ================ END GAME ================
+function endGame(reason){
+  if (state==="ended") return;
+  state="ended";
+  overlay.textContent="";
+  const arenaArea = Math.PI*WORLD.radius*WORLD.radius;
+  const rows = players.map(p => ({
+    p,
+    pct: arenaArea>0 ? (p.scoreArea/arenaArea)*100 : 0
+  })).sort((a,b)=>b.pct-a.pct);
+  const winner = rows[0].p;
+  const isWinner = winner.isMe;
+  if (isWinner && winner.alive) {
+    const winDiv = document.createElement("div");
+    winDiv.className = "winAnimation";
+    winDiv.textContent = "VICTORY!";
+    document.body.appendChild(winDiv);
+    setTimeout(()=>winDiv.remove(), 2000);
+  } else {
+    const lossDiv = document.createElement("div");
+    lossDiv.className = "winAnimation";
+    lossDiv.style.color = "#ff4444";
+    lossDiv.style.textShadow = "0 0 30px rgba(255,68,68,0.9),0 0 60px rgba(255,68,68,0.7)";
+    lossDiv.textContent = "DEFEAT";
+    document.body.appendChild(lossDiv);
+    setTimeout(()=>lossDiv.remove(), 2000);
+  }
+  if (matchId) {
+    remove(ref(db, `matches/${matchId}`)).catch(() => {});
+  }
+  if (myPlayerId) {
+    remove(ref(db, `lobbies/active/${myPlayerId}`)).catch(() => {});
+  }
+  setTimeout(() => {
+    state = "countdown";
+    players = [];
+    matchmakingState = "lobby";
+    if (matchmakingInterval) clearInterval(matchmakingInterval);
+    matchmakingInterval = null;
+    if (lobbyListener) {
+      off(ref(db, "lobbies/active"));
+      lobbyListener = null;
+    }
+    lobbyScreen.style.display = "flex";
+    nameScreen.style.display = "block";
+    queueSelectScreen.classList.remove("show");
+    queueSelectScreen.style.display = "none";
+    matchStatus.style.display = "none";
+    matchTimer.style.display = "none";
+    matchInfo.style.display = "none";
+    playersWaiting.style.display = "none";
+    endScreen.style.display = "none";
+    nameInput.value = playerName;
+  }, 2500);
+}
+
+// ================ RESTART BUTTON ================
+restartBtn.addEventListener("click", () => {
+  if (myPlayerId) {
+    remove(ref(db, `lobbies/active/${myPlayerId}`)).catch(() => {});
+  }
+  state = "countdown";
+  players = [];
+  matchmakingState = "lobby";
+  if (matchmakingInterval) clearInterval(matchmakingInterval);
+  matchmakingInterval = null;
+  if (lobbyListener) {
+    off(ref(db, "lobbies/active"));
+    lobbyListener = null;
+  }
+  endScreen.style.display = "none";
+  lobbyScreen.style.display = "flex";
+  nameScreen.style.display = "block";
+  queueSelectScreen.classList.remove("show");
+  queueSelectScreen.style.display = "none";
+  matchStatus.style.display = "none";
+  matchTimer.style.display = "none";
+  matchInfo.style.display = "none";
+  playersWaiting.style.display = "none";
+  nameInput.value = playerName;
+});
+
+// ================ MAIN UPDATE LOOP ================
+function update(dt){
+  // Countdown
+  if (state==="countdown"){
+    countdownAccum += dt;
+    if (countdownAccum >= 1){
+      countdownAccum = 0;
+      countdownValue -= 1;
+      
+      if (countdownValue > 0){
+        overlay.textContent = String(countdownValue);
+      } else {
+        overlay.textContent = "GO";
+        state="countdown_go";
+        
+        setTimeout(()=>{
+          if (state !== "ended"){
+            overlay.textContent="";
+            state="playing";
+          }
+        }, 320);
+      }
+    }
+    return;
+  }
+  
+  if (state==="countdown_go") return;
+  if (state!=="playing") return;
+  
+  // Game timer
+  timerAccum += dt;
+  while (timerAccum >= 1){
+    timerAccum -= 1;
+    matchTimeLeft = Math.max(0, matchTimeLeft-1);
+    timerText.textContent = formatTime(matchTimeLeft);
+    if (matchTimeLeft === 0){
+      endGame("Time's up!");
+      return;
+    }
+  }
+  
+  // Bot AI
+  for (const p of players){
+    if (p.isBot) botStep(p, dt);
+  }
+  
+  // Store last positions
+  for (const p of players){
+    p.lastX = p.x; p.lastY = p.y;
+  }
+  
+  // Player movement
+  for (const p of players){
+    if (!p.alive) continue;
+    
+    // Check own trail collision
+    if (checkOwnTrailCollision(p)) {
+      p.vx = -p.vx;
+      p.vy = -p.vy;
+      const lastTrail = p.trail[p.trail.length - 1];
+      if (lastTrail) {
+        const dx = p.x - lastTrail.x;
+        const dy = p.y - lastTrail.y;
+        const dist = Math.hypot(dx, dy) || 1;
+        p.vx = dx / dist;
+        p.vy = dy / dist;
+      }
+    }
+    
+    moveWithBoundarySlide(p, dt);
+    
+    // Simple trail logic
+    const insideOwn = maskHas(p.colorIndex, p.x, p.y);
+    
+    if (!insideOwn && p.lastInsideOwn && !p.trailActive){
+      p.trailActive=true;
+      p.trail=[{x:p.x,y:p.y}];
+    }
+    
+    if (p.trailActive) {
+      addTrailPointIfNeeded(p);
+    }
+    
+    // Simple capture
+    if (insideOwn && p.trailActive && p.trail.length > 3){
+      p.trailActive = false;
+      p.trail = [];
+      p.scoreArea += 1000;
+    }
+    
+    p.lastInsideOwn = insideOwn;
+  }
+  
+  // Check collisions
+  checkTrailKills();
+  checkHeadToHead();
+  
+  // Check for winner
+  const alive = players.filter(p=>p.alive);
+  if (alive.length === 1){
+    endGame(`Last standing: ${alive[0].name}`);
+    return;
+  }
+  
+  updateLeaderboard();
+}
+
+// ================ GAME LOOP ================
+let last = performance.now();
+function gameLoop(now){
+  if ((matchmakingState === "playing") && players.length > 0) {
+    const dt = Math.min(0.05, (now-last)/1000);
+    last = now;
+    update(dt);
+    render();
+  }
+  requestAnimationFrame(gameLoop);
+}
+
+// ================ INITIALIZE ================
+// Show lobby on load
+lobbyScreen.style.display = "flex";
+
+// Initialize masks
+initMasks();
+
+// Start game loop
+requestAnimationFrame(gameLoop);
+
+</script>
+</body>
+</html>
